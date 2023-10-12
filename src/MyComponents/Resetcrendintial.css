@@ -1,0 +1,44 @@
+#password123{
+    
+ margin-left: 21.5%;
+ margin-top: 6%;
+}
+#confirmPassword123{
+    margin-left: 4.5%;
+    margin-top: 5%;
+    
+}
+.logo1000123{
+    width: 18px;
+    height: 2%;
+    margin-top: 2.2%;
+   
+}
+#myheadding20001{
+    margin-left: 3%;
+    margin-top: 6%;
+    font-weight: 500;
+}
+.clickbutton{
+    margin-top: 5%;
+    margin-left: 74%;
+}
+.image5678{
+    margin-top: 50%;
+}
+.welcome{
+    display: flex;
+    align-items: center;
+    
+}
+#credi{
+    font-weight: 450;
+    margin-left: 5%;
+    margin-top: 1.8%;
+    margin-bottom: 0%;
+    display: inline;
+    white-space: nowrap;
+    
+   
+       
+}
