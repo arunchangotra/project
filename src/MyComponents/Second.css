@@ -13,10 +13,12 @@
   }
   
   .links1 {
-    margin-top: 10%;
     
-    margin-left: 14%;
-    margin-right: 5px;
+    margin-left: 10%;
+    margin-top: 18%;
+    
+    
+    
   }
   
   .mayalogo1 {
@@ -51,4 +53,7 @@
   .image5{
     width: 80%;
     height: 70%;
+  }
+  .content1234{
+    margin-left: 10%;
   }

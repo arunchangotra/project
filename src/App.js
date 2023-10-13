@@ -14,7 +14,7 @@ function App() {
         <RegistrationForm />
         <div className="bottom">
           
-          <img src="formbottom.png" alt="Image at the bottom" />
+          <img src="formbottom.png" alt="Image at the bottom" className="im"/>
         </div>
         
       </div>
