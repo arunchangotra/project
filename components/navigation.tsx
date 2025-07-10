@@ -23,7 +23,7 @@ export function Navigation() {
       <div className="flex items-center space-x-4">
         <Link href="/landing" className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-200">
           <Building2 className="h-6 w-6 text-apple-blue-700" />
-          <span className="font-bold text-xl text-gray-900 tracking-tight">AI Earnings Assistant</span>
+          <span className="font-bold text-xl text-gray-900 tracking-tight">Earnings Assistant</span>
           <Badge
             variant="secondary"
             className="ml-2 text-xs px-2 py-0.5 rounded-full bg-apple-blue-100 text-apple-blue-700 border-apple-blue-200"
