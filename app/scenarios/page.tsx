@@ -71,10 +71,10 @@ export default function WhatIfScenarios() {
   const [results, setResults] = useState<ScenarioResults>(baselineResults)
 
   // State to control which metrics are displayed in the result cards
-  // Initialize with only 4-5 key metrics instead of all popular metrics
+  // Initialize with only 3 key metrics instead of 5
   const [selectedDisplayMetrics, setSelectedDisplayMetrics] = useState<Set<string>>(() => {
-    // Select only 4-5 most important metrics by default
-    const defaultMetrics = ["NIM", "ROE", "ROA", "CAR", "ER"] // 5 key metrics
+    // Select only 3 most important metrics by default
+    const defaultMetrics = ["NIM", "ROE", "ROA"] // 3 key metrics
     return new Set(defaultMetrics)
   })
 
@@ -209,13 +209,34 @@ export default function WhatIfScenarios() {
     }
   }
 
+  // Helper function to create short names for chart display
+  const getShortMetricName = (fullName: string) => {
+    const shortNames: Record<string, string> = {
+      "Net Interest Margin (NIM)": "NIM",
+      "Return on Equity (ROE)": "ROE",
+      "Return on Assets (ROA)": "ROA",
+      "Capital Adequacy Ratio (CAR)": "CAR",
+      "Common Equity Tier 1 (CET1) Ratio": "CET1",
+      "Non-Performing Loan (NPL) Ratio": "NPL Ratio",
+      "Loan-to-Deposit Ratio (LDR)": "LDR",
+      "CASA Ratio": "CASA",
+      "P/E Ratio": "P/E",
+      "P/B Ratio": "P/B",
+      "Efficiency Ratio": "Efficiency",
+      "Adjusted Tangible Common Equity/Assets": "ATCE",
+      "Net Charge-Off Ratio": "NCO Ratio",
+      "Provision Coverage Ratio (PCR)": "PCR",
+    }
+    return shortNames[fullName] || fullName
+  }
+
   // Dynamically generate comparison data for the chart based on selected display metrics
   const comparisonData = Array.from(selectedDisplayMetrics)
     .map((metricId) => {
       const data = getMetricDisplayData(metricId)
       if (!data) return null
       return {
-        metric: data.name,
+        metric: getShortMetricName(data.name), // Use short name for chart
         baseline: data.baseline,
         scenario: data.scenario,
         unit: data.unit,
@@ -542,17 +563,9 @@ export default function WhatIfScenarios() {
               className={`min-h-[200px] h-[${Math.max(200, selectedDisplayMetrics.size * 50 + 100)}px]`}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis
-                    dataKey="metric"
-                    tickLine={false}
-                    axisLine={false}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={0}
-                  />
+                  <XAxis dataKey="metric" tickLine={false} axisLine={false} interval={0} tick={{ fontSize: 12 }} />
                   <YAxis tickLine={false} axisLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="baseline" fill="var(--color-baseline)" radius={[4, 4, 0, 0]} />
