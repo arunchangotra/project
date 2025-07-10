@@ -16,38 +16,53 @@ import { financialRatios } from "@/lib/financial-ratios" // Import financial rat
 // Helper function to convert markdown-like content to HTML
 const convertMarkdownToHtml = (markdown: string): string => {
   const html = markdown
-    // Convert headers
-    .replace(/^\*\*(.*?)\*\*$/gm, "<h1>$1</h1>")
-    .replace(/^\*\*(\d+\.\s.*?)\*\*$/gm, "<h2>$1</h2>")
-    .replace(/^\*\*([^*\n]+)\*\*(?=\s)/gm, "<h3>$1</h3>")
-    // Convert bold text
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    // Convert headers - more specific patterns
+    .replace(
+      /^\*\*([^*\n]+)\*\*$/gm,
+      '<h1 style="color: #1f2937; font-size: 1.5rem; font-weight: bold; margin: 1.5rem 0 1rem 0; border-bottom: 2px solid #3b82f6; padding-bottom: 0.5rem;">$1</h1>',
+    )
+    .replace(
+      /^\*\*(\d+\.\s[^*\n]+)\*\*$/gm,
+      '<h2 style="color: #374151; font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.75rem 0;">$1</h2>',
+    )
+    // Convert bold text (not headers)
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong style="color: #1f2937; font-weight: 600;">$1</strong>')
     // Convert italic text
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    // Convert bullet points
-    .replace(/^\*\s+(.+)$/gm, "<li>$1</li>")
-    // Wrap consecutive list items in ul tags
-    .replace(/(<li>.*<\/li>)/gs, (match) => {
-      const items = match
-        .split("</li>")
-        .filter((item) => item.trim())
-        .map((item) => item + "</li>")
-      return "<ul>" + items.join("") + "</ul>"
-    })
-    // Convert line breaks to paragraphs
+    .replace(/\*([^*\n]+)\*/g, '<em style="font-style: italic;">$1</em>')
+    // Convert bullet points with better spacing
+    .replace(/^\*\s+(.+)$/gm, '<li style="margin-bottom: 0.5rem; line-height: 1.6;">$1</li>')
+    // Wrap consecutive list items in ul tags with proper styling
+    .replace(
+      /(<li[^>]*>.*?<\/li>(\s*<li[^>]*>.*?<\/li>)*)/gs,
+      '<ul style="margin: 1rem 0; padding-left: 1.5rem; list-style-type: disc;">$1</ul>',
+    )
+    // Convert paragraphs with proper spacing
     .split("\n\n")
     .map((paragraph) => {
-      if (paragraph.trim() && !paragraph.includes("<h") && !paragraph.includes("<ul>")) {
-        return `<p>${paragraph.trim()}</p>`
+      const trimmed = paragraph.trim()
+      if (trimmed && !trimmed.includes("<h") && !trimmed.includes("<ul>") && !trimmed.includes("<li>")) {
+        return `<p style="margin: 1rem 0; line-height: 1.7; color: #374151;">${trimmed}</p>`
       }
-      return paragraph
+      return trimmed
     })
     .join("\n")
-    // Highlight financial figures
-    .replace(/\$[\d,]+\.?\d*[MB]?/g, '<span class="highlight">$&</span>')
-    .replace(/\d+\.\d+%/g, '<span class="highlight">$&</span>')
-    .replace(/\+\d+\.\d+%/g, '<span class="highlight text-green-600">$&</span>')
-    .replace(/-\d+\.\d+%/g, '<span class="highlight text-red-600">$&</span>')
+    // Highlight financial figures with better styling
+    .replace(
+      /\$[\d,]+\.?\d*[MB]?/g,
+      '<span style="background-color: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 600;">$&</span>',
+    )
+    .replace(
+      /\d+\.\d+%/g,
+      '<span style="background-color: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 600;">$&</span>',
+    )
+    .replace(
+      /\+\d+\.\d+%/g,
+      '<span style="background-color: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 600;">$&</span>',
+    )
+    .replace(
+      /-\d+\.\d+%/g,
+      '<span style="background-color: #fee2e2; color: #dc2626; padding: 2px 6px; border-radius: 4px; font-weight: 600;">$&</span>',
+    )
 
   return html
 }
@@ -633,14 +648,59 @@ The Q3 results underscore the effectiveness of our diversified business model an
                           <head>
                             <title>Board Deck Preview</title>
                             <style>
-                              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
-                              h1 { color: #1f2937; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
-                              h2 { color: #374151; margin-top: 30px; }
-                              h3 { color: #4b5563; }
-                              strong { color: #1f2937; }
-                              ul { padding-left: 20px; }
-                              li { margin-bottom: 8px; }
-                              .highlight { background-color: #dbeafe; padding: 2px 4px; border-radius: 3px; }
+                              body { 
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                                line-height: 1.7; 
+                                max-width: 800px; 
+                                margin: 0 auto; 
+                                padding: 40px 20px; 
+                                color: #374151;
+                                font-size: 0.95rem;
+                              }
+                              h1 { 
+                                color: #1f2937; 
+                                font-size: 1.5rem; 
+                                font-weight: bold; 
+                                margin: 1.5rem 0 1rem 0; 
+                                border-bottom: 2px solid #3b82f6; 
+                                padding-bottom: 0.5rem; 
+                              }
+                              h2 { 
+                                color: #374151; 
+                                font-size: 1.25rem; 
+                                font-weight: 600; 
+                                margin: 1.25rem 0 0.75rem 0; 
+                              }
+                              h3 { 
+                                color: #4b5563; 
+                                font-size: 1.1rem; 
+                                font-weight: 600; 
+                                margin: 1rem 0 0.5rem 0; 
+                              }
+                              strong { 
+                                color: #1f2937; 
+                                font-weight: 600; 
+                              }
+                              ul { 
+                                margin: 1rem 0; 
+                                padding-left: 1.5rem; 
+                                list-style-type: disc; 
+                              }
+                              li { 
+                                margin-bottom: 0.5rem; 
+                                line-height: 1.6; 
+                              }
+                              p { 
+                                margin: 1rem 0; 
+                                line-height: 1.7; 
+                              }
+                              .highlight { 
+                                background-color: #dbeafe; 
+                                color: #1e40af; 
+                                padding: 2px 6px; 
+                                border-radius: 4px; 
+                                font-weight: 600; 
+                              }
                             </style>
                           </head>
                           <body>${htmlContent}</body>
@@ -655,7 +715,13 @@ The Q3 results underscore the effectiveness of our diversified business model an
                 </Button>
               </div>
               <div
-                className="bg-white border border-gray-200 rounded-lg p-6 max-h-[500px] overflow-y-auto prose prose-sm max-w-none"
+                className="bg-white border border-gray-200 rounded-lg p-8 max-h-[500px] overflow-y-auto"
+                style={{
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontSize: "0.95rem",
+                  lineHeight: "1.7",
+                  color: "#374151",
+                }}
                 dangerouslySetInnerHTML={{ __html: convertMarkdownToHtml(content) }}
               />
             </div>

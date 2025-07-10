@@ -539,12 +539,20 @@ export default function WhatIfScenarios() {
                 baseline: { label: "Baseline", color: "hsl(var(--chart-1))" },
                 scenario: { label: "Scenario", color: "hsl(var(--chart-2))" },
               }}
-              className="h-[200px]"
+              className={`min-h-[200px] h-[${Math.max(200, selectedDisplayMetrics.size * 50 + 100)}px]`}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonData}>
+                <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="metric" tickLine={false} axisLine={false} />
+                  <XAxis
+                    dataKey="metric"
+                    tickLine={false}
+                    axisLine={false}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
+                  />
                   <YAxis tickLine={false} axisLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="baseline" fill="var(--color-baseline)" radius={[4, 4, 0, 0]} />
