@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { X, Download } from "lucide-react"
+import { Minimize2, Maximize2, X, Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ChatInterface } from "./chat-interface"
 
@@ -10,8 +10,7 @@ interface CFOChatWidgetProps {
   setIsChatOpen: (isOpen: boolean) => void
   isMaximized: boolean
   setIsMaximized: (isMax: boolean) => void
-  initialMessage: string | null
-  onBackToDashboard?: () => void
+  initialMessage: string | null // New prop for initial message
 }
 
 export function CFOChatWidget({
@@ -20,7 +19,6 @@ export function CFOChatWidget({
   isMaximized,
   setIsMaximized,
   initialMessage,
-  onBackToDashboard,
 }: CFOChatWidgetProps) {
   const toggleChat = () => {
     setIsChatOpen((prev) => !prev)
@@ -39,8 +37,7 @@ export function CFOChatWidget({
 
   const closeChat = () => {
     setIsChatOpen(false)
-    setIsMaximized(false)
-    onBackToDashboard?.() // Go back to dashboard when closing chat
+    setIsMaximized(false) // Reset to default when closing
   }
 
   const exportChat = () => {
@@ -55,27 +52,76 @@ export function CFOChatWidget({
 
   return (
     <>
+      {/* Mascot Button (removed as AIChatInput is the primary entry point) */}
+      {/*
+      {!isChatOpen && (
+        <Button
+          onClick={toggleChat}
+          className={cn(
+            "fixed bottom-8 right-8 z-50 rounded-full p-5 shadow-lg transition-all duration-300 ease-in-out",
+            "bg-apple-blue-600 hover:bg-apple-blue-700 text-white",
+          )}
+          aria-label="Open CFO Chat"
+        >
+          <MessageSquare className="h-8 w-8" />
+        </Button>
+      )}
+      */}
+
       {/* Overlay for maximized state */}
       {isChatOpen && isMaximized && (
         <div
-          className="fixed inset-0 z-40 bg-white/80 backdrop-blur-lg transition-opacity duration-300 ease-in-out"
+          className="fixed inset-0 z-40 bg-white/80 backdrop-blur-lg transition-opacity duration-300 ease-in-out" // Ensure z-40 is between sidebar (z-20) and chat (z-50)
           aria-hidden="true"
         />
       )}
 
-      {/* Chat Window Container - Full screen when maximized */}
+      {/* Chat Window Container */}
       <div
         className={cn(
-          "fixed z-50 bg-white shadow-xl flex flex-col overflow-hidden",
+          "fixed z-50 bg-white shadow-xl rounded-lg flex flex-col overflow-hidden", // Ensure z-50 is higher than sidebar
           "transition-all duration-300 ease-in-out",
-          // Always full screen when open
-          isChatOpen ? "inset-0" : "opacity-0 pointer-events-none inset-0",
+          // Positioning and size based on isMaximized
+          isMaximized
+            ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] h-[90vh]"
+            : "bottom-8 right-8 w-[400px] h-[600px]",
+          // Visibility
+          isChatOpen ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
+        style={{
+          transformOrigin: isMaximized ? "center" : "bottom right",
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-          <h2 className="text-lg font-semibold text-gray-800">AI Earnings Assistant</h2>
+        <div
+          className={cn(
+            "flex items-center justify-between p-4 border-b border-gray-200",
+            isMaximized ? "bg-apple-gray-50" : "bg-white",
+          )}
+        >
+          <h2 className="text-lg font-semibold text-gray-800">{isMaximized ? "AI Earnings Assistant" : "CFO Chat"}</h2>
           <div className="flex space-x-2">
+            {isMaximized ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={minimizeWindow}
+                className="h-8 w-8 text-gray-600 hover:bg-gray-100"
+                aria-label="Minimize chat window"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={maximizeWindow}
+                className="h-8 w-8 text-gray-600 hover:bg-gray-100"
+                aria-label="Maximize chat window"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -96,10 +142,9 @@ export function CFOChatWidget({
             </Button>
           </div>
         </div>
-
         {/* Chat Content */}
-        <div className="flex-1 overflow-hidden">
-          <ChatInterface isMaximized={true} initialMessage={initialMessage} />
+        <div className="flex-1 p-4 overflow-hidden">
+          <ChatInterface isMaximized={isMaximized} initialMessage={initialMessage} />
         </div>
       </div>
     </>

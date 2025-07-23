@@ -5,8 +5,8 @@ import { useState, useEffect } from "react"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { CFOChatWidget } from "@/components/cfo-chat-widget"
-import { cn } from "@/lib/utils"
 import ChatDashboard from "./page"
+import { cn } from "@/lib/utils"
 
 export default function ClientLayout({
   children,
@@ -17,28 +17,19 @@ export default function ClientLayout({
   const [isChatMaximized, setIsChatMaximized] = useState(false)
   const [initialChatMessage, setInitialChatMessage] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [currentView, setCurrentView] = useState<"dashboard" | "chat">("dashboard")
+  const [currentView, setCurrentView] = useState<"dashboard" | "other">("dashboard")
 
   // Function to handle sending a message from anywhere in the app
   const handleSendInitialMessage = (message: string) => {
     setInitialChatMessage(message)
     setIsChatOpen(true)
     setIsChatMaximized(true)
-    setCurrentView("chat")
   }
 
   // Function to handle opening the chat without a specific message
   const handleOpenChat = () => {
     setIsChatOpen(true)
     setIsChatMaximized(true)
-    setCurrentView("chat")
-  }
-
-  // Function to go back to dashboard
-  const handleBackToDashboard = () => {
-    setCurrentView("dashboard")
-    setIsChatOpen(false)
-    setIsChatMaximized(false)
   }
 
   // Clear initial message after it's been consumed by the chat interface
@@ -54,17 +45,16 @@ export default function ClientLayout({
     setIsSidebarOpen(isOpen)
   }
 
+  // Determine if we should show the main dashboard or other content
+  const isMainDashboard = typeof window !== "undefined" && window.location.pathname === "/"
+
   return (
     <html lang="en">
       <body className={cn(isChatMaximized && "overflow-hidden")}>
         <div className="flex flex-col min-h-screen bg-apple-gray-50">
           <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-lg supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm">
             <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
-              <Navigation
-                onSidebarToggle={handleSidebarToggle}
-                onBackToDashboard={handleBackToDashboard}
-                currentView={currentView}
-              />
+              <Navigation onSidebarToggle={handleSidebarToggle} />
             </div>
           </header>
           <main
@@ -75,7 +65,7 @@ export default function ClientLayout({
                 : "container mx-auto py-8 px-4 md:px-6", // When sidebar is closed: normal container behavior
             )}
           >
-            {currentView === "dashboard" ? (
+            {isMainDashboard ? (
               <ChatDashboard onSendMessage={handleSendInitialMessage} onOpenChat={handleOpenChat} />
             ) : (
               children
@@ -83,17 +73,14 @@ export default function ClientLayout({
           </main>
         </div>
 
-        {/* Floating CFO Chat Widget - only show when in chat view */}
-        {currentView === "chat" && (
-          <CFOChatWidget
-            isChatOpen={isChatOpen}
-            setIsChatOpen={setIsChatOpen}
-            isMaximized={isChatMaximized}
-            setIsMaximized={setIsChatMaximized}
-            initialMessage={initialChatMessage}
-            onBackToDashboard={handleBackToDashboard}
-          />
-        )}
+        {/* Floating CFO Chat Widget - always available */}
+        <CFOChatWidget
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+          isMaximized={isChatMaximized}
+          setIsMaximized={setIsChatMaximized}
+          initialMessage={initialChatMessage}
+        />
       </body>
     </html>
   )

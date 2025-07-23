@@ -47,7 +47,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Get quarterly performance snapshots and KPI summaries",
       icon: BarChart3,
       color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
-      chatPrompt: "Show me the Q3 2024 earnings overview with key performance indicators and quarterly snapshots",
+      chatPrompt: "Show me the Q3 2024 earnings overview with key performance indicators and quarterly snapshot",
     },
     {
       id: "variance-analysis",
@@ -55,7 +55,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Drill down into specific changes with AI explanations",
       icon: TrendingUp,
       color: "bg-green-50 border-green-200 hover:bg-green-100",
-      chatPrompt: "Analyze the variance in our Q3 2024 financial metrics and explain the key changes",
+      chatPrompt: "Perform a detailed variance analysis for Q3 2024, showing line item changes and explanations",
     },
     {
       id: "what-if-scenarios",
@@ -63,8 +63,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Simulate impact of business levers on key metrics",
       icon: Calculator,
       color: "bg-purple-50 border-purple-200 hover:bg-purple-100",
-      chatPrompt:
-        "Help me build what-if scenarios to simulate the impact of different business decisions on our key metrics",
+      chatPrompt: "Open the what-if scenario builder to simulate impact of business changes on financial metrics",
     },
     {
       id: "board-deck",
@@ -72,7 +71,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Generate AI-powered narratives for presentations",
       icon: FileText,
       color: "bg-orange-50 border-orange-200 hover:bg-orange-100",
-      chatPrompt: "Draft a board presentation narrative for Q3 2024 results with executive summary and key highlights",
+      chatPrompt: "Help me draft a board presentation narrative for Q3 2024 financial results",
     },
     {
       id: "peer-comparison",
@@ -96,7 +95,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Review NPL ratios, provisions, and asset quality",
       icon: Target,
       color: "bg-red-50 border-red-200 hover:bg-red-100",
-      chatPrompt: "What's our current risk profile and asset quality? Show me NPL ratios and provisions analysis",
+      chatPrompt: "What's our current risk profile and asset quality assessment?",
     },
     {
       id: "efficiency-metrics",
@@ -104,8 +103,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Cost-to-income ratios and productivity metrics",
       icon: Activity,
       color: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100",
-      chatPrompt:
-        "How efficient are our operations this quarter? Show me cost-to-income ratios and productivity metrics",
+      chatPrompt: "How efficient are our operations this quarter? Show cost-to-income and productivity metrics",
     },
   ]
 
