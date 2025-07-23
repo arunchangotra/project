@@ -1,10 +1,28 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { MessageSquare, Plus, MoreHorizontal, Clock, Star } from "lucide-react"
+import {
+  MessageSquare,
+  Plus,
+  MoreHorizontal,
+  Clock,
+  Star,
+  BarChart3,
+  TrendingUp,
+  Calculator,
+  FileText,
+  Users,
+  DollarSign,
+  Target,
+  Activity,
+  Compass,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 interface ChatHistory {
   id: string
@@ -16,10 +34,20 @@ interface ChatHistory {
 
 interface ChatSidebarProps {
   isOpen: boolean
-  onToggle: (isOpen: boolean) => void // Change to accept boolean parameter
+  onToggle: (isOpen: boolean) => void
+}
+
+interface ExploreItem {
+  id: string
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  route?: string
+  action?: () => void
 }
 
 export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
+  const router = useRouter()
+
   const [chatHistory] = useState<ChatHistory[]>([
     {
       id: "1",
@@ -55,12 +83,79 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
     },
   ])
 
+  const exploreItems: ExploreItem[] = [
+    {
+      id: "earnings-overview",
+      title: "Earnings Overview",
+      icon: BarChart3,
+      route: "/dashboard",
+    },
+    {
+      id: "variance-analysis",
+      title: "Variance Analysis",
+      icon: TrendingUp,
+      route: "/variance",
+    },
+    {
+      id: "what-if-scenarios",
+      title: "What-If Scenarios",
+      icon: Calculator,
+      route: "/scenarios",
+    },
+    {
+      id: "board-deck",
+      title: "Board Deck",
+      icon: FileText,
+      route: "/board-deck",
+    },
+    {
+      id: "peer-comparison",
+      title: "Peer Benchmarking",
+      icon: Users,
+      action: () => {
+        /* Handle peer comparison */
+      },
+    },
+    {
+      id: "profitability",
+      title: "Profitability",
+      icon: DollarSign,
+      action: () => {
+        /* Handle profitability analysis */
+      },
+    },
+    {
+      id: "risk-metrics",
+      title: "Risk Assessment",
+      icon: Target,
+      action: () => {
+        /* Handle risk assessment */
+      },
+    },
+    {
+      id: "efficiency",
+      title: "Efficiency",
+      icon: Activity,
+      action: () => {
+        /* Handle efficiency metrics */
+      },
+    },
+  ]
+
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
+
+  const handleExploreItemClick = (item: ExploreItem) => {
+    if (item.route) {
+      router.push(item.route)
+    } else if (item.action) {
+      item.action()
+    }
+  }
 
   return (
     <div
       className={cn(
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-20", // Changed z-index from 30 to 20
+        "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-20",
         isOpen ? "w-80" : "w-0 overflow-hidden",
       )}
     >
@@ -82,6 +177,31 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
             <Plus className="h-4 w-4 mr-2" />
             New Chat
           </Button>
+        </div>
+
+        {/* Start Exploring Section */}
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-center text-sm font-medium text-gray-700 mb-3">
+            <Compass className="h-4 w-4 mr-2 text-apple-blue-600" />
+            Start exploring
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {exploreItems.map((item) => {
+              const IconComponent = item.icon
+              return (
+                <Button
+                  key={item.id}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleExploreItemClick(item)}
+                  className="h-auto p-3 flex flex-col items-center justify-center text-center hover:bg-apple-gray-50 rounded-lg border border-transparent hover:border-apple-blue-200 transition-all duration-200"
+                >
+                  <IconComponent className="h-5 w-5 text-apple-blue-600 mb-1" />
+                  <span className="text-xs text-gray-700 leading-tight">{item.title}</span>
+                </Button>
+              )
+            })}
+          </div>
         </div>
 
         {/* Chat History */}
