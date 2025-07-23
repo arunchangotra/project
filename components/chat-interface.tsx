@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -215,6 +215,19 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
   const [isLoading, setIsLoading] = useState(false)
   const [showQuickQuestions, setShowQuickQuestions] = useState(true)
 
+  // Ref for auto-scrolling to bottom
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when new messages are added
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
   // Effect to handle initial message from feature cards
   useEffect(() => {
     if (initialMessage) {
@@ -303,130 +316,144 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-screen">
+      {/* Quick Questions Card - Fixed at top */}
       {isMaximized && (
-        <Card className="shadow-lg rounded-xl border-none mb-4">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-semibold flex items-center space-x-2 text-gray-800">
-                <Sparkles className="h-4 w-4 text-apple-blue-600" />
-                <span>Quick Questions</span>
-              </CardTitle>
-              <CardDescription className="text-sm text-gray-600">Click to ask common questions</CardDescription>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowQuickQuestions((prev) => !prev)}
-              className="h-8 w-8 text-gray-600 hover:bg-gray-100"
-            >
-              {showQuickQuestions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              <span className="sr-only">{showQuickQuestions ? "Collapse" : "Expand"} quick questions</span>
-            </Button>
-          </CardHeader>
-          {showQuickQuestions && (
-            <CardContent>
-              <div className="space-y-2">
-                {promptSuggestions.map((suggestion, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-left justify-start h-auto p-2 text-xs rounded-lg border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent"
-                    onClick={() => handleSend(suggestion)}
-                  >
-                    {suggestion}
-                  </Button>
-                ))}
+        <div className="flex-shrink-0 mb-4">
+          <Card className="shadow-lg rounded-xl border-none">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-semibold flex items-center space-x-2 text-gray-800">
+                  <Sparkles className="h-4 w-4 text-apple-blue-600" />
+                  <span>Quick Questions</span>
+                </CardTitle>
+                <CardDescription className="text-sm text-gray-600">Click to ask common questions</CardDescription>
               </div>
-            </CardContent>
-          )}
-        </Card>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowQuickQuestions((prev) => !prev)}
+                className="h-8 w-8 text-gray-600 hover:bg-gray-100"
+              >
+                {showQuickQuestions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                <span className="sr-only">{showQuickQuestions ? "Collapse" : "Expand"} quick questions</span>
+              </Button>
+            </CardHeader>
+            {showQuickQuestions && (
+              <CardContent>
+                <div className="space-y-2">
+                  {promptSuggestions.map((suggestion, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-left justify-start h-auto p-2 text-xs rounded-lg border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent"
+                      onClick={() => handleSend(suggestion)}
+                    >
+                      {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        </div>
       )}
 
-      <Card className="shadow-lg rounded-xl border-none flex flex-col flex-1">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-gray-800">Chat</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col flex-1 space-y-4">
-          <ScrollArea className="flex-1 w-full border border-gray-200 rounded-xl p-4 bg-apple-gray-50">
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[80%] rounded-xl p-3 shadow-sm ${
-                      message.type === "user"
-                        ? "bg-apple-blue-600 text-white"
-                        : "bg-white text-gray-900 border border-gray-200"
-                    }`}
-                  >
-                    <div className="text-sm">
-                      {typeof message.content === "string" ? message.content : message.content}
-                    </div>
-                    {message.citation && (
-                      <div className="mt-2 pt-2 border-t border-gray-200 text-gray-500 text-xs">
-                        <Badge
-                          variant="secondary"
-                          className="rounded-full px-2 py-0.5 bg-apple-gray-100 text-gray-600 border-gray-200"
-                        >
-                          {message.citation}
-                        </Badge>
+      {/* Chat Messages Area - Scrollable */}
+      <div className="flex-1 min-h-0">
+        <Card className="shadow-lg rounded-xl border-none h-full flex flex-col">
+          <CardHeader className="pb-2 flex-shrink-0">
+            <CardTitle className="text-base font-semibold text-gray-800">Chat</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col min-h-0 p-4">
+            <ScrollArea ref={scrollAreaRef} className="flex-1 w-full pr-4" style={{ height: "calc(100vh - 300px)" }}>
+              <div className="space-y-4 pb-4">
+                {messages.map((message) => (
+                  <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[85%] rounded-xl shadow-sm ${
+                        message.type === "user"
+                          ? "bg-apple-blue-600 text-white p-3"
+                          : "bg-white text-gray-900 border border-gray-200"
+                      }`}
+                    >
+                      <div className={message.type === "user" ? "text-sm" : ""}>
+                        {typeof message.content === "string" ? (
+                          <div className="p-3">{message.content}</div>
+                        ) : (
+                          <div className="p-4">{message.content}</div>
+                        )}
                       </div>
-                    )}
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="text-xs text-gray-500">{message.timestamp.toLocaleTimeString()}</div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(message.content)}
-                        className="h-6 w-6 p-0 text-gray-500 hover:bg-apple-gray-100"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
+                      {message.citation && (
+                        <div className="mt-2 pt-2 border-t border-gray-200 text-gray-500 text-xs px-3">
+                          <Badge
+                            variant="secondary"
+                            className="rounded-full px-2 py-0.5 bg-apple-gray-100 text-gray-600 border-gray-200"
+                          >
+                            {message.citation}
+                          </Badge>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between mt-2 px-3 pb-1">
+                        <div className="text-xs text-gray-500">{message.timestamp.toLocaleTimeString()}</div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(message.content)}
+                          className="h-6 w-6 p-0 text-gray-500 hover:bg-apple-gray-100"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.1s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.1s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+                )}
+                {/* Invisible div for auto-scroll target */}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* Input field for continued conversation within the chat */}
-          <div className="flex space-x-2 mt-4">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Continue the conversation..."
-              onKeyPress={(e) => e.key === "Enter" && handleSend(input)}
-              disabled={isLoading}
-              className="rounded-full px-4 py-2 border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500"
-            />
-            <Button
-              onClick={() => handleSend(input)}
-              disabled={isLoading || !input.trim()}
-              className="rounded-full bg-apple-blue-600 hover:bg-apple-blue-700"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Input Area - Fixed at bottom */}
+      <div className="flex-shrink-0 mt-4">
+        <div className="flex space-x-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Continue the conversation..."
+            onKeyPress={(e) => e.key === "Enter" && handleSend(input)}
+            disabled={isLoading}
+            className="rounded-full px-4 py-2 border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500"
+          />
+          <Button
+            onClick={() => handleSend(input)}
+            disabled={isLoading || !input.trim()}
+            className="rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 flex-shrink-0"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
