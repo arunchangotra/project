@@ -1,248 +1,202 @@
 "use client"
-
-import type React from "react"
-
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  BarChart3,
-  TrendingUp,
-  Calculator,
-  FileText,
-  Search,
-  Send,
-  Sparkles,
-  Target,
-  Users,
-  DollarSign,
-  Activity,
-  ArrowRight,
-} from "lucide-react"
-import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { BarChart3, TrendingUp, Calculator, FileText, MessageSquare, ArrowRight } from "lucide-react"
+import Link from "next/link"
+import { KPICard } from "@/components/kpi-card"
+import { quarterlyData, currentQuarter, previousQuarter } from "@/lib/sample-data"
 
-interface FeatureCard {
-  id: string
-  title: string
-  description: string
-  icon: React.ComponentType<{ className?: string }>
-  color: string
-  route?: string
-  action?: () => void
-}
+export default function HomePage() {
+  const current = quarterlyData[currentQuarter as keyof typeof quarterlyData]
+  const previous = quarterlyData[previousQuarter as keyof typeof quarterlyData]
 
-export default function ChatDashboard() {
-  const router = useRouter()
-  const [chatInput, setChatInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
-
-  const featureCards: FeatureCard[] = [
-    {
-      id: "earnings-overview",
-      title: "Earnings Overview",
-      description: "Get quarterly performance snapshots and KPI summaries",
-      icon: BarChart3,
-      color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
-      route: "/dashboard",
-    },
-    {
-      id: "variance-analysis",
-      title: "Variance Analysis",
-      description: "Drill down into specific changes with AI explanations",
-      icon: TrendingUp,
-      color: "bg-green-50 border-green-200 hover:bg-green-100",
-      route: "/variance",
-    },
-    {
-      id: "what-if-scenarios",
-      title: "What-If Scenarios",
-      description: "Simulate impact of business levers on key metrics",
-      icon: Calculator,
-      color: "bg-purple-50 border-purple-200 hover:bg-purple-100",
-      route: "/scenarios",
-    },
-    {
-      id: "board-deck",
-      title: "Board Deck Drafting",
-      description: "Generate AI-powered narratives for presentations",
-      icon: FileText,
-      color: "bg-orange-50 border-orange-200 hover:bg-orange-100",
-      route: "/board-deck",
-    },
-    {
-      id: "peer-comparison",
-      title: "Peer Benchmarking",
-      description: "Compare performance against industry peers",
-      icon: Users,
-      color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100",
-      action: () => handleQuickAction("Show me how we compare to industry peers"),
-    },
-    {
-      id: "profitability-analysis",
-      title: "Profitability Deep Dive",
-      description: "Analyze ROE, ROA, and margin trends",
-      icon: DollarSign,
-      color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
-      action: () => handleQuickAction("Analyze our profitability metrics and trends"),
-    },
-    {
-      id: "risk-metrics",
-      title: "Risk Assessment",
-      description: "Review NPL ratios, provisions, and asset quality",
-      icon: Target,
-      color: "bg-red-50 border-red-200 hover:bg-red-100",
-      action: () => handleQuickAction("What's our current risk profile and asset quality?"),
-    },
-    {
-      id: "efficiency-metrics",
-      title: "Operational Efficiency",
-      description: "Cost-to-income ratios and productivity metrics",
-      icon: Activity,
-      color: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100",
-      action: () => handleQuickAction("How efficient are our operations this quarter?"),
-    },
-  ]
-
-  const quickPrompts = [
-    "Why did NIM improve this quarter?",
-    "What drove the increase in provisions?",
-    "How do we compare to peers on ROE?",
-    "Explain the variance in fee income",
-    "What if loan growth was 15%?",
-    "Draft board summary for Q3 results",
-  ]
-
-  const handleCardClick = (card: FeatureCard) => {
-    if (card.route) {
-      router.push(card.route)
-    } else if (card.action) {
-      card.action()
+  const calculateChange = (current: number, previous: number) => {
+    const change = ((current - previous) / previous) * 100
+    return {
+      value: Math.abs(change).toFixed(1),
+      type: change >= 0 ? ("positive" as const) : ("negative" as const),
     }
   }
 
-  const handleQuickAction = (prompt: string) => {
-    setChatInput(prompt)
-    // This would typically open the chat interface with the prompt
-    // For now, we'll simulate it by setting the input
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(value)
   }
 
-  const handleSendMessage = () => {
-    if (!chatInput.trim()) return
-
-    setIsTyping(true)
-    // Simulate AI response delay
-    setTimeout(() => {
-      setIsTyping(false)
-      // Here you would typically handle the chat interaction
-      // For now, we'll just clear the input
-      setChatInput("")
-    }, 2000)
-  }
-
-  const handleQuickPrompt = (prompt: string) => {
-    setChatInput(prompt)
-  }
+  const quickQuestions = [
+    "What drove the NIM expansion this quarter?",
+    "How do we compare to industry peers?",
+    "What are the key risks to monitor?",
+    "Generate board deck summary",
+  ]
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto">
-      {/* Main Header */}
-      <div className="text-center py-12">
-        <div className="flex items-center justify-center mb-4">
-          <Sparkles className="h-8 w-8 text-apple-blue-600 mr-3" />
-          <h1 className="text-4xl font-bold text-gray-900">What can I help with?</h1>
-        </div>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Ask me anything about your Q3 2024 financial performance, or choose from the options below
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold text-gray-900">Welcome to AI Earnings Assistant</h1>
+        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          Your intelligent financial analysis companion. Get instant insights, variance analysis, and strategic
+          recommendations powered by AI.
         </p>
-      </div>
-
-      {/* Chat Input */}
-      <div className="mb-8">
-        <div className="relative max-w-2xl mx-auto">
-          <div className="flex items-center space-x-3 p-4 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
-            <Input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask about earnings, metrics, comparisons, or scenarios..."
-              className="flex-1 border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base bg-transparent"
-              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!chatInput.trim() || isTyping}
-              className="rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 h-10 w-10 p-0"
-            >
-              {isTyping ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Prompts */}
-      <div className="mb-12">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4 text-center">Quick Questions</h2>
-        <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
-          {quickPrompts.map((prompt, index) => (
+        <div className="flex flex-wrap justify-center gap-2">
+          {quickQuestions.map((question, index) => (
             <Button
               key={index}
               variant="outline"
               size="sm"
-              onClick={() => handleQuickPrompt(prompt)}
-              className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-white text-sm px-4 py-2"
+              className="text-apple-blue-600 border-apple-blue-200 hover:bg-apple-blue-50 bg-transparent"
             >
-              {prompt}
+              {question}
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Feature Cards Grid */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-800 mb-6 text-center">Start exploring</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {featureCards.map((card) => {
-            const IconComponent = card.icon
-            return (
-              <Card
-                key={card.id}
-                className={cn("cursor-pointer transition-all duration-200 hover:shadow-lg border-2 group", card.color)}
-                onClick={() => handleCardClick(card)}
-              >
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center text-center space-y-3">
-                    <div className="p-3 rounded-full bg-white/80 group-hover:bg-white transition-colors duration-200">
-                      <IconComponent className="h-6 w-6 text-gray-700" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-1 text-sm">{card.title}</h3>
-                      <p className="text-xs text-gray-600 leading-relaxed">{card.description}</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors duration-200" />
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+      {/* KPI Snapshot */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-900">KPI Snapshot - {currentQuarter}</h2>
+          <Button className="bg-apple-blue-600 hover:bg-apple-blue-700 text-white">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Ask AI
+          </Button>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <KPICard
+            title="Net Income"
+            value={formatCurrency(current.netIncome)}
+            change={`+${calculateChange(current.netIncome, previous.netIncome).value}% QoQ`}
+            changeType={calculateChange(current.netIncome, previous.netIncome).type}
+          />
+          <KPICard
+            title="Total Revenue"
+            value={formatCurrency(current.totalRevenue)}
+            change={`+${calculateChange(current.totalRevenue, previous.totalRevenue).value}% QoQ`}
+            changeType={calculateChange(current.totalRevenue, previous.totalRevenue).type}
+          />
+          <KPICard
+            title="Net Interest Margin"
+            value={`${current.netInterestMargin}%`}
+            change={`+${((current.netInterestMargin - previous.netInterestMargin) * 100).toFixed(0)} bps QoQ`}
+            changeType="positive"
+          />
+          <KPICard
+            title="Return on Equity"
+            value={`${current.returnOnEquity}%`}
+            change={`+${((current.returnOnEquity - previous.returnOnEquity) * 100).toFixed(0)} bps QoQ`}
+            changeType="positive"
+          />
+          <KPICard
+            title="Efficiency Ratio"
+            value={`${current.efficiencyRatio}%`}
+            change={`${((current.efficiencyRatio - previous.efficiencyRatio) * 100).toFixed(0)} bps QoQ`}
+            changeType={current.efficiencyRatio < previous.efficiencyRatio ? "positive" : "negative"}
+          />
         </div>
       </div>
 
-      {/* Recent Activity Hint */}
-      <div className="text-center py-8 border-t border-gray-100">
-        <p className="text-sm text-gray-500 mb-4">Recent conversations and analysis will appear here</p>
-        <div className="flex justify-center space-x-2">
-          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-          <div className="w-2 h-2 bg-apple-blue-600 rounded-full"></div>
-          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-        </div>
+      {/* Feature Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Link href="/dashboard">
+          <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group">
+            <CardHeader>
+              <BarChart3 className="h-10 w-10 text-apple-blue-600 group-hover:scale-110 transition-transform duration-200" />
+              <CardTitle className="group-hover:text-apple-blue-600 transition-colors">Earnings Overview</CardTitle>
+              <CardDescription>Comprehensive dashboard with key metrics and performance indicators</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-apple-blue-600 text-sm font-medium">
+                View Dashboard
+                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/variance">
+          <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group">
+            <CardHeader>
+              <TrendingUp className="h-10 w-10 text-apple-blue-600 group-hover:scale-110 transition-transform duration-200" />
+              <CardTitle className="group-hover:text-apple-blue-600 transition-colors">Variance Analysis</CardTitle>
+              <CardDescription>Automated analysis of performance variances with AI-powered insights</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-apple-blue-600 text-sm font-medium">
+                Analyze Variances
+                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/scenarios">
+          <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group">
+            <CardHeader>
+              <Calculator className="h-10 w-10 text-apple-blue-600 group-hover:scale-110 transition-transform duration-200" />
+              <CardTitle className="group-hover:text-apple-blue-600 transition-colors">What-If Scenarios</CardTitle>
+              <CardDescription>Model different scenarios and understand potential impacts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-apple-blue-600 text-sm font-medium">
+                Run Scenarios
+                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/board-deck">
+          <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group">
+            <CardHeader>
+              <FileText className="h-10 w-10 text-apple-blue-600 group-hover:scale-110 transition-transform duration-200" />
+              <CardTitle className="group-hover:text-apple-blue-600 transition-colors">Board Deck</CardTitle>
+              <CardDescription>Generate executive summaries and board-ready presentations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-apple-blue-600 text-sm font-medium">
+                Create Deck
+                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
+
+      {/* AI Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>AI-Generated Summary</CardTitle>
+          <CardDescription>{currentQuarter} Performance Highlights</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="prose prose-sm max-w-none">
+            <p className="text-gray-700 leading-relaxed">
+              <strong>Strong {currentQuarter} Performance:</strong> Net income reached{" "}
+              {formatCurrency(current.netIncome)}, representing a{" "}
+              {calculateChange(current.netIncome, previous.netIncome).value}% increase from the previous quarter. This
+              growth was primarily driven by net interest margin expansion to {current.netInterestMargin}% and
+              disciplined expense management.
+            </p>
+            <p className="text-gray-700 leading-relaxed mt-3">
+              <strong>Key Highlights:</strong> Return on equity improved to {current.returnOnEquity}%, exceeding our
+              target range, while maintaining a strong capital position with a Tier 1 ratio of{" "}
+              {current.tier1CapitalRatio}%. The efficiency ratio of {current.efficiencyRatio}% demonstrates continued
+              operational excellence.
+            </p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <Button className="bg-apple-blue-600 hover:bg-apple-blue-700 text-white">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Ask AI for More Details
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

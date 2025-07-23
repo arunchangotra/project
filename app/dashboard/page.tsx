@@ -1,63 +1,75 @@
 "use client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { KPICard } from "@/components/kpi-card"
-import { quarterlyData } from "@/lib/sample-data"
+
 import { Button } from "@/components/ui/button"
-import { MessageSquare, ArrowLeft } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowLeft, MessageSquare } from "lucide-react"
 import Link from "next/link"
+import { KPICard } from "@/components/kpi-card"
+import { quarterlyData, currentQuarter, previousQuarter } from "@/lib/sample-data"
 
-export default function Dashboard() {
-  const currentQuarter = quarterlyData[0]
+export default function DashboardPage() {
+  const current = quarterlyData[currentQuarter as keyof typeof quarterlyData]
+  const previous = quarterlyData[previousQuarter as keyof typeof quarterlyData]
 
-  const handleAskAI = (question: string) => {
-    // This would trigger the chat interface with a pre-filled question
-    console.log("Ask AI:", question)
+  const calculateChange = (current: number, previous: number) => {
+    const change = ((current - previous) / previous) * 100
+    return {
+      value: Math.abs(change).toFixed(1),
+      type: change >= 0 ? ("positive" as const) : ("negative" as const),
+    }
   }
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(value)
+  }
+
+  const quickQuestions = [
+    "Explain the NIM improvement",
+    "What drove revenue growth?",
+    "How is our ROE trending?",
+    "Compare to industry peers",
+  ]
+
   return (
-    <div className="space-y-8">
-      {/* Header with Back Button */}
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button asChild variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-            <Link href="/">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Chat
-            </Link>
-          </Button>
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="hover:bg-gray-100">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Earnings Overview</h1>
-            <p className="text-gray-600">Q3 2024 Financial Performance</p>
+            <p className="text-gray-600">{currentQuarter} Financial Performance Dashboard</p>
           </div>
         </div>
-        <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full bg-apple-gray-200 text-gray-700">
-          Last Updated: Nov 15 2024
-        </Badge>
+        <Button className="bg-apple-blue-600 hover:bg-apple-blue-700 text-white">
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Ask AI
+        </Button>
       </div>
 
       {/* Quick AI Questions */}
-      <Card className="shadow-lg rounded-xl border-none bg-gradient-to-r from-apple-blue-50 to-indigo-50">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
-            <MessageSquare className="h-5 w-5 text-apple-blue-600" />
-            <span>Ask AI about this data</span>
-          </CardTitle>
+          <CardTitle>Quick AI Questions</CardTitle>
+          <CardDescription>Get instant insights about your financial performance</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {[
-              "Why did revenue grow 8.2% this quarter?",
-              "What's driving the NIM improvement?",
-              "How does our ROE compare to peers?",
-              "Explain the cost-to-income improvement",
-            ].map((question, index) => (
+            {quickQuestions.map((question, index) => (
               <Button
                 key={index}
                 variant="outline"
                 size="sm"
-                onClick={() => handleAskAI(question)}
-                className="rounded-full border-apple-blue-300 text-apple-blue-700 hover:bg-apple-blue-100 bg-white/80"
+                className="text-apple-blue-600 border-apple-blue-200 hover:bg-apple-blue-50 bg-transparent"
               >
                 {question}
               </Button>
@@ -67,72 +79,87 @@ export default function Dashboard() {
       </Card>
 
       {/* KPI Snapshot */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-6 text-gray-800">Quarterly Snapshot</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-gray-900">KPI Snapshot</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <KPICard
-            title="Revenue"
-            value={currentQuarter.revenue}
-            change={currentQuarter.yoyRevenue}
-            changeType="YoY"
-            format="currency"
+            title="Net Income"
+            value={formatCurrency(current.netIncome)}
+            change={`+${calculateChange(current.netIncome, previous.netIncome).value}% QoQ`}
+            changeType={calculateChange(current.netIncome, previous.netIncome).type}
+            description="Quarterly net income"
           />
           <KPICard
-            title="Net Profit"
-            value={currentQuarter.netProfit}
-            change={currentQuarter.yoyNetProfit}
-            changeType="YoY"
-            format="currency"
+            title="Total Revenue"
+            value={formatCurrency(current.totalRevenue)}
+            change={`+${calculateChange(current.totalRevenue, previous.totalRevenue).value}% QoQ`}
+            changeType={calculateChange(current.totalRevenue, previous.totalRevenue).type}
+            description="Net interest + non-interest income"
           />
           <KPICard
-            title="NIM"
-            value={currentQuarter.nim}
-            change={currentQuarter.yoyNim * 100}
-            changeType="YoY"
-            format="percentage"
+            title="Net Interest Margin"
+            value={`${current.netInterestMargin}%`}
+            change={`+${((current.netInterestMargin - previous.netInterestMargin) * 100).toFixed(0)} bps QoQ`}
+            changeType="positive"
+            description="NII / Average earning assets"
           />
           <KPICard
-            title="Cost-to-Income"
-            value={currentQuarter.costToIncome}
-            change={-1.6}
-            changeType="YoY"
-            format="percentage"
+            title="Return on Equity"
+            value={`${current.returnOnEquity}%`}
+            change={`+${((current.returnOnEquity - previous.returnOnEquity) * 100).toFixed(0)} bps QoQ`}
+            changeType="positive"
+            description="Net income / Average equity"
           />
-          <KPICard title="EPS" value={currentQuarter.eps} change={currentQuarter.yoyEps} changeType="YoY" />
+          <KPICard
+            title="Efficiency Ratio"
+            value={`${current.efficiencyRatio}%`}
+            change={`${((current.efficiencyRatio - previous.efficiencyRatio) * 100).toFixed(0)} bps QoQ`}
+            changeType={current.efficiencyRatio < previous.efficiencyRatio ? "positive" : "negative"}
+            description="Non-interest expense / Revenue"
+          />
         </div>
-      </section>
+      </div>
 
       {/* AI Summary */}
-      <Card className="shadow-lg rounded-xl border-none">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-xl font-semibold text-gray-800">AI Summary</CardTitle>
-            <p className="text-gray-600">Automated quarterly performance analysis</p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleAskAI("Explain this quarter's performance in detail")}
-            className="rounded-full border-apple-blue-300 text-apple-blue-700 hover:bg-apple-blue-50"
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Ask AI
-          </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle>AI-Generated Summary</CardTitle>
+          <CardDescription>Key insights and performance analysis for {currentQuarter}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="prose max-w-none text-gray-700 leading-relaxed">
-            <p>
-              <strong>Q3 2024 Performance Summary:</strong> This quarter, revenue rose by 8.2% YoY to $2.85B, driven
-              primarily by retail deposit inflows and improved lending margins in the SME segment. Net profit increased
-              12.5% YoY to $890M, benefiting from strong fee income growth and disciplined cost management. Net Interest
-              Margin improved 8bps QoQ to 3.45%, reflecting successful repricing of the loan portfolio amid rising rate
-              environment.
-            </p>
-            <p className="mt-4">
-              <strong>Key Highlights:</strong> Cost-to-income ratio improved to 58.2% from 59.8% in Q2, demonstrating
-              operational efficiency gains. However, loan loss provisions increased 27.6% QoQ due to cautious stance on
-              commercial real estate exposure. EPS grew 11.8% YoY to $4.25, exceeding analyst expectations of $4.10.
-            </p>
+          <div className="space-y-4">
+            <div className="prose prose-sm max-w-none">
+              <p className="text-gray-700 leading-relaxed">
+                <strong>Exceptional {currentQuarter} Performance:</strong> The bank delivered outstanding results with
+                net income of {formatCurrency(current.netIncome)}, marking a{" "}
+                {calculateChange(current.netIncome, previous.netIncome).value}% increase quarter-over-quarter. This
+                strong performance was driven by net interest margin expansion to {current.netInterestMargin}% and
+                continued operational efficiency improvements.
+              </p>
+              <p className="text-gray-700 leading-relaxed">
+                <strong>Profitability Excellence:</strong> Return on equity reached {current.returnOnEquity}%,
+                significantly outperforming industry benchmarks and demonstrating effective capital deployment. The
+                efficiency ratio of {current.efficiencyRatio}% reflects disciplined expense management and operational
+                excellence initiatives.
+              </p>
+              <p className="text-gray-700 leading-relaxed">
+                <strong>Strategic Position:</strong> With a robust Tier 1 capital ratio of {current.tier1CapitalRatio}%
+                and strong asset quality metrics, the bank is well-positioned for sustainable growth while maintaining
+                prudent risk management practices.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+              <Button size="sm" className="bg-apple-blue-600 hover:bg-apple-blue-700 text-white">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Dive Deeper into Performance
+              </Button>
+              <Button size="sm" variant="outline">
+                Compare to Peers
+              </Button>
+              <Button size="sm" variant="outline">
+                Generate Board Summary
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -42,7 +42,8 @@ interface ExploreItem {
   id: string
   title: string
   icon: React.ComponentType<{ className?: string }>
-  action: () => void
+  route?: string
+  action?: () => void
 }
 
 export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: ChatSidebarProps) {
@@ -80,15 +81,6 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
       preview: "What if loan growth was 15% next quarter?",
     },
   ])
-
-  const handleChatAction = (message: string) => {
-    if (onSendMessage && onOpenChat) {
-      onOpenChat()
-      onSendMessage(message)
-      // Close sidebar after sending message for better UX
-      onToggle(false)
-    }
-  }
 
   const exploreItems: ExploreItem[] = [
     {
@@ -167,8 +159,19 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
 
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
 
+  const handleChatAction = (message: string) => {
+    if (onSendMessage && onOpenChat) {
+      onOpenChat()
+      onSendMessage(message)
+      // Close sidebar after sending message for better UX
+      onToggle(false)
+    }
+  }
+
   const handleExploreItemClick = (item: ExploreItem) => {
-    item.action()
+    if (item.action) {
+      item.action()
+    }
   }
 
   return (
