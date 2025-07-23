@@ -21,7 +21,6 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ChatInterface } from "@/components/chat-interface"
 
 interface FeatureCard {
   id: string
@@ -35,8 +34,6 @@ interface FeatureCard {
 export default function ChatDashboard() {
   const [chatInput, setChatInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
-  const [showChat, setShowChat] = useState(false)
-  const [initialChatMessage, setInitialChatMessage] = useState<string | null>(null)
 
   const featureCards: FeatureCard[] = [
     {
@@ -46,7 +43,7 @@ export default function ChatDashboard() {
       icon: BarChart3,
       color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
       prompt:
-        "Show me a comprehensive overview of our Q3 2024 earnings performance including key metrics, revenue breakdown, and year-over-year comparisons.",
+        "Show me a comprehensive earnings overview for Q3 2024 including key metrics, revenue breakdown, and performance highlights",
     },
     {
       id: "variance-analysis",
@@ -55,7 +52,7 @@ export default function ChatDashboard() {
       icon: TrendingUp,
       color: "bg-green-50 border-green-200 hover:bg-green-100",
       prompt:
-        "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and Q3 2023. Focus on the most significant changes and their drivers.",
+        "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers behind these changes",
     },
     {
       id: "what-if-scenarios",
@@ -64,7 +61,7 @@ export default function ChatDashboard() {
       icon: Calculator,
       color: "bg-purple-50 border-purple-200 hover:bg-purple-100",
       prompt:
-        "Help me run what-if scenarios for Q4 2024. I want to understand the impact of different business levers on our key financial metrics.",
+        "Help me run what-if scenarios for different business assumptions and their impact on our key financial metrics",
     },
     {
       id: "board-deck",
@@ -72,8 +69,7 @@ export default function ChatDashboard() {
       description: "Generate AI-powered narratives for presentations",
       icon: FileText,
       color: "bg-orange-50 border-orange-200 hover:bg-orange-100",
-      prompt:
-        "Draft a comprehensive board presentation summary for Q3 2024 results, highlighting key achievements, challenges, and strategic outlook.",
+      prompt: "Generate a board-ready executive summary and key talking points for our Q3 2024 financial performance",
     },
     {
       id: "peer-comparison",
@@ -82,7 +78,7 @@ export default function ChatDashboard() {
       icon: Users,
       color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100",
       prompt:
-        "Compare our Q3 2024 performance against industry peers. Focus on key metrics like ROE, NIM, efficiency ratios, and asset quality.",
+        "Compare our Q3 2024 performance against industry peers and highlight areas where we're outperforming or underperforming",
     },
     {
       id: "profitability-analysis",
@@ -91,7 +87,7 @@ export default function ChatDashboard() {
       icon: DollarSign,
       color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
       prompt:
-        "Provide a deep dive analysis of our profitability metrics including ROE, ROA, NIM trends, and margin analysis for Q3 2024.",
+        "Analyze our profitability metrics including ROE, ROA, NIM trends and identify key drivers of profitability changes",
     },
     {
       id: "risk-metrics",
@@ -100,7 +96,7 @@ export default function ChatDashboard() {
       icon: Target,
       color: "bg-red-50 border-red-200 hover:bg-red-100",
       prompt:
-        "Analyze our current risk profile including NPL ratios, provision coverage, asset quality trends, and credit risk indicators for Q3 2024.",
+        "Provide a comprehensive risk assessment including NPL ratios, provision coverage, and asset quality trends",
     },
     {
       id: "efficiency-metrics",
@@ -108,8 +104,7 @@ export default function ChatDashboard() {
       description: "Cost-to-income ratios and productivity metrics",
       icon: Activity,
       color: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100",
-      prompt:
-        "Evaluate our operational efficiency including cost-to-income ratios, productivity metrics, and efficiency trends compared to previous quarters.",
+      prompt: "Analyze our operational efficiency metrics including cost-to-income ratio and productivity indicators",
     },
   ]
 
@@ -123,50 +118,26 @@ export default function ChatDashboard() {
   ]
 
   const handleCardClick = (card: FeatureCard) => {
-    setInitialChatMessage(card.prompt)
-    setShowChat(true)
+    setChatInput(card.prompt)
+    // This would trigger the chat widget to open with the prompt
+    // The actual implementation would depend on your chat widget setup
   }
 
   const handleSendMessage = () => {
     if (!chatInput.trim()) return
 
-    setInitialChatMessage(chatInput)
-    setShowChat(true)
-    setChatInput("")
+    setIsTyping(true)
+    // Simulate AI response delay
+    setTimeout(() => {
+      setIsTyping(false)
+      // Here you would typically handle the chat interaction
+      // For now, we'll just clear the input
+      setChatInput("")
+    }, 2000)
   }
 
   const handleQuickPrompt = (prompt: string) => {
-    setInitialChatMessage(prompt)
-    setShowChat(true)
-  }
-
-  const handleBackToHome = () => {
-    setShowChat(false)
-    setInitialChatMessage(null)
-  }
-
-  if (showChat) {
-    return (
-      <div className="flex flex-col h-full">
-        {/* Chat Header */}
-        <div className="border-b border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={handleBackToHome} className="text-apple-blue-600 hover:bg-apple-blue-50">
-              ← Back to Home
-            </Button>
-            <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-apple-blue-600" />
-              <span className="font-semibold text-gray-900">AI Earnings Assistant</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Chat Interface */}
-        <div className="flex-1 p-4">
-          <ChatInterface isMaximized={true} initialMessage={initialChatMessage} />
-        </div>
-      </div>
-    )
+    setChatInput(prompt)
   }
 
   return (

@@ -12,34 +12,34 @@ interface ClientLayoutProps {
 }
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [chatMessage, setChatMessage] = useState<string | null>(null)
 
-  const handleStartChat = (prompt: string) => {
-    // This function will be called when user clicks on explore items
-    // For now, we'll just log it - in a real app, this would trigger the chat
-    console.log("Starting chat with prompt:", prompt)
+  const handleSidebarToggle = (isOpen: boolean) => {
+    setIsSidebarOpen(isOpen)
+  }
 
-    // You could implement logic here to:
-    // 1. Navigate to the main chat page
-    // 2. Set the initial message
-    // 3. Open a chat modal
+  const handleExploreClick = (prompt: string) => {
+    setChatMessage(prompt)
+    // Close sidebar after clicking explore item
+    setIsSidebarOpen(false)
+  }
 
-    // For demonstration, let's navigate to home with the chat active
-    if (typeof window !== "undefined") {
-      window.location.href = "/"
-    }
+  // Clear the chat message after it's been processed
+  const clearChatMessage = () => {
+    setChatMessage(null)
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      <ChatSidebar isOpen={sidebarOpen} onToggle={setSidebarOpen} onStartChat={handleStartChat} />
+      <Navigation onSidebarToggle={handleSidebarToggle} isSidebarOpen={isSidebarOpen} />
+      <ChatSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} onExploreClick={handleExploreClick} />
 
-      <main className={`transition-all duration-300 ${sidebarOpen ? "ml-80" : "ml-0"}`} style={{ paddingTop: "4rem" }}>
-        <div className="container mx-auto px-4 py-6">{children}</div>
-      </main>
+      <div className={`transition-all duration-300 ${isSidebarOpen ? "ml-80" : "ml-0"}`}>
+        <main className="pt-16">{children}</main>
+      </div>
 
-      <CFOChatWidget />
+      <CFOChatWidget initialMessage={chatMessage} onMessageProcessed={clearChatMessage} />
     </div>
   )
 }

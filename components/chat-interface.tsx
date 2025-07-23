@@ -14,8 +14,8 @@ interface ChatMessage {
   content: string
   timestamp: Date
   citation?: string
-  hasCharts?: boolean
-  metrics?: any[]
+  hasChart?: boolean
+  chartData?: any
 }
 
 interface ChatInterfaceProps {
@@ -45,7 +45,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
   const [isLoading, setIsLoading] = useState(false)
   const [showQuickQuestions, setShowQuickQuestions] = useState(true)
 
-  // Effect to handle initial message from sidebar or main page
+  // Effect to handle initial message from sidebar explore clicks
   useEffect(() => {
     if (initialMessage) {
       handleSend(initialMessage, true)
@@ -66,7 +66,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
     if (!isInitial) setInput("")
     setIsLoading(true)
 
-    // Simulate AI response with more comprehensive content
+    // Simulate AI response
     setTimeout(() => {
       const aiResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -74,153 +74,231 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
         content: generateAIResponse(messageContent),
         timestamp: new Date(),
         citation: "Based on Q3 2024 MIS data and variance analysis",
-        hasCharts: shouldIncludeCharts(messageContent),
-        metrics: generateMetrics(messageContent),
+        hasChart: shouldIncludeChart(messageContent),
       }
       setMessages((prev) => [...prev, aiResponse])
       setIsLoading(false)
     }, 1500)
   }
 
-  const shouldIncludeCharts = (question: string): boolean => {
+  const shouldIncludeChart = (question: string): boolean => {
     const lowerQuestion = question.toLowerCase()
     return (
       lowerQuestion.includes("overview") ||
       lowerQuestion.includes("trend") ||
-      lowerQuestion.includes("comparison") ||
-      lowerQuestion.includes("performance")
+      lowerQuestion.includes("variance") ||
+      lowerQuestion.includes("profitability")
     )
-  }
-
-  const generateMetrics = (question: string) => {
-    const lowerQuestion = question.toLowerCase()
-
-    if (lowerQuestion.includes("overview") || lowerQuestion.includes("earnings")) {
-      return [
-        { label: "Net Revenue", value: "$2.45B", change: "+8.2%", trend: "up" },
-        { label: "Net Profit", value: "$890M", change: "+12.5%", trend: "up" },
-        { label: "ROE", value: "14.2%", change: "+1.1pp", trend: "up" },
-        { label: "NIM", value: "3.45%", change: "+8bps", trend: "up" },
-      ]
-    }
-
-    if (lowerQuestion.includes("profitability")) {
-      return [
-        { label: "ROE", value: "14.2%", change: "+1.1pp", trend: "up" },
-        { label: "ROA", value: "1.8%", change: "+0.2pp", trend: "up" },
-        { label: "NIM", value: "3.45%", change: "+8bps", trend: "up" },
-        { label: "Cost/Income", value: "52.3%", change: "-1.2pp", trend: "down" },
-      ]
-    }
-
-    return null
   }
 
   const generateAIResponse = (question: string): string => {
     const lowerQuestion = question.toLowerCase()
 
-    if (lowerQuestion.includes("overview") || lowerQuestion.includes("earnings")) {
+    if (lowerQuestion.includes("earnings overview") || lowerQuestion.includes("comprehensive earnings")) {
       return `## Q3 2024 Earnings Overview
 
-**Strong Performance Across Key Metrics**
+**Key Performance Highlights:**
+• **Net Revenue**: $2.85B (+12.3% QoQ, +18.7% YoY)
+• **Net Profit**: $890M (+15.2% QoQ, +22.1% YoY)
+• **Net Interest Margin**: 3.45% (+8bps QoQ)
+• **Return on Equity**: 14.2% (+120bps QoQ)
+• **Cost-to-Income Ratio**: 52.3% (-180bps QoQ)
 
-Our Q3 2024 results demonstrate robust financial performance with significant improvements across core banking metrics:
+**Revenue Breakdown:**
+• Interest Income: $2.1B (+10.5% QoQ)
+• Fee Income: $420M (-5.6% QoQ)
+• Trading Income: $330M (+28.4% QoQ)
 
-**Revenue Growth**: Net revenue increased 8.2% QoQ to $2.45B, driven by:
-- Higher net interest income (+$125M) from loan portfolio repricing
-- Improved fee income from wealth management services (+$15M)
-- Trading revenue contribution (+$8M)
+**Key Drivers:**
+✅ Strong loan growth (+12% QoQ) with improved spreads
+✅ Successful deposit repricing strategy
+✅ Robust trading performance in volatile markets
+⚠️ Regulatory impact on card interchange fees
+⚠️ Higher provisions due to economic uncertainty
 
-**Profitability Expansion**: Net profit grew 12.5% to $890M with:
-- ROE improving to 14.2% (+110bps YoY)
-- NIM expansion to 3.45% (+8bps QoQ)
-- Effective cost management keeping efficiency ratio at 52.3%
-
-**Asset Quality**: Credit metrics remain healthy:
-- NPL ratio stable at 1.8%
-- Provision coverage at 85%
-- New loan originations of $1.2B with strong credit standards
-
-**Key Drivers**: The strong performance was primarily driven by successful loan repricing initiatives, disciplined cost management, and favorable market conditions in our core markets.`
+The quarter demonstrates strong operational performance with healthy margin expansion and controlled costs.`
     }
 
-    if (lowerQuestion.includes("variance") || lowerQuestion.includes("changes")) {
+    if (lowerQuestion.includes("variance analysis") || lowerQuestion.includes("key variances")) {
       return `## Q3 2024 Variance Analysis
 
-**Key Performance Changes vs Q2 2024**
+**Major Variances vs Q2 2024:**
 
-**Positive Variances:**
-- **Net Interest Income**: +$125M (+6.8%) - Loan repricing and volume growth
-- **Fee Income**: +$18M (+4.5%) - Wealth management and digital banking fees
-- **Operating Efficiency**: -120bps improvement in cost-to-income ratio
+**🔺 Positive Variances:**
+• **Net Interest Income**: +$85M (+4.2%)
+  - Loan repricing: +$120M
+  - Volume growth: +$45M
+  - Deposit mix shift: -$80M
 
-**Areas of Concern:**
-- **Loan Loss Provisions**: +$35M (+27.6%) - Increased CRE exposure provisions
-- **Operating Expenses**: +$25M (+3.2%) - Technology investments and compliance costs
+• **Trading Revenue**: +$72M (+28.4%)
+  - FX trading: +$35M
+  - Fixed income: +$25M
+  - Equity derivatives: +$12M
 
-**Year-over-Year Comparison:**
-- Revenue growth of 15.2% demonstrates strong business momentum
-- Credit costs normalized at 45bps of loans vs 38bps in Q3 2023
-- Capital ratios strengthened with CET1 at 12.8% (+80bps YoY)
+**🔻 Negative Variances:**
+• **Fee Income**: -$25M (-5.6%)
+  - Card interchange: -$30M (regulatory)
+  - Service charges: +$5M
 
-**Outlook**: Management expects continued NIM expansion in Q4 with disciplined credit underwriting maintaining asset quality.`
+• **Loan Loss Provisions**: +$27M (+27.6%)
+  - Commercial real estate: +$18M
+  - Economic adjustments: +$7M
+  - Specific provisions: +$2M
+
+**Net Impact**: +$105M improvement in pre-provision income, partially offset by higher provisions.`
+    }
+
+    if (lowerQuestion.includes("what-if") || lowerQuestion.includes("scenarios")) {
+      return `## What-If Scenario Analysis
+
+I can help you model various scenarios. Here are some common analyses:
+
+**📊 Available Scenarios:**
+• **Loan Growth Impact**: Model 5%, 10%, 15%, or 20% growth rates
+• **Interest Rate Sensitivity**: +/-50bps, +/-100bps rate changes
+• **Credit Loss Scenarios**: Stress test provision requirements
+• **Cost Management**: Impact of expense reduction initiatives
+• **Deposit Mix Changes**: Effect of deposit composition shifts
+
+**Example: 15% Loan Growth Scenario**
+• Additional Interest Income: ~$180M annually
+• Required Capital: ~$450M (assuming 10% CAR)
+• ROE Impact: +150bps
+• NIM Impact: +12bps (assuming current spreads)
+
+**What specific scenario would you like me to model?**
+Please specify:
+- Metric to change (loan growth, rates, costs, etc.)
+- Magnitude of change
+- Time horizon (quarterly/annual)`
+    }
+
+    if (lowerQuestion.includes("board deck") || lowerQuestion.includes("executive summary")) {
+      return `## Q3 2024 Board Deck - Executive Summary
+
+**🎯 Key Messages:**
+• Delivered strong Q3 results with 15.2% profit growth
+• Successfully executed margin expansion strategy (+8bps NIM)
+• Maintained disciplined risk management amid economic uncertainty
+
+**📈 Financial Highlights:**
+• Revenue growth of 12.3% QoQ driven by core banking activities
+• ROE improved to 14.2%, exceeding our 13% target
+• Efficiency ratio improved 180bps to 52.3%
+• Book value per share increased 8.5% QoQ
+
+**🔑 Strategic Progress:**
+• Digital transformation: 78% of transactions now digital (+5pp)
+• SME lending growth: 12% QoQ with maintained credit quality
+• Wealth management AUM grew 15% QoQ
+
+**⚠️ Key Risks & Mitigants:**
+• Economic headwinds: Enhanced monitoring and stress testing
+• Regulatory changes: Proactive compliance and fee structure adjustments
+• Credit quality: Selective lending and robust provisioning
+
+**🎯 Q4 Outlook:**
+• Expect continued NIM expansion (+5-10bps)
+• Loan growth target: 8-12% QoQ
+• Maintain cost discipline with <53% efficiency ratio`
+    }
+
+    if (lowerQuestion.includes("peer") || lowerQuestion.includes("benchmark")) {
+      return `## Peer Benchmarking Analysis - Q3 2024
+
+**🏆 Performance vs Industry Peers:**
+
+**Profitability (Ranking out of 12 peers):**
+• ROE: 14.2% - **Rank #3** (Industry avg: 12.1%)
+• ROA: 1.85% - **Rank #2** (Industry avg: 1.52%)
+• NIM: 3.45% - **Rank #4** (Industry avg: 3.28%)
+
+**Efficiency:**
+• Cost-to-Income: 52.3% - **Rank #5** (Industry avg: 55.7%)
+• Operating leverage: +340bps - **Rank #2**
+
+**Asset Quality:**
+• NPL Ratio: 1.8% - **Rank #6** (Industry avg: 2.1%)
+• Provision Coverage: 68% - **Rank #4** (Industry avg: 62%)
+
+**Capital Strength:**
+• CET1 Ratio: 12.8% - **Rank #3** (Industry avg: 11.9%)
+• Tier 1 Capital: 14.2% - **Rank #4**
+
+**🎯 Key Insights:**
+✅ **Outperforming**: Profitability metrics, capital strength
+⚠️ **At Par**: Efficiency, asset quality
+🔍 **Focus Areas**: Cost management, credit risk monitoring
+
+**Competitive Position**: Strong fundamentals with top-quartile profitability`
     }
 
     if (lowerQuestion.includes("profitability") || lowerQuestion.includes("roe") || lowerQuestion.includes("roa")) {
-      return `## Profitability Deep Dive Analysis
+      return `## Profitability Deep Dive - Q3 2024
 
-**Return Metrics Performance**
+**📊 Key Profitability Metrics:**
 
-**ROE Analysis (14.2%, +110bps YoY)**:
-- **Net Income Growth**: Primary driver with 12.5% increase
-- **Equity Efficiency**: Improved capital utilization
-- **Peer Comparison**: Above industry median of 12.8%
+**Return on Equity (ROE): 14.2%**
+• Q2 2024: 13.0% (+120bps improvement)
+• YoY: 11.8% (+240bps improvement)
+• Target: 13.0% ✅ **Exceeded**
 
-**ROA Trends (1.8%, +20bps YoY)**:
-- **Asset Productivity**: Enhanced yield on earning assets
-- **Balance Sheet Optimization**: Focus on high-margin products
-- **Risk-Adjusted Returns**: Strong performance relative to credit costs
+**Return on Assets (ROA): 1.85%**
+• Q2 2024: 1.72% (+13bps improvement)
+• Industry benchmark: 1.52% ✅ **Above peer average**
 
-**NIM Expansion (3.45%, +8bps QoQ)**:
-- **Asset Repricing**: +15bps from loan portfolio repricing
-- **Funding Mix**: -7bps impact from deposit competition
-- **Forward Guidance**: Expected to reach 3.55% by Q4 2024
+**Net Interest Margin (NIM): 3.45%**
+• Q2 2024: 3.37% (+8bps improvement)
+• Trend: Consistent expansion over 4 quarters
+• Drivers: Loan repricing (+15bps), deposit costs (+7bps)
 
-**Efficiency Improvements**:
-- Cost-to-income ratio at 52.3% (-120bps QoQ)
-- Technology investments driving operational leverage
-- Branch optimization contributing to cost savings`
+**🔍 ROE Decomposition:**
+• **Net Margin**: 31.2% (vs 29.8% in Q2)
+• **Asset Turnover**: 0.059x (stable)
+• **Equity Multiplier**: 7.8x (vs 7.6x in Q2)
+
+**Profitability Drivers:**
+✅ Successful yield optimization on loan portfolio
+✅ Disciplined cost management (-180bps efficiency ratio)
+✅ Strategic balance sheet growth
+⚠️ Rising funding costs partially offset gains
+
+**Outlook**: Expect ROE to remain above 14% with continued NIM expansion`
     }
 
-    if (lowerQuestion.includes("risk") || lowerQuestion.includes("npl") || lowerQuestion.includes("provisions")) {
-      return `## Risk Assessment & Asset Quality
+    if (lowerQuestion.includes("risk") || lowerQuestion.includes("npl") || lowerQuestion.includes("asset quality")) {
+      return `## Risk Assessment - Q3 2024
 
-**Credit Risk Profile - Q3 2024**
+**🎯 Asset Quality Overview:**
 
-**Asset Quality Metrics**:
-- **NPL Ratio**: 1.8% (stable vs Q2, industry avg: 2.1%)
-- **Provision Coverage**: 85% (vs 82% Q2 2024)
-- **Net Charge-offs**: 0.42% of loans (vs 0.38% Q2)
+**Non-Performing Loans (NPL):**
+• NPL Ratio: 1.8% (vs 1.7% in Q2)
+• Absolute NPLs: $1.2B (+$65M QoQ)
+• Industry average: 2.1% ✅ **Better than peers**
 
-**Provision Analysis**:
-- **Total Provisions**: $125M (+27.6% QoQ)
-- **Specific Provisions**: $45M for single large corporate account
-- **General Provisions**: $80M reflecting economic outlook adjustments
+**Provision Coverage:**
+• Coverage Ratio: 68% (vs 65% in Q2)
+• Provision Expense: $125M (+27.6% QoQ)
+• Forward-looking adjustments: $7M for economic uncertainty
 
-**Portfolio Composition Risk**:
-- **Commercial Real Estate**: 18% of portfolio, increased monitoring
-- **SME Lending**: 35% of portfolio, strong performance
-- **Retail Mortgages**: 28% of portfolio, low delinquency rates
+**📈 Credit Quality by Segment:**
+• **Retail Banking**: NPL 1.2% (stable)
+• **SME Lending**: NPL 1.8% (+10bps)
+• **Corporate Banking**: NPL 2.4% (+20bps)
+• **Commercial Real Estate**: NPL 3.1% (+40bps) ⚠️
 
-**Forward-Looking Indicators**:
-- Economic scenario modeling shows resilient portfolio
-- Stress testing indicates adequate capital buffers
-- Early warning systems identify potential problem accounts
+**🔍 Key Risk Factors:**
+• **Commercial Real Estate**: Increased stress from market conditions
+• **Economic Sensitivity**: Higher provisions for macro uncertainty
+• **Concentration Risk**: Top 20 exposures = 15% of loan book
 
-**Management Actions**:
-- Enhanced due diligence for CRE exposures
-- Tightened underwriting standards for new originations
-- Increased provision buffer for economic uncertainty`
+**Risk Mitigants:**
+✅ Enhanced monitoring and early warning systems
+✅ Diversified portfolio across sectors and geographies
+✅ Strong collateral coverage (average LTV: 65%)
+✅ Robust stress testing framework
+
+**Outlook**: Expect modest NPL increase but manageable within risk appetite`
     }
 
     if (
@@ -228,139 +306,39 @@ Our Q3 2024 results demonstrate robust financial performance with significant im
       lowerQuestion.includes("cost") ||
       lowerQuestion.includes("operational")
     ) {
-      return `## Operational Efficiency Analysis
+      return `## Operational Efficiency Analysis - Q3 2024
 
-**Cost Management Performance**
+**💰 Cost-to-Income Ratio: 52.3%**
+• Q2 2024: 54.1% (-180bps improvement) ✅
+• YoY: 56.8% (-450bps improvement) ✅
+• Industry average: 55.7% ✅ **Best in class**
 
-**Efficiency Ratio**: 52.3% (-120bps QoQ improvement)
-- **Industry Benchmark**: 55.8% (we're outperforming)
-- **Target Range**: 50-52% by end of 2024
-- **Key Drivers**: Technology automation and process optimization
+**📊 Cost Breakdown:**
+• **Personnel Costs**: $890M (62% of total costs)
+• **Technology**: $285M (20% of total costs)
+• **Premises**: $145M (10% of total costs)
+• **Other Operating**: $115M (8% of total costs)
 
-**Cost Structure Analysis**:
-- **Personnel Costs**: $890M (65% of total costs)
-- **Technology Investments**: $180M (+8% YoY for digital transformation)
-- **Premises & Equipment**: $125M (-5% from branch optimization)
+**🚀 Efficiency Initiatives:**
+• **Digital Transformation**: 78% digital adoption (+5pp QoQ)
+  - Reduced branch transactions by 15%
+  - Lower servicing costs per customer
+• **Process Automation**: 45% of routine processes automated
+• **Workforce Optimization**: Strategic hiring in growth areas
 
-**Productivity Metrics**:
-- **Revenue per Employee**: $485K (+12% YoY)
-- **Assets per Employee**: $28M (+8% YoY)
-- **Digital Adoption**: 78% of transactions now digital (+15pp YoY)
+**📈 Productivity Metrics:**
+• Revenue per FTE: $485K (+8.2% QoQ)
+• Assets per FTE: $26.2M (+6.5% QoQ)
+• Customer per FTE: 1,240 (+4.8% QoQ)
 
-**Efficiency Initiatives**:
-- **Branch Network**: Optimized 15 locations, saving $8M annually
-- **Process Automation**: 45% of routine processes now automated
-- **Digital Banking**: Mobile app usage up 25%, reducing service costs
+**🎯 Efficiency Drivers:**
+✅ Technology investments delivering scale benefits
+✅ Streamlined operations and process improvements
+✅ Strategic cost management without compromising growth
 
-**Future Outlook**:
-- Target efficiency ratio of 50% by Q4 2025
-- Continued investment in AI and automation
-- Focus on revenue growth while maintaining cost discipline`
+**Q4 Outlook**: Target to maintain efficiency ratio below 53%`
     }
 
-    if (lowerQuestion.includes("peer") || lowerQuestion.includes("benchmark") || lowerQuestion.includes("comparison")) {
-      return `## Peer Benchmarking Analysis
-
-**Industry Position - Q3 2024**
-
-**Profitability Comparison**:
-- **Our ROE**: 14.2% vs Industry Median: 12.8% ✅ **+140bps advantage**
-- **Our ROA**: 1.8% vs Industry Median: 1.4% ✅ **+40bps advantage**
-- **Our NIM**: 3.45% vs Industry Median: 3.28% ✅ **+17bps advantage**
-
-**Efficiency Metrics**:
-- **Our Cost/Income**: 52.3% vs Industry Median: 55.8% ✅ **350bps better**
-- **Revenue Growth**: 8.2% vs Industry Median: 5.1% ✅ **Outperforming**
-
-**Asset Quality**:
-- **Our NPL Ratio**: 1.8% vs Industry Median: 2.1% ✅ **30bps better**
-- **Provision Coverage**: 85% vs Industry Median: 78% ✅ **More conservative**
-
-**Capital Strength**:
-- **Our CET1**: 12.8% vs Regulatory Min: 10.5% ✅ **Well-capitalized**
-- **Tier 1 Ratio**: 14.2% vs Industry Median: 13.1% ✅ **Above average**
-
-**Market Position**:
-- **Top Quartile** in profitability metrics
-- **Second Quartile** in efficiency measures
-- **Top Quartile** in asset quality indicators
-
-**Competitive Advantages**:
-- Superior loan pricing discipline
-- Effective cost management
-- Strong risk management framework
-- Digital banking capabilities`
-    }
-
-    if (
-      lowerQuestion.includes("scenario") ||
-      lowerQuestion.includes("what-if") ||
-      lowerQuestion.includes("simulation")
-    ) {
-      return `## What-If Scenario Analysis
-
-**Scenario Planning Framework**
-
-I can help you model various business scenarios. Here are some key levers we can analyze:
-
-**Interest Rate Scenarios**:
-- **+100bps rate increase**: NIM could expand by ~15-20bps
-- **-50bps rate decrease**: NIM compression of ~8-12bps
-- **Impact on**: Net interest income, deposit costs, loan demand
-
-**Loan Growth Scenarios**:
-- **15% loan growth**: Could add ~$180M in annual revenue
-- **5% loan growth**: More conservative, focused on margins
-- **Impact on**: Capital ratios, funding requirements, risk profile
-
-**Credit Cost Scenarios**:
-- **Economic downturn**: Provisions could increase 50-75%
-- **Benign environment**: Provision normalization to 35bps
-- **Impact on**: Net income, capital adequacy, dividend capacity
-
-**Operational Scenarios**:
-- **Digital transformation acceleration**: 200bps efficiency improvement
-- **Branch network optimization**: $25M annual cost savings
-- **Impact on**: Cost structure, customer experience, market share
-
-**Which scenario would you like me to model in detail?** I can provide specific financial projections and sensitivity analysis for any of these areas.`
-    }
-
-    if (lowerQuestion.includes("board") || lowerQuestion.includes("deck") || lowerQuestion.includes("presentation")) {
-      return `## Board Presentation - Q3 2024 Executive Summary
-
-**STRONG Q3 PERFORMANCE WITH CONTINUED MOMENTUM**
-
-### Key Headlines
-- **Record quarterly net income** of $890M (+12.5% QoQ)
-- **NIM expansion** to 3.45% (+8bps) from successful repricing
-- **Efficiency ratio improvement** to 52.3% (-120bps)
-- **Maintained strong asset quality** with NPL ratio at 1.8%
-
-### Financial Highlights
-- **Revenue Growth**: $2.45B (+8.2% QoQ, +15.2% YoY)
-- **ROE Expansion**: 14.2% (+110bps YoY) - top quartile performance
-- **Capital Strength**: CET1 ratio of 12.8% (+80bps YoY)
-
-### Strategic Progress
-- **Digital Transformation**: 78% digital adoption (+15pp YoY)
-- **Market Share Growth**: Gained 25bps in core markets
-- **ESG Leadership**: Achieved carbon neutral operations
-
-### Outlook & Priorities
-- **Q4 Guidance**: NIM expected to reach 3.55%
-- **2024 Targets**: ROE >14%, Efficiency ratio <52%
-- **Strategic Focus**: Sustainable growth, digital innovation, ESG leadership
-
-### Risk Management
-- **Proactive provisioning** for economic uncertainty
-- **Enhanced CRE monitoring** given market conditions
-- **Robust stress testing** confirms capital adequacy
-
-**Recommendation**: Board approval for increased dividend payout ratio to 45% given strong capital position and earnings momentum.`
-    }
-
-    // Default responses for other questions
     if (lowerQuestion.includes("nim") || lowerQuestion.includes("margin")) {
       return "Net Interest Margin improved 8bps QoQ to 3.45% in Q3 2024. This improvement was driven by successful repricing of our loan portfolio (+15bps impact) and favorable deposit mix shift (-7bps impact from higher cost deposits). The retail lending segment contributed most significantly with SME loans repriced at higher spreads. However, competitive pressure in corporate lending limited the upside."
     }
@@ -382,6 +360,76 @@ I can help you model various business scenarios. Here are some key levers we can
 
   const copyToClipboard = (content: string) => {
     navigator.clipboard.writeText(content)
+  }
+
+  const renderMessageContent = (message: ChatMessage) => {
+    const content = message.content
+
+    // Check if content has markdown-style formatting
+    if (content.includes("##") || content.includes("**") || content.includes("•")) {
+      return (
+        <div className="prose prose-sm max-w-none">
+          {content.split("\n").map((line, index) => {
+            // Handle headers
+            if (line.startsWith("## ")) {
+              return (
+                <h3 key={index} className="text-lg font-semibold text-gray-900 mt-4 mb-2">
+                  {line.replace("## ", "")}
+                </h3>
+              )
+            }
+
+            // Handle bold text
+            if (line.includes("**")) {
+              const parts = line.split("**")
+              return (
+                <p key={index} className="mb-2">
+                  {parts.map((part, i) =>
+                    i % 2 === 1 ? (
+                      <strong key={i} className="font-semibold">
+                        {part}
+                      </strong>
+                    ) : (
+                      part
+                    ),
+                  )}
+                </p>
+              )
+            }
+
+            // Handle bullet points
+            if (
+              line.startsWith("• ") ||
+              line.startsWith("✅ ") ||
+              line.startsWith("⚠️ ") ||
+              line.startsWith("🔺 ") ||
+              line.startsWith("🔻 ")
+            ) {
+              return (
+                <div key={index} className="ml-4 mb-1 text-sm">
+                  {line}
+                </div>
+              )
+            }
+
+            // Handle empty lines
+            if (line.trim() === "") {
+              return <br key={index} />
+            }
+
+            // Regular paragraphs
+            return (
+              <p key={index} className="mb-2 text-sm">
+                {line}
+              </p>
+            )
+          })}
+        </div>
+      )
+    }
+
+    // Regular text content
+    return <div className="text-sm">{content}</div>
   }
 
   return (
@@ -442,32 +490,7 @@ I can help you model various business scenarios. Here are some key levers we can
                         : "bg-white text-gray-900 border border-gray-200"
                     }`}
                   >
-                    <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-
-                    {/* Metrics Display for Assistant Messages */}
-                    {message.type === "assistant" && message.metrics && (
-                      <div className="mt-4 grid grid-cols-2 gap-3">
-                        {message.metrics.map((metric, index) => (
-                          <div key={index} className="bg-gray-50 rounded-lg p-3 border">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-gray-600">{metric.label}</span>
-                              <span
-                                className={`text-xs font-semibold ${
-                                  metric.trend === "up"
-                                    ? "text-green-600"
-                                    : metric.trend === "down"
-                                      ? "text-red-600"
-                                      : "text-gray-600"
-                                }`}
-                              >
-                                {metric.change}
-                              </span>
-                            </div>
-                            <div className="text-lg font-bold text-gray-900 mt-1">{metric.value}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {renderMessageContent(message)}
 
                     {message.citation && (
                       <div className="mt-3 pt-3 border-t border-gray-200 text-gray-500 text-xs">
@@ -495,7 +518,7 @@ I can help you model various business scenarios. Here are some key levers we can
               ))}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                  <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                       <div

@@ -34,7 +34,7 @@ interface ChatHistory {
 interface ChatSidebarProps {
   isOpen: boolean
   onToggle: (isOpen: boolean) => void
-  onStartChat: (prompt: string) => void
+  onExploreClick: (prompt: string) => void
 }
 
 interface ExploreItem {
@@ -42,10 +42,9 @@ interface ExploreItem {
   title: string
   icon: React.ComponentType<{ className?: string }>
   prompt: string
-  description: string
 }
 
-export function ChatSidebar({ isOpen, onToggle, onStartChat }: ChatSidebarProps) {
+export function ChatSidebar({ isOpen, onToggle, onExploreClick }: ChatSidebarProps) {
   const [chatHistory] = useState<ChatHistory[]>([
     {
       id: "1",
@@ -87,79 +86,61 @@ export function ChatSidebar({ isOpen, onToggle, onStartChat }: ChatSidebarProps)
       title: "Earnings Overview",
       icon: BarChart3,
       prompt:
-        "Show me a comprehensive overview of our Q3 2024 earnings performance including key metrics, revenue breakdown, and year-over-year comparisons.",
-      description: "Get quarterly performance snapshots and KPI summaries",
+        "Show me a comprehensive earnings overview for Q3 2024 including key metrics, revenue breakdown, and performance highlights",
     },
     {
       id: "variance-analysis",
       title: "Variance Analysis",
       icon: TrendingUp,
       prompt:
-        "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and Q3 2023. Focus on the most significant changes and their drivers.",
-      description: "Drill down into specific changes with AI explanations",
+        "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers behind these changes",
     },
     {
       id: "what-if-scenarios",
       title: "What-If Scenarios",
       icon: Calculator,
       prompt:
-        "Help me run what-if scenarios for Q4 2024. I want to understand the impact of different business levers on our key financial metrics.",
-      description: "Simulate impact of business levers on key metrics",
+        "Help me run what-if scenarios for different business assumptions and their impact on our key financial metrics",
     },
     {
       id: "board-deck",
       title: "Board Deck",
       icon: FileText,
-      prompt:
-        "Draft a comprehensive board presentation summary for Q3 2024 results, highlighting key achievements, challenges, and strategic outlook.",
-      description: "Generate AI-powered narratives for presentations",
+      prompt: "Generate a board-ready executive summary and key talking points for our Q3 2024 financial performance",
     },
     {
       id: "peer-comparison",
       title: "Peer Benchmarking",
       icon: Users,
       prompt:
-        "Compare our Q3 2024 performance against industry peers. Focus on key metrics like ROE, NIM, efficiency ratios, and asset quality.",
-      description: "Compare performance against industry peers",
+        "Compare our Q3 2024 performance against industry peers and highlight areas where we're outperforming or underperforming",
     },
     {
       id: "profitability",
       title: "Profitability",
       icon: DollarSign,
       prompt:
-        "Provide a deep dive analysis of our profitability metrics including ROE, ROA, NIM trends, and margin analysis for Q3 2024.",
-      description: "Analyze ROE, ROA, and margin trends",
+        "Analyze our profitability metrics including ROE, ROA, NIM trends and identify key drivers of profitability changes",
     },
     {
       id: "risk-metrics",
       title: "Risk Assessment",
       icon: Target,
       prompt:
-        "Analyze our current risk profile including NPL ratios, provision coverage, asset quality trends, and credit risk indicators for Q3 2024.",
-      description: "Review NPL ratios, provisions, and asset quality",
+        "Provide a comprehensive risk assessment including NPL ratios, provision coverage, and asset quality trends",
     },
     {
       id: "efficiency",
       title: "Efficiency",
       icon: Activity,
-      prompt:
-        "Evaluate our operational efficiency including cost-to-income ratios, productivity metrics, and efficiency trends compared to previous quarters.",
-      description: "Cost-to-income ratios and productivity metrics",
+      prompt: "Analyze our operational efficiency metrics including cost-to-income ratio and productivity indicators",
     },
   ]
 
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
 
   const handleExploreItemClick = (item: ExploreItem) => {
-    onStartChat(item.prompt)
-    // Close sidebar on mobile after selection
-    if (window.innerWidth < 768) {
-      onToggle(false)
-    }
-  }
-
-  const handleNewChat = () => {
-    onStartChat("")
+    onExploreClick(item.prompt)
   }
 
   return (
@@ -179,7 +160,9 @@ export function ChatSidebar({ isOpen, onToggle, onStartChat }: ChatSidebarProps)
             </Button>
           </div>
           <Button
-            onClick={handleNewChat}
+            onClick={() => {
+              /* Start new chat */
+            }}
             className="w-full bg-apple-blue-600 hover:bg-apple-blue-700 text-white rounded-lg"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -202,10 +185,9 @@ export function ChatSidebar({ isOpen, onToggle, onStartChat }: ChatSidebarProps)
                   variant="ghost"
                   size="sm"
                   onClick={() => handleExploreItemClick(item)}
-                  className="h-auto p-3 flex flex-col items-center justify-center text-center hover:bg-apple-gray-50 rounded-lg border border-transparent hover:border-apple-blue-200 transition-all duration-200 group"
-                  title={item.description}
+                  className="h-auto p-3 flex flex-col items-center justify-center text-center hover:bg-apple-gray-50 rounded-lg border border-transparent hover:border-apple-blue-200 transition-all duration-200"
                 >
-                  <IconComponent className="h-5 w-5 text-apple-blue-600 mb-1 group-hover:scale-110 transition-transform duration-200" />
+                  <IconComponent className="h-5 w-5 text-apple-blue-600 mb-1" />
                   <span className="text-xs text-gray-700 leading-tight">{item.title}</span>
                 </Button>
               )
