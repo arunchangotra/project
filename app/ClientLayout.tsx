@@ -5,8 +5,7 @@ import { useState, useEffect } from "react"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { CFOChatWidget } from "@/components/cfo-chat-widget"
-import { AIChatInput } from "@/components/ai-chat-input"
-import { cn } from "@/lib/utils" // Import cn utility
+import { cn } from "@/lib/utils"
 
 export default function ClientLayout({
   children,
@@ -16,18 +15,19 @@ export default function ClientLayout({
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isChatMaximized, setIsChatMaximized] = useState(false)
   const [initialChatMessage, setInitialChatMessage] = useState<string | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-  // Function to handle sending a message from the fixed input bar
+  // Function to handle sending a message from anywhere in the app
   const handleSendInitialMessage = (message: string) => {
     setInitialChatMessage(message)
-    setIsChatOpen(true) // Open the floating chat
-    setIsChatMaximized(true) // Open directly in maximized view
+    setIsChatOpen(true)
+    setIsChatMaximized(true)
   }
 
-  // Function to handle opening the chat without a specific message (e.g., from '+' or 'Tools')
+  // Function to handle opening the chat without a specific message
   const handleOpenChat = () => {
     setIsChatOpen(true)
-    setIsChatMaximized(true) // Open directly in maximized view
+    setIsChatMaximized(true)
   }
 
   // Clear initial message after it's been consumed by the chat interface
@@ -38,22 +38,33 @@ export default function ClientLayout({
     }
   }, [isChatOpen, initialChatMessage])
 
+  // Add this function to handle sidebar toggle
+  const handleSidebarToggle = (isOpen: boolean) => {
+    setIsSidebarOpen(isOpen)
+  }
+
   return (
     <html lang="en">
-      {/* Apply overflow-hidden to body when chat is maximized to prevent background scrolling */}
       <body className={cn(isChatMaximized && "overflow-hidden")}>
         <div className="flex flex-col min-h-screen bg-apple-gray-50">
           <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-lg supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm">
             <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
-              <Navigation />
+              <Navigation onSidebarToggle={handleSidebarToggle} />
             </div>
           </header>
-          <main className="flex-1 container mx-auto py-12 px-4 md:px-6 pb-32">{children}</main>
+          <main
+            className={cn(
+              "flex-1 transition-all duration-300",
+              isSidebarOpen
+                ? "ml-80 mr-8 px-4 md:px-6 py-8" // When sidebar is open: left margin for sidebar space, right margin for balance, normal padding
+                : "container mx-auto py-8 px-4 md:px-6", // When sidebar is closed: normal container behavior
+            )}
+          >
+            {children}
+          </main>
         </div>
-        {/* Render the fixed AI Chat Input only when the floating chat is NOT open */}
-        {!isChatOpen && <AIChatInput onSendInitialMessage={handleSendInitialMessage} onOpenChat={handleOpenChat} />}
 
-        {/* Render the floating CFO Chat Widget */}
+        {/* Floating CFO Chat Widget - always available */}
         <CFOChatWidget
           isChatOpen={isChatOpen}
           setIsChatOpen={setIsChatOpen}

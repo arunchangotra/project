@@ -1,4 +1,4 @@
-"\"use client"
+"use client"
 
 import { Button } from "@/components/ui/button"
 import { Minimize2, Maximize2, X, Download } from "lucide-react"
@@ -71,7 +71,7 @@ export function CFOChatWidget({
       {/* Overlay for maximized state */}
       {isChatOpen && isMaximized && (
         <div
-          className="fixed inset-0 z-40 bg-white/80 backdrop-blur-lg transition-opacity duration-300 ease-in-out"
+          className="fixed inset-0 z-40 bg-white/80 backdrop-blur-lg transition-opacity duration-300 ease-in-out" // Ensure z-40 is between sidebar (z-20) and chat (z-50)
           aria-hidden="true"
         />
       )}
@@ -79,7 +79,7 @@ export function CFOChatWidget({
       {/* Chat Window Container */}
       <div
         className={cn(
-          "fixed z-50 bg-white shadow-xl rounded-lg flex flex-col overflow-hidden",
+          "fixed z-50 bg-white shadow-xl rounded-lg flex flex-col overflow-hidden", // Ensure z-50 is higher than sidebar
           "transition-all duration-300 ease-in-out",
           // Positioning and size based on isMaximized
           isMaximized
