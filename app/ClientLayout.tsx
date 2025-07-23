@@ -1,82 +1,45 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import "./globals.css"
+
+import { useState } from "react"
 import { Navigation } from "@/components/navigation"
+import { ChatSidebar } from "@/components/chat-sidebar"
 import { CFOChatWidget } from "@/components/cfo-chat-widget"
-import { cn } from "@/lib/utils"
 
-export default function ClientLayout({
-  children,
-}: Readonly<{
+interface ClientLayoutProps {
   children: React.ReactNode
-}>) {
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  const [isChatMaximized, setIsChatMaximized] = useState(false)
-  const [initialChatMessage, setInitialChatMessage] = useState<string | null>(null)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+}
 
-  // Function to handle sending a message from anywhere in the app
-  const handleSendInitialMessage = (message: string) => {
-    setInitialChatMessage(message)
-    setIsChatOpen(true)
-    setIsChatMaximized(true)
-  }
+export default function ClientLayout({ children }: ClientLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Function to handle opening the chat without a specific message
-  const handleOpenChat = () => {
-    setIsChatOpen(true)
-    setIsChatMaximized(true)
-  }
+  const handleStartChat = (prompt: string) => {
+    // This function will be called when user clicks on explore items
+    // For now, we'll just log it - in a real app, this would trigger the chat
+    console.log("Starting chat with prompt:", prompt)
 
-  // Clear initial message after it's been consumed by the chat interface
-  useEffect(() => {
-    if (isChatOpen && initialChatMessage) {
-      const timer = setTimeout(() => setInitialChatMessage(null), 100)
-      return () => clearTimeout(timer)
+    // You could implement logic here to:
+    // 1. Navigate to the main chat page
+    // 2. Set the initial message
+    // 3. Open a chat modal
+
+    // For demonstration, let's navigate to home with the chat active
+    if (typeof window !== "undefined") {
+      window.location.href = "/"
     }
-  }, [isChatOpen, initialChatMessage])
-
-  // Add this function to handle sidebar toggle
-  const handleSidebarToggle = (isOpen: boolean) => {
-    setIsSidebarOpen(isOpen)
   }
 
   return (
-    <html lang="en">
-      <body className={cn(isChatMaximized && "overflow-hidden")}>
-        <div className="flex flex-col min-h-screen bg-apple-gray-50">
-          <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-lg supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm">
-            <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
-              <Navigation
-                onSidebarToggle={handleSidebarToggle}
-                onSendMessage={handleSendInitialMessage}
-                onOpenChat={handleOpenChat}
-              />
-            </div>
-          </header>
-          <main
-            className={cn(
-              "flex-1 transition-all duration-300",
-              isSidebarOpen
-                ? "ml-80 mr-8 px-4 md:px-6 py-8" // When sidebar is open: left margin for sidebar space, right margin for balance, normal padding
-                : "container mx-auto py-8 px-4 md:px-6", // When sidebar is closed: normal container behavior
-            )}
-          >
-            {children}
-          </main>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <ChatSidebar isOpen={sidebarOpen} onToggle={setSidebarOpen} onStartChat={handleStartChat} />
 
-        {/* Floating CFO Chat Widget - always available */}
-        <CFOChatWidget
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
-          isMaximized={isChatMaximized}
-          setIsMaximized={setIsChatMaximized}
-          initialMessage={initialChatMessage}
-        />
-      </body>
-    </html>
+      <main className={`transition-all duration-300 ${sidebarOpen ? "ml-80" : "ml-0"}`} style={{ paddingTop: "4rem" }}>
+        <div className="container mx-auto px-4 py-6">{children}</div>
+      </main>
+
+      <CFOChatWidget />
+    </div>
   )
 }

@@ -22,7 +22,6 @@ import {
   Compass,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useRouter } from "next/navigation"
 
 interface ChatHistory {
   id: string
@@ -35,21 +34,18 @@ interface ChatHistory {
 interface ChatSidebarProps {
   isOpen: boolean
   onToggle: (isOpen: boolean) => void
-  onSendMessage?: (message: string) => void
-  onOpenChat?: () => void
+  onStartChat: (prompt: string) => void
 }
 
 interface ExploreItem {
   id: string
   title: string
   icon: React.ComponentType<{ className?: string }>
-  route?: string
-  action?: () => void
+  prompt: string
+  description: string
 }
 
-export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: ChatSidebarProps) {
-  const router = useRouter()
-
+export function ChatSidebar({ isOpen, onToggle, onStartChat }: ChatSidebarProps) {
   const [chatHistory] = useState<ChatHistory[]>([
     {
       id: "1",
@@ -90,89 +86,80 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
       id: "earnings-overview",
       title: "Earnings Overview",
       icon: BarChart3,
-      action: () =>
-        handleChatAction(
-          "Give me a comprehensive overview of our Q3 2024 earnings performance including key metrics and highlights",
-        ),
+      prompt:
+        "Show me a comprehensive overview of our Q3 2024 earnings performance including key metrics, revenue breakdown, and year-over-year comparisons.",
+      description: "Get quarterly performance snapshots and KPI summaries",
     },
     {
       id: "variance-analysis",
       title: "Variance Analysis",
       icon: TrendingUp,
-      action: () =>
-        handleChatAction(
-          "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers",
-        ),
+      prompt:
+        "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and Q3 2023. Focus on the most significant changes and their drivers.",
+      description: "Drill down into specific changes with AI explanations",
     },
     {
       id: "what-if-scenarios",
       title: "What-If Scenarios",
       icon: Calculator,
-      action: () =>
-        handleChatAction(
-          "Help me run what-if scenarios for Q4 2024. What would happen if loan growth increased by 15%?",
-        ),
+      prompt:
+        "Help me run what-if scenarios for Q4 2024. I want to understand the impact of different business levers on our key financial metrics.",
+      description: "Simulate impact of business levers on key metrics",
     },
     {
       id: "board-deck",
       title: "Board Deck",
       icon: FileText,
-      action: () =>
-        handleChatAction(
-          "Create an executive summary for the board deck highlighting Q3 2024 key achievements and concerns",
-        ),
+      prompt:
+        "Draft a comprehensive board presentation summary for Q3 2024 results, highlighting key achievements, challenges, and strategic outlook.",
+      description: "Generate AI-powered narratives for presentations",
     },
     {
       id: "peer-comparison",
       title: "Peer Benchmarking",
       icon: Users,
-      action: () =>
-        handleChatAction(
-          "Compare our Q3 2024 performance metrics (NIM, ROE, ROA) against industry peers and competitors",
-        ),
+      prompt:
+        "Compare our Q3 2024 performance against industry peers. Focus on key metrics like ROE, NIM, efficiency ratios, and asset quality.",
+      description: "Compare performance against industry peers",
     },
     {
       id: "profitability",
       title: "Profitability",
       icon: DollarSign,
-      action: () =>
-        handleChatAction(
-          "Analyze our profitability trends and explain what's driving changes in our profit margins this quarter",
-        ),
+      prompt:
+        "Provide a deep dive analysis of our profitability metrics including ROE, ROA, NIM trends, and margin analysis for Q3 2024.",
+      description: "Analyze ROE, ROA, and margin trends",
     },
     {
       id: "risk-metrics",
       title: "Risk Assessment",
       icon: Target,
-      action: () =>
-        handleChatAction(
-          "Provide a risk assessment of our current portfolio including NPL trends and provision adequacy",
-        ),
+      prompt:
+        "Analyze our current risk profile including NPL ratios, provision coverage, asset quality trends, and credit risk indicators for Q3 2024.",
+      description: "Review NPL ratios, provisions, and asset quality",
     },
     {
       id: "efficiency",
       title: "Efficiency",
       icon: Activity,
-      action: () =>
-        handleChatAction(
-          "Analyze our operational efficiency metrics and cost-to-income ratio trends. Where can we improve?",
-        ),
+      prompt:
+        "Evaluate our operational efficiency including cost-to-income ratios, productivity metrics, and efficiency trends compared to previous quarters.",
+      description: "Cost-to-income ratios and productivity metrics",
     },
   ]
 
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
 
-  const handleChatAction = (message: string) => {
-    if (onSendMessage && onOpenChat) {
-      onOpenChat()
-      onSendMessage(message)
+  const handleExploreItemClick = (item: ExploreItem) => {
+    onStartChat(item.prompt)
+    // Close sidebar on mobile after selection
+    if (window.innerWidth < 768) {
+      onToggle(false)
     }
   }
 
-  const handleExploreItemClick = (item: ExploreItem) => {
-    if (item.action) {
-      item.action()
-    }
+  const handleNewChat = () => {
+    onStartChat("")
   }
 
   return (
@@ -192,9 +179,7 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
             </Button>
           </div>
           <Button
-            onClick={() => {
-              /* Start new chat */
-            }}
+            onClick={handleNewChat}
             className="w-full bg-apple-blue-600 hover:bg-apple-blue-700 text-white rounded-lg"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -217,9 +202,10 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
                   variant="ghost"
                   size="sm"
                   onClick={() => handleExploreItemClick(item)}
-                  className="h-auto p-3 flex flex-col items-center justify-center text-center hover:bg-apple-gray-50 rounded-lg border border-transparent hover:border-apple-blue-200 transition-all duration-200"
+                  className="h-auto p-3 flex flex-col items-center justify-center text-center hover:bg-apple-gray-50 rounded-lg border border-transparent hover:border-apple-blue-200 transition-all duration-200 group"
+                  title={item.description}
                 >
-                  <IconComponent className="h-5 w-5 text-apple-blue-600 mb-1" />
+                  <IconComponent className="h-5 w-5 text-apple-blue-600 mb-1 group-hover:scale-110 transition-transform duration-200" />
                   <span className="text-xs text-gray-700 leading-tight">{item.title}</span>
                 </Button>
               )
