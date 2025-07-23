@@ -92,7 +92,7 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
       icon: BarChart3,
       action: () =>
         handleChatAction(
-          "Give me a comprehensive overview of our Q3 2024 earnings performance including key metrics, revenue trends, and profitability highlights.",
+          "Give me a comprehensive overview of our Q3 2024 earnings performance including key metrics, highlights, and year-over-year changes.",
         ),
     },
     {
@@ -101,7 +101,7 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
       icon: TrendingUp,
       action: () =>
         handleChatAction(
-          "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers behind the changes.",
+          "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers behind these changes.",
         ),
     },
     {
@@ -146,7 +146,7 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
       icon: Target,
       action: () =>
         handleChatAction(
-          "Provide a comprehensive risk assessment of our current portfolio including NPL trends, provision adequacy, and credit quality metrics.",
+          "Provide a comprehensive risk assessment of our current portfolio including NPL trends, provision adequacy, and credit quality indicators.",
         ),
     },
     {
@@ -155,7 +155,7 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
       icon: Activity,
       action: () =>
         handleChatAction(
-          "Analyze our operational efficiency metrics including cost-to-income ratio, productivity trends, and identify areas for improvement.",
+          "Analyze our operational efficiency metrics including cost-to-income ratio, productivity measures, and identify areas for improvement.",
         ),
     },
   ]
@@ -166,7 +166,7 @@ export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: Cha
     if (onSendMessage && onOpenChat) {
       onOpenChat()
       onSendMessage(message)
-      // Close sidebar after sending message
+      // Close sidebar after sending message for better UX
       onToggle(false)
     }
   }
