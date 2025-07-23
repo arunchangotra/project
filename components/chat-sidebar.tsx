@@ -22,6 +22,7 @@ import {
   Compass,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 interface ChatHistory {
   id: string
@@ -34,17 +35,21 @@ interface ChatHistory {
 interface ChatSidebarProps {
   isOpen: boolean
   onToggle: (isOpen: boolean) => void
-  onExploreClick: (prompt: string) => void
+  onSendMessage?: (message: string) => void
+  onOpenChat?: () => void
 }
 
 interface ExploreItem {
   id: string
   title: string
   icon: React.ComponentType<{ className?: string }>
-  prompt: string
+  route?: string
+  action?: () => void
 }
 
-export function ChatSidebar({ isOpen, onToggle, onExploreClick }: ChatSidebarProps) {
+export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: ChatSidebarProps) {
+  const router = useRouter()
+
   const [chatHistory] = useState<ChatHistory[]>([
     {
       id: "1",
@@ -85,62 +90,91 @@ export function ChatSidebar({ isOpen, onToggle, onExploreClick }: ChatSidebarPro
       id: "earnings-overview",
       title: "Earnings Overview",
       icon: BarChart3,
-      prompt:
-        "Show me a comprehensive earnings overview for Q3 2024 including key metrics, revenue breakdown, and performance highlights",
+      action: () =>
+        handleChatAction(
+          "Give me a comprehensive overview of our Q3 2024 earnings performance including key metrics, revenue trends, and profitability highlights.",
+        ),
     },
     {
       id: "variance-analysis",
       title: "Variance Analysis",
       icon: TrendingUp,
-      prompt:
-        "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers behind these changes",
+      action: () =>
+        handleChatAction(
+          "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers behind the changes.",
+        ),
     },
     {
       id: "what-if-scenarios",
       title: "What-If Scenarios",
       icon: Calculator,
-      prompt:
-        "Help me run what-if scenarios for different business assumptions and their impact on our key financial metrics",
+      action: () =>
+        handleChatAction(
+          "Help me run what-if scenarios for Q4 2024. What would happen if loan growth increased by 15% or if interest rates changed by 50 basis points?",
+        ),
     },
     {
       id: "board-deck",
       title: "Board Deck",
       icon: FileText,
-      prompt: "Generate a board-ready executive summary and key talking points for our Q3 2024 financial performance",
+      action: () =>
+        handleChatAction(
+          "Create an executive summary for the board deck highlighting Q3 2024 key achievements, concerns, and strategic recommendations.",
+        ),
     },
     {
       id: "peer-comparison",
       title: "Peer Benchmarking",
       icon: Users,
-      prompt:
-        "Compare our Q3 2024 performance against industry peers and highlight areas where we're outperforming or underperforming",
+      action: () =>
+        handleChatAction(
+          "Compare our Q3 2024 performance metrics (NIM, ROE, ROA, efficiency ratio) against industry peers and top competitors.",
+        ),
     },
     {
       id: "profitability",
       title: "Profitability",
       icon: DollarSign,
-      prompt:
-        "Analyze our profitability metrics including ROE, ROA, NIM trends and identify key drivers of profitability changes",
+      action: () =>
+        handleChatAction(
+          "Analyze our profitability trends including net interest margin, return on equity, and explain what's driving changes in our profit margins.",
+        ),
     },
     {
       id: "risk-metrics",
       title: "Risk Assessment",
       icon: Target,
-      prompt:
-        "Provide a comprehensive risk assessment including NPL ratios, provision coverage, and asset quality trends",
+      action: () =>
+        handleChatAction(
+          "Provide a comprehensive risk assessment of our current portfolio including NPL trends, provision adequacy, and credit quality metrics.",
+        ),
     },
     {
       id: "efficiency",
       title: "Efficiency",
       icon: Activity,
-      prompt: "Analyze our operational efficiency metrics including cost-to-income ratio and productivity indicators",
+      action: () =>
+        handleChatAction(
+          "Analyze our operational efficiency metrics including cost-to-income ratio, productivity trends, and identify areas for improvement.",
+        ),
     },
   ]
 
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
 
+  const handleChatAction = (message: string) => {
+    if (onSendMessage && onOpenChat) {
+      onOpenChat()
+      onSendMessage(message)
+      // Close sidebar after sending message
+      onToggle(false)
+    }
+  }
+
   const handleExploreItemClick = (item: ExploreItem) => {
-    onExploreClick(item.prompt)
+    if (item.action) {
+      item.action()
+    }
   }
 
   return (

@@ -20,6 +20,7 @@ import {
   Activity,
   ArrowRight,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 interface FeatureCard {
@@ -28,10 +29,12 @@ interface FeatureCard {
   description: string
   icon: React.ComponentType<{ className?: string }>
   color: string
-  prompt: string
+  route?: string
+  action?: () => void
 }
 
 export default function ChatDashboard() {
+  const router = useRouter()
   const [chatInput, setChatInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
 
@@ -42,8 +45,7 @@ export default function ChatDashboard() {
       description: "Get quarterly performance snapshots and KPI summaries",
       icon: BarChart3,
       color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
-      prompt:
-        "Show me a comprehensive earnings overview for Q3 2024 including key metrics, revenue breakdown, and performance highlights",
+      route: "/dashboard",
     },
     {
       id: "variance-analysis",
@@ -51,8 +53,7 @@ export default function ChatDashboard() {
       description: "Drill down into specific changes with AI explanations",
       icon: TrendingUp,
       color: "bg-green-50 border-green-200 hover:bg-green-100",
-      prompt:
-        "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers behind these changes",
+      route: "/variance",
     },
     {
       id: "what-if-scenarios",
@@ -60,8 +61,7 @@ export default function ChatDashboard() {
       description: "Simulate impact of business levers on key metrics",
       icon: Calculator,
       color: "bg-purple-50 border-purple-200 hover:bg-purple-100",
-      prompt:
-        "Help me run what-if scenarios for different business assumptions and their impact on our key financial metrics",
+      route: "/scenarios",
     },
     {
       id: "board-deck",
@@ -69,7 +69,7 @@ export default function ChatDashboard() {
       description: "Generate AI-powered narratives for presentations",
       icon: FileText,
       color: "bg-orange-50 border-orange-200 hover:bg-orange-100",
-      prompt: "Generate a board-ready executive summary and key talking points for our Q3 2024 financial performance",
+      route: "/board-deck",
     },
     {
       id: "peer-comparison",
@@ -77,8 +77,7 @@ export default function ChatDashboard() {
       description: "Compare performance against industry peers",
       icon: Users,
       color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100",
-      prompt:
-        "Compare our Q3 2024 performance against industry peers and highlight areas where we're outperforming or underperforming",
+      action: () => handleQuickAction("Show me how we compare to industry peers"),
     },
     {
       id: "profitability-analysis",
@@ -86,8 +85,7 @@ export default function ChatDashboard() {
       description: "Analyze ROE, ROA, and margin trends",
       icon: DollarSign,
       color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
-      prompt:
-        "Analyze our profitability metrics including ROE, ROA, NIM trends and identify key drivers of profitability changes",
+      action: () => handleQuickAction("Analyze our profitability metrics and trends"),
     },
     {
       id: "risk-metrics",
@@ -95,8 +93,7 @@ export default function ChatDashboard() {
       description: "Review NPL ratios, provisions, and asset quality",
       icon: Target,
       color: "bg-red-50 border-red-200 hover:bg-red-100",
-      prompt:
-        "Provide a comprehensive risk assessment including NPL ratios, provision coverage, and asset quality trends",
+      action: () => handleQuickAction("What's our current risk profile and asset quality?"),
     },
     {
       id: "efficiency-metrics",
@@ -104,7 +101,7 @@ export default function ChatDashboard() {
       description: "Cost-to-income ratios and productivity metrics",
       icon: Activity,
       color: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100",
-      prompt: "Analyze our operational efficiency metrics including cost-to-income ratio and productivity indicators",
+      action: () => handleQuickAction("How efficient are our operations this quarter?"),
     },
   ]
 
@@ -118,9 +115,17 @@ export default function ChatDashboard() {
   ]
 
   const handleCardClick = (card: FeatureCard) => {
-    setChatInput(card.prompt)
-    // This would trigger the chat widget to open with the prompt
-    // The actual implementation would depend on your chat widget setup
+    if (card.route) {
+      router.push(card.route)
+    } else if (card.action) {
+      card.action()
+    }
+  }
+
+  const handleQuickAction = (prompt: string) => {
+    setChatInput(prompt)
+    // This would typically open the chat interface with the prompt
+    // For now, we'll simulate it by setting the input
   }
 
   const handleSendMessage = () => {

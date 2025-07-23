@@ -10,9 +10,11 @@ import { ChatSidebar } from "./chat-sidebar"
 
 interface NavigationProps {
   onSidebarToggle?: (isOpen: boolean) => void
+  onSendMessage?: (message: string) => void
+  onOpenChat?: () => void
 }
 
-export function Navigation({ onSidebarToggle }: NavigationProps) {
+export function Navigation({ onSidebarToggle, onSendMessage, onOpenChat }: NavigationProps) {
   const pathname = usePathname()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
@@ -64,6 +66,8 @@ export function Navigation({ onSidebarToggle }: NavigationProps) {
           setIsSidebarOpen(isOpen)
           onSidebarToggle?.(isOpen)
         }}
+        onSendMessage={onSendMessage}
+        onOpenChat={onOpenChat}
       />
 
       {/* Overlay */}
