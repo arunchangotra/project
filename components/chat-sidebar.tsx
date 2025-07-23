@@ -35,6 +35,8 @@ interface ChatHistory {
 interface ChatSidebarProps {
   isOpen: boolean
   onToggle: (isOpen: boolean) => void
+  onSendMessage?: (message: string) => void
+  onOpenChat?: () => void
 }
 
 interface ExploreItem {
@@ -45,7 +47,7 @@ interface ExploreItem {
   action?: () => void
 }
 
-export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
+export function ChatSidebar({ isOpen, onToggle, onSendMessage, onOpenChat }: ChatSidebarProps) {
   const router = useRouter()
 
   const [chatHistory] = useState<ChatHistory[]>([
@@ -88,66 +90,87 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
       id: "earnings-overview",
       title: "Earnings Overview",
       icon: BarChart3,
-      route: "/dashboard",
+      action: () =>
+        handleChatAction(
+          "Give me a comprehensive overview of our Q3 2024 earnings performance including key metrics and highlights",
+        ),
     },
     {
       id: "variance-analysis",
       title: "Variance Analysis",
       icon: TrendingUp,
-      route: "/variance",
+      action: () =>
+        handleChatAction(
+          "Analyze the key variances in our Q3 2024 performance compared to Q2 2024 and explain the main drivers",
+        ),
     },
     {
       id: "what-if-scenarios",
       title: "What-If Scenarios",
       icon: Calculator,
-      route: "/scenarios",
+      action: () =>
+        handleChatAction(
+          "Help me run what-if scenarios for Q4 2024. What would happen if loan growth increased by 15%?",
+        ),
     },
     {
       id: "board-deck",
       title: "Board Deck",
       icon: FileText,
-      route: "/board-deck",
+      action: () =>
+        handleChatAction(
+          "Create an executive summary for the board deck highlighting Q3 2024 key achievements and concerns",
+        ),
     },
     {
       id: "peer-comparison",
       title: "Peer Benchmarking",
       icon: Users,
-      action: () => {
-        /* Handle peer comparison */
-      },
+      action: () =>
+        handleChatAction(
+          "Compare our Q3 2024 performance metrics (NIM, ROE, ROA) against industry peers and competitors",
+        ),
     },
     {
       id: "profitability",
       title: "Profitability",
       icon: DollarSign,
-      action: () => {
-        /* Handle profitability analysis */
-      },
+      action: () =>
+        handleChatAction(
+          "Analyze our profitability trends and explain what's driving changes in our profit margins this quarter",
+        ),
     },
     {
       id: "risk-metrics",
       title: "Risk Assessment",
       icon: Target,
-      action: () => {
-        /* Handle risk assessment */
-      },
+      action: () =>
+        handleChatAction(
+          "Provide a risk assessment of our current portfolio including NPL trends and provision adequacy",
+        ),
     },
     {
       id: "efficiency",
       title: "Efficiency",
       icon: Activity,
-      action: () => {
-        /* Handle efficiency metrics */
-      },
+      action: () =>
+        handleChatAction(
+          "Analyze our operational efficiency metrics and cost-to-income ratio trends. Where can we improve?",
+        ),
     },
   ]
 
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
 
+  const handleChatAction = (message: string) => {
+    if (onSendMessage && onOpenChat) {
+      onOpenChat()
+      onSendMessage(message)
+    }
+  }
+
   const handleExploreItemClick = (item: ExploreItem) => {
-    if (item.route) {
-      router.push(item.route)
-    } else if (item.action) {
+    if (item.action) {
       item.action()
     }
   }
