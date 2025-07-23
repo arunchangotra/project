@@ -387,17 +387,17 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
 
   return (
     <div className="flex flex-col h-full">
-      <Card className="shadow-lg rounded-xl border-none flex flex-col flex-1">
-        <CardHeader className="pb-2">
+      <Card className="shadow-lg rounded-xl border-none flex flex-col flex-1 min-h-0">
+        <CardHeader className="pb-2 flex-shrink-0">
           <CardTitle className="text-base font-semibold text-gray-800">Chat</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1 space-y-4">
-          <ScrollArea className="flex-1 w-full border border-gray-200 rounded-xl p-4 bg-apple-gray-50">
+        <CardContent className="flex flex-col flex-1 min-h-0 space-y-4">
+          <ScrollArea className="flex-1 w-full border border-gray-200 rounded-xl p-4 bg-apple-gray-50 min-h-0">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[80%] rounded-xl p-3 shadow-sm ${
+                    className={`max-w-[85%] rounded-xl p-3 shadow-sm ${
                       message.type === "user"
                         ? "bg-apple-blue-600 text-white"
                         : "bg-white text-gray-900 border border-gray-200"
@@ -451,8 +451,8 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
               )}
             </div>
           </ScrollArea>
-          {/* Input field for continued conversation within the floating chat */}
-          <div className="flex space-x-2 mt-4">
+          {/* Input field - always visible at bottom */}
+          <div className="flex space-x-2 flex-shrink-0 pt-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -464,7 +464,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
             <Button
               onClick={() => handleSend(input)}
               disabled={isLoading || !input.trim()}
-              className="rounded-full bg-apple-blue-600 hover:bg-apple-blue-700"
+              className="rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 flex-shrink-0"
             >
               <Send className="h-4 w-4" />
             </Button>

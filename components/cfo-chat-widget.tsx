@@ -83,8 +83,8 @@ export function CFOChatWidget({
           "transition-all duration-300 ease-in-out",
           // Positioning and size based on isMaximized
           isMaximized
-            ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] h-[90vh]"
-            : "bottom-8 right-8 w-[400px] h-[600px]",
+            ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] h-[90vh] max-h-[90vh]"
+            : "bottom-8 right-8 w-[400px] h-[600px] max-h-[600px]",
           // Visibility
           isChatOpen ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
@@ -95,7 +95,7 @@ export function CFOChatWidget({
         {/* Header */}
         <div
           className={cn(
-            "flex items-center justify-between p-4 border-b border-gray-200",
+            "flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0",
             isMaximized ? "bg-apple-gray-50" : "bg-white",
           )}
         >
@@ -142,8 +142,8 @@ export function CFOChatWidget({
             </Button>
           </div>
         </div>
-        {/* Chat Content */}
-        <div className="flex-1 p-4 overflow-hidden">
+        {/* Chat Content - flexible height */}
+        <div className="flex-1 p-4 overflow-hidden min-h-0">
           <ChatInterface isMaximized={isMaximized} initialMessage={initialMessage} />
         </div>
       </div>
