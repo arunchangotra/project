@@ -79,12 +79,12 @@ export function CFOChatWidget({
       {/* Chat Window Container */}
       <div
         className={cn(
-          "fixed z-50 bg-white shadow-xl rounded-lg flex flex-col overflow-hidden", // Ensure z-50 is higher than sidebar
+          "fixed z-50 bg-white shadow-xl rounded-lg flex flex-col overflow-hidden",
           "transition-all duration-300 ease-in-out",
-          // Positioning and size based on isMaximized
+          // Positioning and size based on isMaximized - increased sizes
           isMaximized
-            ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] h-[90vh] max-h-[90vh]"
-            : "bottom-8 right-8 w-[400px] h-[600px] max-h-[600px]",
+            ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] h-[95vh] max-h-[95vh]" // Increased from 90% to 95%
+            : "bottom-8 right-8 w-[450px] h-[700px] max-h-[700px]", // Increased width and height
           // Visibility
           isChatOpen ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
@@ -92,21 +92,26 @@ export function CFOChatWidget({
           transformOrigin: isMaximized ? "center" : "bottom right",
         }}
       >
-        {/* Header */}
+        {/* Header - More compact */}
         <div
           className={cn(
-            "flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0",
+            "flex items-center justify-between px-3 py-2 border-b border-gray-200 flex-shrink-0", // Reduced padding
             isMaximized ? "bg-apple-gray-50" : "bg-white",
           )}
         >
-          <h2 className="text-lg font-semibold text-gray-800">{isMaximized ? "AI Earnings Assistant" : "CFO Chat"}</h2>
-          <div className="flex space-x-2">
+          <h2 className="text-base font-semibold text-gray-800">
+            {isMaximized ? "AI Earnings Assistant" : "CFO Chat"}
+          </h2>{" "}
+          {/* Smaller title */}
+          <div className="flex space-x-1">
+            {" "}
+            {/* Reduced spacing */}
             {isMaximized ? (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={minimizeWindow}
-                className="h-8 w-8 text-gray-600 hover:bg-gray-100"
+                className="h-7 w-7 text-gray-600 hover:bg-gray-100" // Smaller buttons
                 aria-label="Minimize chat window"
               >
                 <Minimize2 className="h-4 w-4" />
@@ -116,7 +121,7 @@ export function CFOChatWidget({
                 variant="ghost"
                 size="icon"
                 onClick={maximizeWindow}
-                className="h-8 w-8 text-gray-600 hover:bg-gray-100"
+                className="h-7 w-7 text-gray-600 hover:bg-gray-100"
                 aria-label="Maximize chat window"
               >
                 <Maximize2 className="h-4 w-4" />
@@ -126,7 +131,7 @@ export function CFOChatWidget({
               variant="ghost"
               size="icon"
               onClick={exportChat}
-              className="h-8 w-8 text-gray-600 hover:bg-gray-100"
+              className="h-7 w-7 text-gray-600 hover:bg-gray-100"
               aria-label="Export chat"
             >
               <Download className="h-4 w-4" />
@@ -135,15 +140,17 @@ export function CFOChatWidget({
               variant="ghost"
               size="icon"
               onClick={closeChat}
-              className="h-8 w-8 text-gray-600 hover:bg-gray-100"
+              className="h-7 w-7 text-gray-600 hover:bg-gray-100"
               aria-label="Close chat window"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        {/* Chat Content - flexible height */}
-        <div className="flex-1 p-4 overflow-hidden min-h-0">
+        {/* Chat Content - maximized height */}
+        <div className="flex-1 p-2 overflow-hidden min-h-0">
+          {" "}
+          {/* Reduced padding */}
           <ChatInterface isMaximized={isMaximized} initialMessage={initialMessage} />
         </div>
       </div>
