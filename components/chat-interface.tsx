@@ -20,6 +20,7 @@ import {
   Target,
   Activity,
 } from "lucide-react"
+import { KPICard } from "@/components/kpi-card"
 import { quarterlyData, detailedVarianceData, peerBenchmarkData } from "@/lib/sample-data"
 import { financialRatios } from "@/lib/financial-ratios"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, Legend } from "recharts"
@@ -167,64 +168,65 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
     const currentQuarter = quarterlyData[0]
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2 mb-3">
+      <div className="space-y-6">
+        <div className="flex items-center space-x-2 mb-4">
           <BarChart3 className="h-5 w-5 text-apple-blue-600" />
-          <h3 className="text-base font-semibold text-gray-800">Q3 2024 Earnings Overview</h3>
+          <h3 className="text-lg font-semibold text-gray-800">Q3 2024 Earnings Overview</h3>
         </div>
 
-        {/* KPI Cards - More compact grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-xs text-gray-600">Revenue</div>
-            <div className="text-lg font-bold text-gray-900">${currentQuarter.revenue}M</div>
-            <div className="text-xs text-green-600">+{currentQuarter.yoyRevenue}% YoY</div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-xs text-gray-600">Net Profit</div>
-            <div className="text-lg font-bold text-gray-900">${currentQuarter.netProfit}M</div>
-            <div className="text-xs text-green-600">+{currentQuarter.yoyNetProfit}% YoY</div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-xs text-gray-600">NIM</div>
-            <div className="text-lg font-bold text-gray-900">{currentQuarter.nim}%</div>
-            <div className="text-xs text-green-600">+{(currentQuarter.yoyNim * 100).toFixed(0)}bps YoY</div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-xs text-gray-600">Cost-to-Income</div>
-            <div className="text-lg font-bold text-gray-900">{currentQuarter.costToIncome}%</div>
-            <div className="text-xs text-green-600">-1.6% YoY</div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-xs text-gray-600">EPS</div>
-            <div className="text-lg font-bold text-gray-900">${currentQuarter.eps}</div>
-            <div className="text-xs text-green-600">+{currentQuarter.yoyEps}% YoY</div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-xs text-gray-600">ROE</div>
-            <div className="text-lg font-bold text-gray-900">12.8%</div>
-            <div className="text-xs text-green-600">+0.8% YoY</div>
-          </div>
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <KPICard
+            title="Revenue"
+            value={currentQuarter.revenue}
+            change={currentQuarter.yoyRevenue}
+            changeType="YoY"
+            format="currency"
+          />
+          <KPICard
+            title="Net Profit"
+            value={currentQuarter.netProfit}
+            change={currentQuarter.yoyNetProfit}
+            changeType="YoY"
+            format="currency"
+          />
+          <KPICard
+            title="NIM"
+            value={currentQuarter.nim}
+            change={currentQuarter.yoyNim * 100}
+            changeType="YoY"
+            format="percentage"
+          />
+          <KPICard
+            title="Cost-to-Income"
+            value={currentQuarter.costToIncome}
+            change={-1.6}
+            changeType="YoY"
+            format="percentage"
+          />
+          <KPICard title="EPS" value={currentQuarter.eps} change={currentQuarter.yoyEps} changeType="YoY" />
+          <KPICard title="ROE" value={12.8} change={0.8} changeType="YoY" format="percentage" />
         </div>
 
-        {/* Historical Trend Chart - More compact */}
-        <Card className="shadow-sm rounded-lg border-none">
-          <CardHeader className="pb-2 px-3 py-2">
-            <CardTitle className="text-sm font-semibold text-gray-800">Quarterly Performance Trend</CardTitle>
+        {/* Historical Trend Chart */}
+        <Card className="shadow-md rounded-xl border-none">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold text-gray-800">Quarterly Performance Trend</CardTitle>
           </CardHeader>
-          <CardContent className="px-3 py-2">
+          <CardContent>
             <ChartContainer
               config={{
                 revenue: { label: "Revenue ($M)", color: "hsl(var(--chart-1))" },
                 netProfit: { label: "Net Profit ($M)", color: "hsl(var(--chart-2))" },
+                nim: { label: "NIM (%)", color: "hsl(var(--chart-3))" },
               }}
-              className="h-[200px]"
+              className="h-[300px]"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={quarterlyData.slice().reverse()}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="quarter" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
+                  <XAxis dataKey="quarter" />
+                  <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Legend />
                   <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} />
@@ -235,34 +237,39 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
           </CardContent>
         </Card>
 
-        {/* AI Summary - More compact */}
-        <Card className="shadow-sm rounded-lg border-none">
-          <CardHeader className="pb-2 px-3 py-2">
-            <CardTitle className="text-sm font-semibold text-gray-800">AI Performance Summary</CardTitle>
+        {/* AI Summary */}
+        <Card className="shadow-md rounded-xl border-none">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold text-gray-800">AI Performance Summary</CardTitle>
           </CardHeader>
-          <CardContent className="px-3 py-2">
-            <div className="text-xs text-gray-700 leading-relaxed space-y-2">
+          <CardContent>
+            <div className="prose max-w-none text-sm text-gray-700 leading-relaxed">
               <p>
                 <strong>Q3 2024 Performance Highlights:</strong> The bank delivered exceptional results with revenue
                 growing 8.2% YoY to $2.85B, driven by strong lending activity and optimized interest margins. Net profit
                 surged 12.5% YoY to $890M, reflecting effective cost management and strategic execution.
               </p>
-              <p>
+              <p className="mt-3">
                 <strong>Key Drivers:</strong> NIM expansion (+8bps QoQ to 3.45%) from successful loan repricing,
                 improved operational efficiency (Cost-to-Income ratio down to 58.2%), and robust EPS growth (+11.8% YoY
                 to $4.25). The bank maintains strong capital adequacy while delivering superior shareholder returns.
+              </p>
+              <p className="mt-3">
+                <strong>Strategic Outlook:</strong> Management remains focused on sustainable growth through digital
+                transformation, disciplined capital allocation, and maintaining robust risk frameworks. The strong Q3
+                performance positions the bank well for continued market leadership.
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Quick Actions - More compact */}
-        <div className="flex flex-wrap gap-1">
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleSend("Show detailed variance analysis for Q3 2024")}
-            className="rounded-full text-xs h-7 px-3"
+            className="rounded-full text-xs"
           >
             <TrendingUp className="h-3 w-3 mr-1" />
             Variance Analysis
@@ -271,7 +278,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
             variant="outline"
             size="sm"
             onClick={() => handleSend("Compare our performance with industry peers")}
-            className="rounded-full text-xs h-7 px-3"
+            className="rounded-full text-xs"
           >
             <Users className="h-3 w-3 mr-1" />
             Peer Comparison
@@ -280,7 +287,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
             variant="outline"
             size="sm"
             onClick={() => handleSend("Run what-if scenarios for next quarter")}
-            className="rounded-full text-xs h-7 px-3"
+            className="rounded-full text-xs"
           >
             <Calculator className="h-3 w-3 mr-1" />
             Scenarios
@@ -1135,19 +1142,19 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
   return (
     <div className="flex flex-col h-full">
       <Card className="shadow-lg rounded-xl border-none flex flex-col flex-1 min-h-0">
-        <CardHeader className="pb-1 flex-shrink-0 px-3 py-2"> {/* Reduced padding */}
-          <CardTitle className="text-sm font-semibold text-gray-800">AI Earnings Assistant</CardTitle> {/* Smaller title */}
+        <CardHeader className="pb-1 flex-shrink-0">
+          <CardTitle className="text-sm font-semibold text-gray-800">AI Earnings Assistant</CardTitle>
           <CardDescription className="text-xs text-gray-600">
             Comprehensive financial analysis and insights for Q3 2024
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1 min-h-0 space-y-2 px-3 py-2"> {/* Reduced padding and spacing */}
-          <ScrollArea className="flex-1 w-full border border-gray-200 rounded-xl p-3 bg-apple-gray-50 min-h-0"> {/* Reduced padding */}
-            <div className="space-y-3"> {/* Reduced spacing between messages */}
+        <CardContent className="flex flex-col flex-1 min-h-0 space-y-2">
+          <ScrollArea className="flex-1 w-full border border-gray-200 rounded-xl p-2 bg-apple-gray-50 min-h-0">
+            <div className="space-y-3">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[92%] rounded-xl p-3 shadow-sm ${
+                    className={`max-w-[92%] rounded-xl p-2.5 shadow-sm ${
                       message.type === "user"
                         ? "bg-apple-blue-600 text-white"
                         : "bg-white text-gray-900 border border-gray-200"
@@ -1157,7 +1164,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
                       {typeof message.content === "string" ? message.content : message.content}
                     </div>
                     {message.citation && (
-                      <div className="mt-2 pt-2 border-t border-gray-200 text-gray-500 text-xs">
+                      <div className="mt-1.5 pt-1.5 border-t border-gray-200 text-gray-500 text-xs">
                         <Badge
                           variant="secondary"
                           className="rounded-full px-2 py-0.5 bg-apple-gray-100 text-gray-600 border-gray-200"
@@ -1166,7 +1173,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
                         </Badge>
                       </div>
                     )}
-                    <div className="flex items-center justify-between mt-1"> {/* Reduced margin */}
+                    <div className="flex items-center justify-between mt-1.5">
                       <div className="text-xs text-gray-500">{message.timestamp.toLocaleTimeString()}</div>
                       <Button
                         variant="ghost"
@@ -1184,7 +1191,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
               ))}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-200">
+                  <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-200">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                       <div
@@ -1202,19 +1209,19 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
             </div>
           </ScrollArea>
           {/* Input field - always visible at bottom */}
-          <div className="flex space-x-2 flex-shrink-0 pt-1"> {/* Reduced padding */}
+          <div className="flex space-x-2 flex-shrink-0 pt-1">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about earnings, metrics, scenarios, or any financial analysis..."
               onKeyPress={(e) => e.key === "Enter" && handleSend(input)}
               disabled={isLoading}
-              className="rounded-full px-4 py-2 border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500 text-sm h-9\" {/* Reduced height */}
+              className="rounded-full px-4 py-2 border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500 text-sm"
             />
             <Button
               onClick={() => handleSend(input)}
               disabled={isLoading || !input.trim()}
-              className="rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 flex-shrink-0 h-9 w-9 p-0\" {/* Reduced size */}
+              className="rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 flex-shrink-0"
             >
               <Send className="h-4 w-4" />
             </Button>
