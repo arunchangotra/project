@@ -99,7 +99,7 @@ export function CFOChatWidget({
             isMaximized ? "bg-apple-gray-50" : "bg-white",
           )}
         >
-          <h2 className="text-lg font-semibold text-gray-800">{isMaximized ? "AI Earnings Assistant" : "CFO Chat"}</h2>
+         
           <div className="flex space-x-2">
             {isMaximized ? (
               <Button
