@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { AiChatInput } from "@/components/ai-chat-input"
+import { AIChatInput } from "@/components/ai-chat-input"
 import { ChatInterface } from "@/components/chat-interface"
 import { ChatSidebar } from "@/components/chat-sidebar"
 import { Navigation } from "@/components/navigation"
@@ -45,6 +45,10 @@ export default function HomePage() {
     // Handle the chat message
   }
 
+  const handleOpenChat = () => {
+    setShowChat(true)
+  }
+
   if (showChat) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -79,10 +83,7 @@ export default function HomePage() {
 
           {/* Chat Input */}
           <div className="mb-12">
-            <AiChatInput
-              onSubmit={handleChatSubmit}
-              placeholder="Ask about earnings, variances, scenarios, or any financial question..."
-            />
+            <AIChatInput onSendInitialMessage={handleChatSubmit} onOpenChat={handleOpenChat} />
           </div>
 
           {/* Quick Prompts */}

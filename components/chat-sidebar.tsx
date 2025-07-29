@@ -4,13 +4,17 @@ import type React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import {
+  X,
   MessageSquare,
-  Plus,
-  MoreHorizontal,
   Clock,
-  Star,
+  Bookmark,
+  Settings,
+  HelpCircle,
+  Wrench,
   BarChart3,
   TrendingUp,
   Calculator,
@@ -19,326 +23,274 @@ import {
   DollarSign,
   Target,
   Activity,
-  Wrench,
+  ArrowRight,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-
-interface ChatHistory {
-  id: string
-  title: string
-  timestamp: string
-  isStarred?: boolean
-  preview: string
-}
+import { cn } from "@/lib/utils"
 
 interface ChatSidebarProps {
   isOpen: boolean
-  onToggle: (isOpen: boolean) => void
+  onToggle: (open: boolean) => void
 }
 
-interface ExploreItem {
+interface ToolCard {
   id: string
   title: string
+  description: string
   icon: React.ComponentType<{ className?: string }>
   route?: string
-  action?: () => void
   isActive: boolean
-  description?: string
 }
 
 export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
   const router = useRouter()
+  const [activeSection, setActiveSection] = useState<string | null>(null)
 
-  const [chatHistory] = useState<ChatHistory[]>([
-    {
-      id: "1",
-      title: "Q3 NIM Analysis",
-      timestamp: "2 hours ago",
-      isStarred: true,
-      preview: "Why did net interest margin improve this quarter?",
-    },
-    {
-      id: "2",
-      title: "Provision Variance",
-      timestamp: "Yesterday",
-      preview: "What drove the increase in loan loss provisions?",
-    },
-    {
-      id: "3",
-      title: "Peer Comparison",
-      timestamp: "2 days ago",
-      preview: "How do we compare to industry peers on ROE?",
-    },
-    {
-      id: "4",
-      title: "Board Deck Draft",
-      timestamp: "3 days ago",
-      isStarred: true,
-      preview: "Draft executive summary for Q3 results",
-    },
-    {
-      id: "5",
-      title: "Scenario Analysis",
-      timestamp: "1 week ago",
-      preview: "What if loan growth was 15% next quarter?",
-    },
-  ])
-
-  const exploreItems: ExploreItem[] = [
+  const toolCards: ToolCard[] = [
     {
       id: "earnings-overview",
       title: "Earnings Overview",
+      description: "Get quarterly performance snapshots and KPI summaries",
       icon: BarChart3,
       route: "/dashboard",
       isActive: true,
-      description: "Get quarterly performance snapshots and KPI summaries",
     },
     {
       id: "variance-analysis",
       title: "Variance Analysis",
+      description: "Drill down into specific changes with AI explanations",
       icon: TrendingUp,
       route: "/variance",
       isActive: true,
-      description: "Drill down into specific changes with AI explanations",
     },
     {
       id: "what-if-scenarios",
       title: "What-If Scenarios",
+      description: "Simulate impact of business levers on key metrics",
       icon: Calculator,
       route: "/scenarios",
       isActive: true,
-      description: "Simulate impact of business levers on key metrics",
     },
     {
       id: "board-deck",
-      title: "Board Deck",
+      title: "Board Deck Drafting",
+      description: "Generate AI-powered narratives for presentations",
       icon: FileText,
       route: "/board-deck",
       isActive: true,
-      description: "Generate AI-powered narratives for presentations",
     },
     {
       id: "peer-comparison",
       title: "Peer Benchmarking",
+      description: "Compare performance against industry peers",
       icon: Users,
       isActive: false,
-      description: "Compare performance against industry peers",
-      action: () => {
-        /* Handle peer comparison */
-      },
     },
     {
-      id: "profitability",
+      id: "profitability-analysis",
       title: "Profitability Deep Dive",
+      description: "Analyze ROE, ROA, and margin trends",
       icon: DollarSign,
       isActive: false,
-      description: "Analyze ROE, ROA, and margin trends",
-      action: () => {
-        /* Handle profitability analysis */
-      },
     },
     {
       id: "risk-metrics",
       title: "Risk Assessment",
+      description: "Review NPL ratios, provisions, and asset quality",
       icon: Target,
       isActive: false,
-      description: "Review NPL ratios, provisions, and asset quality",
-      action: () => {
-        /* Handle risk assessment */
-      },
     },
     {
-      id: "efficiency",
+      id: "efficiency-metrics",
       title: "Operational Efficiency",
+      description: "Cost-to-income ratios and productivity metrics",
       icon: Activity,
       isActive: false,
-      description: "Cost-to-income ratios and productivity metrics",
-      action: () => {
-        /* Handle efficiency metrics */
-      },
     },
   ]
 
-  const [selectedChat, setSelectedChat] = useState<string | null>(null)
-
-  const handleExploreItemClick = (item: ExploreItem) => {
-    if (!item.isActive) return
-
-    if (item.route) {
-      router.push(item.route)
-    } else if (item.action) {
-      item.action()
+  const handleToolClick = (tool: ToolCard) => {
+    if (tool.isActive && tool.route) {
+      router.push(tool.route)
+      onToggle(false) // Close sidebar after navigation
     }
   }
 
+  const toggleSection = (section: string) => {
+    setActiveSection(activeSection === section ? null : section)
+  }
+
+  if (!isOpen) return null
+
   return (
-    <div
-      className={cn(
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-20",
-        isOpen ? "w-80" : "w-0 overflow-hidden",
-      )}
-    >
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Conversations</h2>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100">
-              <Plus className="h-4 w-4" />
+    <div className="fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 shadow-lg">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
+        <Button variant="ghost" size="icon" onClick={() => onToggle(false)} className="h-8 w-8">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <ScrollArea className="flex-1 h-[calc(100vh-80px)]">
+        <div className="p-4 space-y-6">
+          {/* Recent Conversations */}
+          <div>
+            <Button
+              variant="ghost"
+              className="w-full justify-between p-2 h-auto"
+              onClick={() => toggleSection("recent")}
+            >
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="h-4 w-4" />
+                <span className="font-medium">Recent</span>
+              </div>
+              <ArrowRight
+                className={cn("h-4 w-4 transition-transform", activeSection === "recent" ? "rotate-90" : "")}
+              />
             </Button>
+            {activeSection === "recent" && (
+              <div className="mt-2 space-y-2 pl-6">
+                <p className="text-sm text-gray-500">No recent conversations</p>
+              </div>
+            )}
           </div>
-          <Button
-            onClick={() => {
-              /* Start new chat */
-            }}
-            className="w-full bg-apple-blue-600 hover:bg-apple-blue-700 text-white rounded-lg"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Chat
+
+          <Separator />
+
+          {/* Tools Section */}
+          <div>
+            <Button
+              variant="ghost"
+              className="w-full justify-between p-2 h-auto"
+              onClick={() => toggleSection("tools")}
+            >
+              <div className="flex items-center space-x-2">
+                <Wrench className="h-4 w-4" />
+                <span className="font-medium">Tools</span>
+              </div>
+              <ArrowRight
+                className={cn("h-4 w-4 transition-transform", activeSection === "tools" ? "rotate-90" : "")}
+              />
+            </Button>
+            {activeSection === "tools" && (
+              <div className="mt-3 space-y-2">
+                {toolCards.map((tool) => {
+                  const IconComponent = tool.icon
+                  return (
+                    <Card
+                      key={tool.id}
+                      className={cn(
+                        "transition-all duration-200 border",
+                        tool.isActive
+                          ? "cursor-pointer hover:shadow-md hover:border-apple-blue-200 bg-white"
+                          : "cursor-not-allowed bg-gray-50 border-gray-200",
+                      )}
+                      onClick={() => handleToolClick(tool)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start space-x-3">
+                          <div
+                            className={cn(
+                              "p-2 rounded-lg flex-shrink-0",
+                              tool.isActive ? "bg-apple-blue-50" : "bg-gray-100",
+                            )}
+                          >
+                            <IconComponent
+                              className={cn("h-4 w-4", tool.isActive ? "text-apple-blue-600" : "text-gray-400")}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4
+                                className={cn("text-sm font-medium", tool.isActive ? "text-gray-900" : "text-gray-500")}
+                              >
+                                {tool.title}
+                              </h4>
+                              {!tool.isActive && (
+                                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                                  Coming soon
+                                </span>
+                              )}
+                            </div>
+                            <p
+                              className={cn(
+                                "text-xs mt-1 leading-relaxed",
+                                tool.isActive ? "text-gray-600" : "text-gray-400",
+                              )}
+                            >
+                              {tool.description}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* History */}
+          <div>
+            <Button
+              variant="ghost"
+              className="w-full justify-between p-2 h-auto"
+              onClick={() => toggleSection("history")}
+            >
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4" />
+                <span className="font-medium">History</span>
+              </div>
+              <ArrowRight
+                className={cn("h-4 w-4 transition-transform", activeSection === "history" ? "rotate-90" : "")}
+              />
+            </Button>
+            {activeSection === "history" && (
+              <div className="mt-2 space-y-2 pl-6">
+                <p className="text-sm text-gray-500">No conversation history</p>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Saved */}
+          <div>
+            <Button
+              variant="ghost"
+              className="w-full justify-between p-2 h-auto"
+              onClick={() => toggleSection("saved")}
+            >
+              <div className="flex items-center space-x-2">
+                <Bookmark className="h-4 w-4" />
+                <span className="font-medium">Saved</span>
+              </div>
+              <ArrowRight
+                className={cn("h-4 w-4 transition-transform", activeSection === "saved" ? "rotate-90" : "")}
+              />
+            </Button>
+            {activeSection === "saved" && (
+              <div className="mt-2 space-y-2 pl-6">
+                <p className="text-sm text-gray-500">No saved items</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div className="p-4 border-t border-gray-200 space-y-2">
+          <Button variant="ghost" className="w-full justify-start" size="sm">
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+          <Button variant="ghost" className="w-full justify-start" size="sm">
+            <HelpCircle className="h-4 w-4 mr-2" />
+            Help & Support
           </Button>
         </div>
-
-        {/* Tools Section */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center text-sm font-medium text-gray-700 mb-3">
-            <Wrench className="h-4 w-4 mr-2 text-apple-blue-600" />
-            Tools
-          </div>
-          <div className="space-y-2">
-            {exploreItems.map((item) => {
-              const IconComponent = item.icon
-              return (
-                <div
-                  key={item.id}
-                  className={cn(
-                    "relative group rounded-lg border transition-all duration-200",
-                    item.isActive
-                      ? "border-gray-200 hover:border-apple-blue-200 hover:bg-apple-blue-50 cursor-pointer"
-                      : "border-gray-100 bg-gray-50 cursor-not-allowed",
-                  )}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleExploreItemClick(item)}
-                    disabled={!item.isActive}
-                    className={cn(
-                      "w-full h-auto p-3 flex items-start justify-start text-left hover:bg-transparent",
-                      item.isActive ? "text-gray-900" : "text-gray-400",
-                    )}
-                  >
-                    <IconComponent
-                      className={cn(
-                        "h-5 w-5 mr-3 mt-0.5 flex-shrink-0",
-                        item.isActive ? "text-apple-blue-600" : "text-gray-300",
-                      )}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span
-                          className={cn(
-                            "text-sm font-medium truncate",
-                            item.isActive ? "text-gray-900" : "text-gray-400",
-                          )}
-                        >
-                          {item.title}
-                        </span>
-                        {!item.isActive && (
-                          <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full ml-2 flex-shrink-0">
-                            Coming soon
-                          </span>
-                        )}
-                      </div>
-                      <p className={cn("text-xs leading-tight", item.isActive ? "text-gray-600" : "text-gray-400")}>
-                        {item.description}
-                      </p>
-                    </div>
-                  </Button>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Chat History */}
-        <ScrollArea className="flex-1">
-          <div className="p-2">
-            {/* Today Section */}
-            <div className="mb-4">
-              <div className="flex items-center text-xs font-medium text-gray-500 mb-2 px-2">
-                <Clock className="h-3 w-3 mr-1" />
-                Today
-              </div>
-              {chatHistory.slice(0, 2).map((chat) => (
-                <div
-                  key={chat.id}
-                  className={cn(
-                    "group flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-colors duration-200 mb-1",
-                    selectedChat === chat.id ? "bg-apple-blue-50 border border-apple-blue-200" : "hover:bg-gray-50",
-                  )}
-                  onClick={() => setSelectedChat(chat.id)}
-                >
-                  <MessageSquare className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">{chat.title}</h3>
-                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {chat.isStarred && <Star className="h-3 w-3 text-yellow-500 fill-current" />}
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <MoreHorizontal className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{chat.preview}</p>
-                    <p className="text-xs text-gray-400 mt-1">{chat.timestamp}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Previous Section */}
-            <div className="mb-4">
-              <div className="flex items-center text-xs font-medium text-gray-500 mb-2 px-2">Previous</div>
-              {chatHistory.slice(2).map((chat) => (
-                <div
-                  key={chat.id}
-                  className={cn(
-                    "group flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-colors duration-200 mb-1",
-                    selectedChat === chat.id ? "bg-apple-blue-50 border border-apple-blue-200" : "hover:bg-gray-50",
-                  )}
-                  onClick={() => setSelectedChat(chat.id)}
-                >
-                  <MessageSquare className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">{chat.title}</h3>
-                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {chat.isStarred && <Star className="h-3 w-3 text-yellow-500 fill-current" />}
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <MoreHorizontal className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{chat.preview}</p>
-                    <p className="text-xs text-gray-400 mt-1">{chat.timestamp}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </ScrollArea>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-100">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>{chatHistory.length} conversations</span>
-            <Button variant="ghost" size="sm" className="text-xs">
-              Clear all
-            </Button>
-          </div>
-        </div>
-      </div>
+      </ScrollArea>
     </div>
   )
 }
