@@ -56,13 +56,7 @@ export function CFOChatWidget({
     <>
       {/* Chat Toggle Button */}
       {!isChatOpen && (
-        
-      )}
-
-      {/* Chat Window */}
-      {isChatOpen && !isMaximized && (
-        <div className="fixed bottom-6 right-6 z-40 w-96 h-[500px] bg-white rounded-lg shadow-xl border border-gray-200">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        er justify-between p-4 border-b border-gray-200">
             <h3 className="font-semibold text-gray-900">AI Assistant</h3>
             <div className="flex items-center space-x-2">
               <Button variant="ghost" size="icon" onClick={toggleMaximize} className="h-8 w-8">
