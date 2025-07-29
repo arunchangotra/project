@@ -28,6 +28,8 @@ export function ChatInterface({ isMaximized = false, initialMessage }: ChatInter
   const [isLoading, setIsLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputAreaRef = useRef<HTMLDivElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
   // Generate static response based on user input
   const generateStaticResponse = (userMessage: string): string => {
@@ -258,13 +260,44 @@ Please feel free to ask about specific financial metrics, ratios, or analysis yo
 I'm ready to dive deep into any financial topic you'd like to explore!`
   }
 
-  // Smooth scroll to bottom function
-  const scrollToBottom = () => {
+  // Enhanced scroll to bottom function that also ensures input visibility
+  const scrollToBottomAndShowInput = () => {
+    // First scroll the messages to bottom
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
         behavior: "smooth",
         block: "end",
       })
+    }
+
+    // Then ensure input area is visible
+    setTimeout(() => {
+      if (inputAreaRef.current && chatContainerRef.current) {
+        const inputRect = inputAreaRef.current.getBoundingClientRect()
+        const containerRect = chatContainerRef.current.getBoundingClientRect()
+
+        // Check if input is not fully visible
+        if (inputRect.bottom > containerRect.bottom || inputRect.top < containerRect.top) {
+          inputAreaRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          })
+        }
+      }
+    }, 300)
+  }
+
+  // Alternative scroll function for during streaming
+  const scrollDuringStreaming = () => {
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
+      if (scrollContainer) {
+        // Smooth scroll to bottom
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: "smooth",
+        })
+      }
     }
   }
 
@@ -278,12 +311,12 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
   // Auto-scroll when messages change
   useEffect(() => {
     const timer = setTimeout(() => {
-      scrollToBottom()
+      scrollToBottomAndShowInput()
     }, 100)
     return () => clearTimeout(timer)
   }, [messages])
 
-  // Simulate streaming response
+  // Simulate streaming response with enhanced scrolling
   const simulateStreamingResponse = (fullResponse: string, messageId: string) => {
     const words = fullResponse.split(" ")
     let currentIndex = 0
@@ -295,8 +328,11 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
         )
         currentIndex++
 
-        // Auto-scroll during streaming
-        setTimeout(scrollToBottom, 50)
+        // Auto-scroll during streaming - use lighter scroll method
+        if (currentIndex % 5 === 0) {
+          // Scroll every 5 words to reduce frequency
+          setTimeout(scrollDuringStreaming, 50)
+        }
       } else {
         // Streaming complete
         setMessages((prev) =>
@@ -313,7 +349,9 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
         )
         setIsLoading(false)
         clearInterval(streamingInterval)
-        scrollToBottom()
+
+        // Final scroll to ensure input is visible
+        setTimeout(scrollToBottomAndShowInput, 200)
       }
     }, 50) // Adjust speed as needed
   }
@@ -332,8 +370,8 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
     setInputValue("")
     setIsLoading(true)
 
-    // Scroll to bottom after user message
-    setTimeout(scrollToBottom, 100)
+    // Scroll to bottom after user message and ensure input stays visible
+    setTimeout(scrollToBottomAndShowInput, 100)
 
     // Create AI response placeholder
     const aiMessageId = (Date.now() + 1).toString()
@@ -374,163 +412,166 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
   }
 
   return (
-    <Card className={cn("flex flex-col", isMaximized ? "h-screen" : "h-full")}>
-      <CardHeader className="pb-3 border-b border-gray-100 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Bot className="h-5 w-5 text-apple-blue-600" />
-            <h3 className="font-semibold text-gray-900">AI Earnings Assistant</h3>
+    <div ref={chatContainerRef} className={cn("flex flex-col", isMaximized ? "h-screen" : "h-full")}>
+      <Card className="flex flex-col h-full">
+        <CardHeader className="pb-3 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Bot className="h-5 w-5 text-apple-blue-600" />
+              <h3 className="font-semibold text-gray-900">AI Earnings Assistant</h3>
+            </div>
+            <div className="text-xs text-gray-500">
+              {messages.length > 0 && `${Math.floor(messages.length / 2)} conversations`}
+            </div>
           </div>
-          <div className="text-xs text-gray-500">
-            {messages.length > 0 && `${Math.floor(messages.length / 2)} conversations`}
-          </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
-        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-          <div className="space-y-4">
-            {messages.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-sm">Start a conversation to get financial insights and analysis.</p>
-              </div>
-            )}
+        <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-sm">Start a conversation to get financial insights and analysis.</p>
+                </div>
+              )}
 
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn("flex space-x-3", message.role === "user" ? "justify-end" : "justify-start")}
-              >
-                {message.role === "assistant" && (
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn("flex space-x-3", message.role === "user" ? "justify-end" : "justify-start")}
+                >
+                  {message.role === "assistant" && (
+                    <div className="flex-shrink-0">
+                      <div className="h-8 w-8 bg-apple-blue-100 rounded-full flex items-center justify-center">
+                        <Bot className="h-4 w-4 text-apple-blue-600" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-lg p-3",
+                      message.role === "user" ? "bg-apple-blue-600 text-white" : "bg-gray-50 text-gray-900",
+                    )}
+                  >
+                    <div
+                      className="text-sm leading-relaxed prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: formatMessageContent(message.content),
+                      }}
+                    />
+
+                    {message.isStreaming && (
+                      <div className="flex items-center mt-2">
+                        <div className="flex space-x-1">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div
+                            className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.1s" }}
+                          ></div>
+                          <div
+                            className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {message.citations && !message.isStreaming && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-600 mb-2">Sources:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {message.citations.map((citation, index) => (
+                            <span key={index} className="text-xs bg-white px-2 py-1 rounded border text-gray-700">
+                              {citation}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {message.role === "assistant" && !message.isStreaming && (
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCopyMessage(message.content)}
+                            className="h-6 w-6 text-gray-500 hover:text-gray-700"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
+                            <ThumbsUp className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
+                            <ThumbsDown className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
+                            <RotateCcw className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {message.timestamp.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {message.role === "user" && (
+                    <div className="flex-shrink-0">
+                      <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-gray-600" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+                <div className="flex space-x-3 justify-start">
                   <div className="flex-shrink-0">
                     <div className="h-8 w-8 bg-apple-blue-100 rounded-full flex items-center justify-center">
                       <Bot className="h-4 w-4 text-apple-blue-600" />
                     </div>
                   </div>
-                )}
-
-                <div
-                  className={cn(
-                    "max-w-[85%] rounded-lg p-3",
-                    message.role === "user" ? "bg-apple-blue-600 text-white" : "bg-gray-50 text-gray-900",
-                  )}
-                >
-                  <div
-                    className="text-sm leading-relaxed prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{
-                      __html: formatMessageContent(message.content),
-                    }}
-                  />
-
-                  {message.isStreaming && (
-                    <div className="flex items-center mt-2">
-                      <div className="flex space-x-1">
-                        <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div
-                          className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.1s" }}
-                        ></div>
-                        <div
-                          className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {message.citations && !message.isStreaming && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <p className="text-xs text-gray-600 mb-2">Sources:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {message.citations.map((citation, index) => (
-                          <span key={index} className="text-xs bg-white px-2 py-1 rounded border text-gray-700">
-                            {citation}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {message.role === "assistant" && !message.isStreaming && (
-                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
-                      <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleCopyMessage(message.content)}
-                          className="h-6 w-6 text-gray-500 hover:text-gray-700"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
-                          <ThumbsUp className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
-                          <ThumbsDown className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
-                          <RotateCcw className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {message.role === "user" && (
-                  <div className="flex-shrink-0">
-                    <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-gray-600" />
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
-
-            {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
-              <div className="flex space-x-3 justify-start">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 bg-apple-blue-100 rounded-full flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-apple-blue-600" />
-                  </div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.1s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
 
-            {/* Invisible element to scroll to */}
-            <div ref={messagesEndRef} />
+              {/* Invisible element to scroll to */}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+
+          {/* Input area with ref for scrolling */}
+          <div ref={inputAreaRef} className="p-4 border-t border-gray-100 flex-shrink-0 bg-white">
+            <AIChatInput
+              value={inputValue}
+              onChange={setInputValue}
+              onSubmit={handleSendMessage}
+              disabled={isLoading}
+              placeholder="Ask about financial metrics, scenarios, or analysis..."
+            />
           </div>
-        </ScrollArea>
-
-        <div className="p-4 border-t border-gray-100 flex-shrink-0">
-          <AIChatInput
-            value={inputValue}
-            onChange={setInputValue}
-            onSubmit={handleSendMessage}
-            disabled={isLoading}
-            placeholder="Ask about financial metrics, scenarios, or analysis..."
-          />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
