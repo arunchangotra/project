@@ -7,6 +7,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, Calculator, FileText } from "lucide-react"
 import { AIChatInput } from "@/components/ai-chat-input"
+import { ChatInterface } from "@/components/chat-interface"
+import { ChatSidebar } from "@/components/chat-sidebar"
+import { Navigation } from "@/components/navigation"
 
 interface QuickPrompt {
   id: string
@@ -15,13 +18,11 @@ interface QuickPrompt {
   category: "analysis" | "scenario" | "reporting"
 }
 
-interface ChatDashboardProps {
-  onSendMessage?: (message: string) => void
-  onOpenChat?: () => void
-}
-
-export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboardProps) {
+export default function ChatDashboard() {
   const [inputValue, setInputValue] = useState("")
+  const [showChat, setShowChat] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [initialMessage, setInitialMessage] = useState<string | null>(null)
 
   const quickPrompts: QuickPrompt[] = [
     {
@@ -63,15 +64,17 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
   ]
 
   const handlePromptClick = (prompt: QuickPrompt) => {
-    if (onSendMessage) {
-      onSendMessage(prompt.text)
-    }
+    setInitialMessage(prompt.text)
+    setShowChat(true)
   }
 
   const handleInputSubmit = (message: string) => {
-    if (onSendMessage) {
-      onSendMessage(message)
-    }
+    setInitialMessage(message)
+    setShowChat(true)
+  }
+
+  const handleOpenChat = () => {
+    setShowChat(true)
   }
 
   const getCategoryColor = (category: string) => {
@@ -87,82 +90,105 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
     }
   }
 
+  // If chat is active, show the chat interface
+  if (showChat) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation onToggleSidebar={setIsSidebarOpen} />
+        <ChatSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+        <div className={`transition-all duration-300 ${isSidebarOpen ? "ml-80" : "ml-0"}`}>
+          <div className="p-4">
+            <ChatInterface isMaximized={true} initialMessage={initialMessage} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show the main dashboard
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-4xl mx-auto space-y-8">
-          {/* Main Header */}
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">What can I help with?</h1>
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Your AI-powered earnings assistant for banking insights, variance analysis, and strategic planning.
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation onToggleSidebar={setIsSidebarOpen} />
+      <ChatSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
 
-          {/* Chat Input */}
-          <div className="w-full max-w-2xl mx-auto">
-            <AIChatInput
-              value={inputValue}
-              onChange={setInputValue}
-              onSubmit={handleInputSubmit}
-              placeholder="Ask about earnings, run scenarios, or request analysis..."
-              className="w-full"
-            />
-          </div>
+      <div className={`transition-all duration-300 ${isSidebarOpen ? "ml-80" : "ml-0"}`}>
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1 flex items-center justify-center px-4 py-8">
+            <div className="w-full max-w-4xl mx-auto space-y-8">
+              {/* Main Header */}
+              <div className="text-center space-y-4">
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">What can I help with?</h1>
+                <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                  Your AI-powered earnings assistant for banking insights, variance analysis, and strategic planning.
+                </p>
+              </div>
 
-          {/* Quick Prompts */}
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-lg font-semibold text-gray-900">Popular questions</h2>
-              <p className="text-sm text-gray-600">Get started with these common financial analysis queries</p>
-            </div>
+              {/* Chat Input */}
+              <div className="w-full max-w-2xl mx-auto">
+                <AIChatInput
+                  value={inputValue}
+                  onChange={setInputValue}
+                  onSubmit={handleInputSubmit}
+                  placeholder="Ask about earnings, run scenarios, or request analysis..."
+                  className="w-full"
+                />
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-              {quickPrompts.map((prompt) => {
-                const IconComponent = prompt.icon
-                return (
-                  <Card
-                    key={prompt.id}
-                    className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] border border-gray-200 hover:border-apple-blue-300 h-full"
-                    onClick={() => handlePromptClick(prompt)}
-                  >
-                    <CardContent className="p-4 h-full flex flex-col">
-                      <div className="flex items-start space-x-3 flex-1">
-                        <div className="p-2 bg-apple-blue-50 rounded-lg flex-shrink-0 group-hover:bg-apple-blue-100 transition-colors">
-                          <IconComponent className="h-5 w-5 text-apple-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 leading-relaxed group-hover:text-apple-blue-900 transition-colors mb-2">
-                            {prompt.text}
-                          </p>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${getCategoryColor(prompt.category)} capitalize`}
-                          >
-                            {prompt.category}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          </div>
+              {/* Quick Prompts */}
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h2 className="text-lg font-semibold text-gray-900">Popular questions</h2>
+                  <p className="text-sm text-gray-600">Get started with these common financial analysis queries</p>
+                </div>
 
-          {/* Recent Activity Hint */}
-          <div className="text-center">
-            <div className="max-w-md mx-auto">
-              <p className="text-sm text-gray-500">
-                Start a conversation above or explore your{" "}
-                <button
-                  onClick={onOpenChat}
-                  className="text-apple-blue-600 hover:text-apple-blue-700 font-medium underline"
-                >
-                  recent conversations
-                </button>{" "}
-                to continue where you left off.
-              </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+                  {quickPrompts.map((prompt) => {
+                    const IconComponent = prompt.icon
+                    return (
+                      <Card
+                        key={prompt.id}
+                        className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] border border-gray-200 hover:border-apple-blue-300 h-full"
+                        onClick={() => handlePromptClick(prompt)}
+                      >
+                        <CardContent className="p-4 h-full flex flex-col">
+                          <div className="flex items-start space-x-3 flex-1">
+                            <div className="p-2 bg-apple-blue-50 rounded-lg flex-shrink-0 group-hover:bg-apple-blue-100 transition-colors">
+                              <IconComponent className="h-5 w-5 text-apple-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 leading-relaxed group-hover:text-apple-blue-900 transition-colors mb-2">
+                                {prompt.text}
+                              </p>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${getCategoryColor(prompt.category)} capitalize`}
+                              >
+                                {prompt.category}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Recent Activity Hint */}
+              <div className="text-center">
+                <div className="max-w-md mx-auto">
+                  <p className="text-sm text-gray-500">
+                    Start a conversation above or explore your{" "}
+                    <button
+                      onClick={handleOpenChat}
+                      className="text-apple-blue-600 hover:text-apple-blue-700 font-medium underline"
+                    >
+                      recent conversations
+                    </button>{" "}
+                    to continue where you left off.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
