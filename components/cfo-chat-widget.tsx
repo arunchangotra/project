@@ -64,10 +64,10 @@ export function CFOChatWidget({
         </Button>
       )}
 
-      {/* Chat Window */}
+      {/* Chat Window - Now with dynamic height */}
       {isChatOpen && !isMaximized && (
-        <div className="fixed bottom-6 right-6 z-40 w-96 h-[500px] bg-white rounded-lg shadow-xl border border-gray-200">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="fixed bottom-6 right-6 z-40 w-96 bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col max-h-[80vh] min-h-[400px]">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
             <h3 className="font-semibold text-gray-900">AI Assistant</h3>
             <div className="flex items-center space-x-2">
               <Button variant="ghost" size="icon" onClick={toggleMaximize} className="h-8 w-8">
@@ -78,7 +78,7 @@ export function CFOChatWidget({
               </Button>
             </div>
           </div>
-          <div className="h-[calc(100%-73px)]">
+          <div className="flex-1 min-h-0">
             <ChatInterface initialMessage={initialMessage} />
           </div>
         </div>

@@ -14,6 +14,7 @@ interface Message {
   role: "user" | "assistant"
   timestamp: Date
   citations?: string[]
+  isStreaming?: boolean
 }
 
 interface ChatInterfaceProps {
@@ -26,6 +27,7 @@ export function ChatInterface({ isMaximized = false, initialMessage }: ChatInter
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Generate static response based on user input
   const generateStaticResponse = (userMessage: string): string => {
@@ -50,7 +52,18 @@ export function ChatInterface({ isMaximized = false, initialMessage }: ChatInter
 **Forward Outlook:**
 • Expect additional 5-10 bps improvement in Q4
 • Asset repricing momentum continues
-• Deposit competition may intensify`
+• Deposit competition may intensify
+
+**Risk Considerations:**
+• Economic slowdown could impact loan demand
+• Regulatory changes may affect pricing flexibility
+• Competition for deposits increasing funding costs
+
+**Strategic Recommendations:**
+• Continue aggressive loan repricing initiatives
+• Focus on relationship-based deposit gathering
+• Monitor competitor pricing strategies closely
+• Prepare for potential margin compression in 2025`
     }
 
     if (message.includes("provision") || message.includes("loan loss")) {
@@ -72,7 +85,18 @@ export function ChatInterface({ isMaximized = false, initialMessage }: ChatInter
 **Portfolio Breakdown:**
 • SME loans: $8.1M provisions (2.1% of portfolio)
 • Retail mortgages: $2.8M provisions (0.4% of portfolio)
-• Personal loans: $1.4M provisions (3.2% of portfolio)`
+• Personal loans: $1.4M provisions (3.2% of portfolio)
+
+**Sector Analysis:**
+• **Retail/Hospitality:** 3.8% provision rate (highest risk)
+• **Manufacturing:** 1.9% provision rate (moderate risk)
+• **Professional Services:** 0.8% provision rate (lowest risk)
+• **Real Estate:** 2.4% provision rate (elevated due to market conditions)
+
+**Forward-Looking Indicators:**
+• Economic stress testing shows potential 15-20% increase in Q4
+• Early warning indicators suggest continued pressure in SME segment
+• Regulatory guidance emphasizes conservative provisioning approach`
     }
 
     if (message.includes("scenario") || message.includes("what if")) {
@@ -99,7 +123,18 @@ export function ChatInterface({ isMaximized = false, initialMessage }: ChatInter
 **Key Assumptions:**
 • Loan mix: 60% SME, 40% retail
 • No significant change in deposit mix
-• Regulatory capital ratios remain above minimums`
+• Regulatory capital ratios remain above minimums
+
+**Risk Factors:**
+• Credit quality deterioration could increase provisions
+• Funding competition may raise deposit costs
+• Regulatory capital requirements may constrain growth
+• Economic downturn could reduce loan demand
+
+**Sensitivity Analysis:**
+• **Best Case:** +$7.2M pre-tax profit (assuming lower funding costs)
+• **Worst Case:** +$2.1M pre-tax profit (assuming higher provisions)
+• **Break-even:** Growth rate of 8.5% maintains current profitability levels`
     }
 
     if (message.includes("peer") || message.includes("compare") || message.includes("roe")) {
@@ -129,7 +164,23 @@ export function ChatInterface({ isMaximized = false, initialMessage }: ChatInter
 
 **Growth Metrics:**
 • Loan Growth: 8.2% YoY (Peer avg: 6.8%)
-• Deposit Growth: 5.4% YoY (Peer avg: 4.9%)`
+• Deposit Growth: 5.4% YoY (Peer avg: 4.9%)
+
+**Efficiency Analysis:**
+• **Strengths:** Superior cost management, higher NIM
+• **Areas for Improvement:** Digital adoption, fee income diversification
+• **Competitive Position:** Strong fundamentals, well-positioned for growth
+
+**Market Position:**
+• Market share: 12.3% (3rd largest in region)
+• Branch network: 45 locations (peer avg: 38)
+• Digital adoption: 78% (peer avg: 71%)
+
+**Strategic Implications:**
+• Maintain cost discipline advantage
+• Leverage strong capital position for growth
+• Focus on digital transformation initiatives
+• Consider strategic acquisitions to gain scale`
     }
 
     if (message.includes("board") || message.includes("executive") || message.includes("summary")) {
@@ -162,10 +213,26 @@ export function ChatInterface({ isMaximized = false, initialMessage }: ChatInter
 • SME lending growth: 11.2% YoY
 • ESG initiatives on track
 
+**Market Environment:**
+• Interest rate environment remains supportive
+• Economic indicators show mixed signals
+• Competitive landscape intensifying
+
 **Outlook:**
 • Cautiously optimistic for Q4
 • Continued NIM expansion expected
-• Monitoring economic headwinds`
+• Monitoring economic headwinds
+
+**Key Priorities:**
+• Maintain asset quality standards
+• Execute digital transformation roadmap
+• Optimize capital allocation
+• Strengthen competitive positioning
+
+**Regulatory Updates:**
+• All regulatory requirements met
+• Capital ratios well above minimums
+• Stress test results favorable`
     }
 
     // Default response
@@ -179,7 +246,26 @@ I'm here to help with financial analysis and earnings insights. I can assist wit
 • **Board Reporting** - Executive summaries and presentations
 • **Risk Assessment** - Credit quality and provision analysis
 
-Please feel free to ask about specific financial metrics, ratios, or analysis you'd like me to help with. I have access to Q3 2024 financial data and can provide detailed insights.`
+Please feel free to ask about specific financial metrics, ratios, or analysis you'd like me to help with. I have access to Q3 2024 financial data and can provide detailed insights.
+
+**Popular Questions:**
+• Why did NIM improve this quarter?
+• What drove the increase in provisions?
+• How do we compare to peers on ROE?
+• What would 15% loan growth mean for profitability?
+• Can you generate an executive summary for the board?
+
+I'm ready to dive deep into any financial topic you'd like to explore!`
+  }
+
+  // Smooth scroll to bottom function
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      })
+    }
   }
 
   // Handle initial message
@@ -189,15 +275,48 @@ Please feel free to ask about specific financial metrics, ratios, or analysis yo
     }
   }, [initialMessage])
 
-  // Auto-scroll to bottom when new messages are added
+  // Auto-scroll when messages change
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight
-      }
-    }
+    const timer = setTimeout(() => {
+      scrollToBottom()
+    }, 100)
+    return () => clearTimeout(timer)
   }, [messages])
+
+  // Simulate streaming response
+  const simulateStreamingResponse = (fullResponse: string, messageId: string) => {
+    const words = fullResponse.split(" ")
+    let currentIndex = 0
+    const streamingInterval = setInterval(() => {
+      if (currentIndex < words.length) {
+        const partialResponse = words.slice(0, currentIndex + 1).join(" ")
+        setMessages((prev) =>
+          prev.map((msg) => (msg.id === messageId ? { ...msg, content: partialResponse, isStreaming: true } : msg)),
+        )
+        currentIndex++
+
+        // Auto-scroll during streaming
+        setTimeout(scrollToBottom, 50)
+      } else {
+        // Streaming complete
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId
+              ? {
+                  ...msg,
+                  content: fullResponse,
+                  isStreaming: false,
+                  citations: ["Q3 2024 Financial Statements", "Internal Risk Reports", "Peer Analysis Database"],
+                }
+              : msg,
+          ),
+        )
+        setIsLoading(false)
+        clearInterval(streamingInterval)
+        scrollToBottom()
+      }
+    }, 50) // Adjust speed as needed
+  }
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return
@@ -213,19 +332,29 @@ Please feel free to ask about specific financial metrics, ratios, or analysis yo
     setInputValue("")
     setIsLoading(true)
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: generateStaticResponse(message),
-        role: "assistant",
-        timestamp: new Date(),
-        citations: ["Q3 2024 Financial Statements", "Internal Risk Reports", "Peer Analysis Database"],
-      }
+    // Scroll to bottom after user message
+    setTimeout(scrollToBottom, 100)
 
+    // Create AI response placeholder
+    const aiMessageId = (Date.now() + 1).toString()
+    const aiResponse: Message = {
+      id: aiMessageId,
+      content: "",
+      role: "assistant",
+      timestamp: new Date(),
+      isStreaming: true,
+    }
+
+    // Add empty AI message
+    setTimeout(() => {
       setMessages((prev) => [...prev, aiResponse])
-      setIsLoading(false)
-    }, 1500)
+
+      // Start streaming after a short delay
+      setTimeout(() => {
+        const fullResponse = generateStaticResponse(message)
+        simulateStreamingResponse(fullResponse, aiMessageId)
+      }, 500)
+    }, 300)
   }
 
   const handleCopyMessage = (content: string) => {
@@ -237,30 +366,34 @@ Please feel free to ask about specific financial metrics, ratios, or analysis yo
     return content
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/^## (.*$)/gm, '<h3 class="text-lg font-semibold text-gray-900 mb-2">$1</h3>')
-      .replace(/^• (.*$)/gm, '<li class="ml-4">$1</li>')
+      .replace(/^## (.*$)/gm, '<h3 class="text-lg font-semibold text-gray-900 mb-3 mt-4 first:mt-0">$1</h3>')
+      .replace(/^### (.*$)/gm, '<h4 class="text-base font-semibold text-gray-800 mb-2 mt-3">$1</h4>')
+      .replace(/^• (.*$)/gm, '<li class="ml-4 mb-1">$1</li>')
+      .replace(/\n\n/g, "<br><br>")
       .replace(/\n/g, "<br>")
   }
 
   return (
-    <Card className={cn("flex flex-col", isMaximized ? "h-screen" : "h-[600px]")}>
-      <CardHeader className="pb-1 border-b border-gray-100">
+    <Card className={cn("flex flex-col", isMaximized ? "h-screen" : "h-full")}>
+      <CardHeader className="pb-3 border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Bot className="h-5 w-5 text-apple-blue-600" />
             <h3 className="font-semibold text-gray-900">AI Earnings Assistant</h3>
           </div>
-          <div className="text-xs text-gray-500">{messages.length > 0 && `${messages.length} messages`}</div>
+          <div className="text-xs text-gray-500">
+            {messages.length > 0 && `${Math.floor(messages.length / 2)} conversations`}
+          </div>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0">
-        <ScrollArea ref={scrollAreaRef} className="flex-1 p-2">
-          <div className="space-y-3">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+          <div className="space-y-4">
             {messages.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>Start a conversation to get financial insights and analysis.</p>
+                <p className="text-sm">Start a conversation to get financial insights and analysis.</p>
               </div>
             )}
 
@@ -279,20 +412,36 @@ Please feel free to ask about specific financial metrics, ratios, or analysis yo
 
                 <div
                   className={cn(
-                    "max-w-[92%] rounded-lg p-2.5",
+                    "max-w-[85%] rounded-lg p-3",
                     message.role === "user" ? "bg-apple-blue-600 text-white" : "bg-gray-50 text-gray-900",
                   )}
                 >
                   <div
-                    className="text-sm leading-relaxed"
+                    className="text-sm leading-relaxed prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{
                       __html: formatMessageContent(message.content),
                     }}
                   />
 
-                  {message.citations && (
-                    <div className="mt-1.5 pt-1.5 border-t border-gray-200">
-                      <p className="text-xs text-gray-600 mb-1">Sources:</p>
+                  {message.isStreaming && (
+                    <div className="flex items-center mt-2">
+                      <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div
+                          className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.1s" }}
+                        ></div>
+                        <div
+                          className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {message.citations && !message.isStreaming && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-600 mb-2">Sources:</p>
                       <div className="flex flex-wrap gap-1">
                         {message.citations.map((citation, index) => (
                           <span key={index} className="text-xs bg-white px-2 py-1 rounded border text-gray-700">
@@ -303,24 +452,24 @@ Please feel free to ask about specific financial metrics, ratios, or analysis yo
                     </div>
                   )}
 
-                  {message.role === "assistant" && (
-                    <div className="flex items-center justify-between mt-1.5">
+                  {message.role === "assistant" && !message.isStreaming && (
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
                       <div className="flex items-center space-x-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleCopyMessage(message.content)}
-                          className="h-5 w-5 text-gray-500 hover:text-gray-700"
+                          className="h-6 w-6 text-gray-500 hover:text-gray-700"
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
                           <ThumbsUp className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
                           <ThumbsDown className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
                           <RotateCcw className="h-3 w-3" />
                         </Button>
                       </div>
@@ -344,14 +493,14 @@ Please feel free to ask about specific financial metrics, ratios, or analysis yo
               </div>
             ))}
 
-            {isLoading && (
+            {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
               <div className="flex space-x-3 justify-start">
                 <div className="flex-shrink-0">
                   <div className="h-8 w-8 bg-apple-blue-100 rounded-full flex items-center justify-center">
                     <Bot className="h-4 w-4 text-apple-blue-600" />
                   </div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-2.5">
+                <div className="bg-gray-50 rounded-lg p-3">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                     <div
@@ -366,10 +515,13 @@ Please feel free to ask about specific financial metrics, ratios, or analysis yo
                 </div>
               </div>
             )}
+
+            {/* Invisible element to scroll to */}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
 
-        <div className="p-2 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100 flex-shrink-0">
           <AIChatInput
             value={inputValue}
             onChange={setInputValue}
