@@ -2,15 +2,13 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
+import { ChatSidebar } from "@/components/chat-sidebar"
 import { CFOChatWidget } from "@/components/cfo-chat-widget"
 import { cn } from "@/lib/utils"
 
-const inter = Inter({ subsets: ["latin"] })
-
-export default function ClientLayout({
+export function ClientLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
@@ -41,41 +39,39 @@ export default function ClientLayout({
     }
   }, [isChatOpen, initialChatMessage])
 
-  // Add this function to handle sidebar toggle
+  // Handle sidebar toggle
   const handleSidebarToggle = (isOpen: boolean) => {
     setIsSidebarOpen(isOpen)
   }
 
   return (
-    <html lang="en">
-      <body className={cn(inter.className, isChatMaximized && "overflow-hidden")}>
-        <div className="flex flex-col min-h-screen bg-gray-50">
-          <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-lg supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm">
-            <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
-              <Navigation onSidebarToggle={handleSidebarToggle} />
-            </div>
-          </header>
-          <main
-            className={cn(
-              "flex-1 transition-all duration-300",
-              isSidebarOpen
-                ? "ml-80 mr-8 px-4 md:px-6 py-8" // When sidebar is open: left margin for sidebar space, right margin for balance, normal padding
-                : "container mx-auto py-8 px-4 md:px-6", // When sidebar is closed: normal container behavior
-            )}
-          >
-            {children}
-          </main>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Single Navigation Header */}
+      <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-lg supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
+          <Navigation onSidebarToggle={handleSidebarToggle} />
         </div>
+      </header>
 
-        {/* Floating CFO Chat Widget - always available */}
-        <CFOChatWidget
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
-          isMaximized={isChatMaximized}
-          setIsMaximized={setIsChatMaximized}
-          initialMessage={initialChatMessage}
-        />
-      </body>
-    </html>
+      {/* Chat Sidebar */}
+      <ChatSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+
+      {/* Main Content */}
+      <main className={cn("flex-1 transition-all duration-300", isSidebarOpen ? "ml-80" : "ml-0")}>{children}</main>
+
+      {/* Overlay for mobile */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black/20 z-10 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
+      )}
+
+      {/* Floating CFO Chat Widget - always available */}
+      <CFOChatWidget
+        isChatOpen={isChatOpen}
+        setIsChatOpen={setIsChatOpen}
+        isMaximized={isChatMaximized}
+        setIsMaximized={setIsChatMaximized}
+        initialMessage={initialChatMessage}
+      />
+    </div>
   )
 }

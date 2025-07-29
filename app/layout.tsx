@@ -1,11 +1,15 @@
 import type React from "react"
 import type { Metadata } from "next"
-import ClientLayout from "./ClientLayout"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { ClientLayout } from "./ClientLayout"
+
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "AI Earnings Assistant",
-  description: "AI-powered financial insights for banking CFOs and FP&A teams.",
-  generator: "v0.dev",
+  description: "AI-powered financial analysis and earnings insights for CFOs",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -13,8 +17,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return <ClientLayout>{children}</ClientLayout>
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <ClientLayout>{children}</ClientLayout>
+      </body>
+    </html>
+  )
 }
-
-
-import './globals.css'
