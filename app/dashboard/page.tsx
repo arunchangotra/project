@@ -1,107 +1,141 @@
 "use client"
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { KPICard } from "@/components/kpi-card"
-import { sampleKPIs } from "@/lib/sample-data"
-import { BarChart3, TrendingUp, DollarSign } from "lucide-react"
+import { quarterlyData } from "@/lib/sample-data"
+import { Button } from "@/components/ui/button"
+import { MessageSquare, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
-export default function DashboardPage() {
+export default function Dashboard() {
+  const currentQuarter = quarterlyData[0]
+
+  const handleAskAI = (question: string) => {
+    // This would trigger the chat interface with a pre-filled question
+    console.log("Ask AI:", question)
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">Earnings Overview</h1>
-          <p className="text-gray-600">Get quarterly performance snapshots and KPI summaries</p>
+    <div className="space-y-8">
+      {/* Header with Back Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button asChild variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Chat
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Earnings Overview</h1>
+            <p className="text-gray-600">Q3 2024 Financial Performance</p>
+          </div>
         </div>
-
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {sampleKPIs.map((kpi, index) => (
-            <KPICard
-              key={index}
-              title={kpi.title}
-              value={kpi.value}
-              change={kpi.change}
-              trend={kpi.trend}
-              description={kpi.description}
-            />
-          ))}
-        </div>
-
-        {/* Charts and Analysis */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5" />
-                <span>Quarterly Trends</span>
-              </CardTitle>
-              <CardDescription>Key metrics over the last 4 quarters</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                <p className="text-gray-500">Chart visualization would appear here</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5" />
-                <span>Performance Highlights</span>
-              </CardTitle>
-              <CardDescription>Key achievements this quarter</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                <div>
-                  <p className="font-medium">NIM Expansion</p>
-                  <p className="text-sm text-gray-600">12 bps improvement driven by yield optimization</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                <div>
-                  <p className="font-medium">Cost Efficiency</p>
-                  <p className="text-sm text-gray-600">CIR improved by 180 bps through operational excellence</p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
-                <div>
-                  <p className="font-medium">Asset Quality</p>
-                  <p className="text-sm text-gray-600">NPL ratio decreased to 1.8%, lowest in 3 years</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Additional Insights */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5" />
-              <span>AI Insights</span>
-            </CardTitle>
-            <CardDescription>Automated analysis and recommendations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">Key Observations</h4>
-              <ul className="text-blue-800 text-sm space-y-1">
-                <li>• Strong momentum in SME lending with 24% YoY growth</li>
-                <li>• Digital channels now account for 78% of transactions</li>
-                <li>• Credit costs remain well-controlled at 0.35% of advances</li>
-                <li>• Capital adequacy at 16.8% provides growth flexibility</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+        <Badge variant="secondary" className="text-sm px-3 py-1 rounded-full bg-apple-gray-200 text-gray-700">
+          Last Updated: Nov 15 2024
+        </Badge>
       </div>
+
+      {/* Quick AI Questions */}
+      <Card className="shadow-lg rounded-xl border-none bg-gradient-to-r from-apple-blue-50 to-indigo-50">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
+            <MessageSquare className="h-5 w-5 text-apple-blue-600" />
+            <span>Ask AI about this data</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {[
+              "Why did revenue grow 8.2% this quarter?",
+              "What's driving the NIM improvement?",
+              "How does our ROE compare to peers?",
+              "Explain the cost-to-income improvement",
+            ].map((question, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                onClick={() => handleAskAI(question)}
+                className="rounded-full border-apple-blue-300 text-apple-blue-700 hover:bg-apple-blue-100 bg-white/80"
+              >
+                {question}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* KPI Snapshot */}
+      <section>
+        <h2 className="text-2xl font-semibold mb-6 text-gray-800">Quarterly Snapshot</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <KPICard
+            title="Revenue"
+            value={currentQuarter.revenue}
+            change={currentQuarter.yoyRevenue}
+            changeType="YoY"
+            format="currency"
+          />
+          <KPICard
+            title="Net Profit"
+            value={currentQuarter.netProfit}
+            change={currentQuarter.yoyNetProfit}
+            changeType="YoY"
+            format="currency"
+          />
+          <KPICard
+            title="NIM"
+            value={currentQuarter.nim}
+            change={currentQuarter.yoyNim * 100}
+            changeType="YoY"
+            format="percentage"
+          />
+          <KPICard
+            title="Cost-to-Income"
+            value={currentQuarter.costToIncome}
+            change={-1.6}
+            changeType="YoY"
+            format="percentage"
+          />
+          <KPICard title="EPS" value={currentQuarter.eps} change={currentQuarter.yoyEps} changeType="YoY" />
+        </div>
+      </section>
+
+      {/* AI Summary */}
+      <Card className="shadow-lg rounded-xl border-none">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-xl font-semibold text-gray-800">AI Summary</CardTitle>
+            <p className="text-gray-600">Automated quarterly performance analysis</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleAskAI("Explain this quarter's performance in detail")}
+            className="rounded-full border-apple-blue-300 text-apple-blue-700 hover:bg-apple-blue-50"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Ask AI
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="prose max-w-none text-gray-700 leading-relaxed">
+            <p>
+              <strong>Q3 2024 Performance Summary:</strong> This quarter, revenue rose by 8.2% YoY to $2.85B, driven
+              primarily by retail deposit inflows and improved lending margins in the SME segment. Net profit increased
+              12.5% YoY to $890M, benefiting from strong fee income growth and disciplined cost management. Net Interest
+              Margin improved 8bps QoQ to 3.45%, reflecting successful repricing of the loan portfolio amid rising rate
+              environment.
+            </p>
+            <p className="mt-4">
+              <strong>Key Highlights:</strong> Cost-to-income ratio improved to 58.2% from 59.8% in Q2, demonstrating
+              operational efficiency gains. However, loan loss provisions increased 27.6% QoQ due to cautious stance on
+              commercial real estate exposure. EPS grew 11.8% YoY to $4.25, exceeding analyst expectations of $4.10.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

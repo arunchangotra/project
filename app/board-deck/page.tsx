@@ -1,13 +1,17 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Download, Eye, Edit, Sparkles } from "lucide-react" // Import Settings2 for the settings icon
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { RefreshCw, MessageSquareText, Settings2, Upload, FileText, Download } from "lucide-react" // Import Settings2 for the settings icon
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input" // Import Input for target word count
+import { Label } from "@/components/ui/label" // Import Label
+import { MetricMultiSelect } from "@/components/metric-multi-select" // Re-use multi-select
 import { financialRatios } from "@/lib/financial-ratios" // Import financial ratios
-import { Badge } from "@/components/ui/badge"
 
 // Helper function to convert markdown-like content to HTML
 const convertMarkdownToHtml = (markdown: string): string => {
@@ -73,9 +77,6 @@ export default function BoardDeckDrafting() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResults, setAnalysisResults] = useState<string | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("quarterly")
-  const [customPrompt, setCustomPrompt] = useState("")
-  const [isGenerating, setIsGenerating] = useState(false)
 
   const defaultExecutiveContent = `**Q3 2024 Financial Performance Summary: Driving Sustainable Growth**
 
@@ -125,33 +126,6 @@ We remain confident in our ability to navigate future challenges and capitalize 
   const generatedWordCount = useMemo(() => calculateWordCount(content), [content])
   const generatedReadabilityScore = useMemo(() => simulateReadabilityScore(), [content])
 
-  const templates = [
-    {
-      id: "quarterly",
-      name: "Quarterly Results",
-      description: "Comprehensive quarterly performance presentation",
-      slides: 12,
-    },
-    {
-      id: "strategic",
-      name: "Strategic Update",
-      description: "Strategic initiatives and progress update",
-      slides: 8,
-    },
-    {
-      id: "risk",
-      name: "Risk Review",
-      description: "Credit risk and asset quality assessment",
-      slides: 10,
-    },
-    {
-      id: "budget",
-      name: "Budget Review",
-      description: "Annual budget vs actual performance",
-      slides: 15,
-    },
-  ]
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -199,6 +173,40 @@ We remain confident in our ability to navigate future challenges and capitalize 
       setAnalysisResults(mockAnalysis)
       setIsAnalyzing(false)
     }, 2000)
+  }
+
+  const generatePowerPoint = () => {
+    // Simulate PowerPoint generation
+    const pptContent = `PowerPoint Presentation: ${selectedQuarter} Board Deck
+
+  Slide 1: Executive Summary
+  ${content.substring(0, 200)}...
+
+  Slide 2: Financial Highlights
+  - Revenue: Performance metrics
+  - Profitability: Key indicators
+  - Capital: Strength measures
+
+  Slide 3: Strategic Initiatives
+  - Growth drivers
+  - Operational efficiency
+  - Risk management
+
+  Slide 4: Outlook & Priorities
+  - Forward-looking statements
+  - Strategic focus areas
+  - Key milestones
+
+  [Additional slides would be generated based on content length and structure]`
+
+    const blob = new Blob([pptContent], {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `board-deck-${selectedQuarter.replace(" ", "-").toLowerCase()}.pptx`
+    a.click()
   }
 
   const applyAnalystFormat = () => {
@@ -357,48 +365,6 @@ The Q3 results underscore the effectiveness of our diversified business model an
     setContent(dynamicContent)
   }
 
-  const handleGenerate = () => {
-    setIsGenerating(true)
-    // Simulate generation
-    setTimeout(() => {
-      setIsGenerating(false)
-    }, 3000)
-  }
-
-  const generatePowerPoint = () => {
-    // Simulate PowerPoint generation
-    const pptContent = `PowerPoint Presentation: ${selectedQuarter} Board Deck
-
-  Slide 1: Executive Summary
-  ${content.substring(0, 200)}...
-
-  Slide 2: Financial Highlights
-  - Revenue: Performance metrics
-  - Profitability: Key indicators
-  - Capital: Strength measures
-
-  Slide 3: Strategic Initiatives
-  - Growth drivers
-  - Operational efficiency
-  - Risk management
-
-  Slide 4: Outlook & Priorities
-  - Forward-looking statements
-  - Strategic focus areas
-  - Key milestones
-
-  [Additional slides would be generated based on content length and structure]`
-
-    const blob = new Blob([pptContent], {
-      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `board-deck-${selectedQuarter.replace(" ", "-").toLowerCase()}.pptx`
-    a.click()
-  }
-
   const exportToPDF = () => {
     const blob = new Blob([content], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
@@ -418,140 +384,361 @@ The Q3 results underscore the effectiveness of our diversified business model an
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="space-y-2">
+    <div className="space-y-6">
+      {" "}
+      {/* Reduced overall spacing */}
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        {" "}
+        {/* Reduced margin-bottom */}
+        <div>
           <h1 className="text-3xl font-bold text-gray-900">Board Deck Drafting Assistant</h1>
           <p className="text-base text-gray-600 mt-1">Generate narrative for board presentation</p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Template Selection */}
-          <div className="lg:col-span-1 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Select Template</CardTitle>
-                <CardDescription>Choose a presentation template</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {templates.map((template) => (
-                  <div
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(template.id)}
-                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedTemplate === template.id
-                        ? "border-apple-blue-500 bg-apple-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-medium">{template.name}</h4>
-                      <Badge variant="secondary">{template.slides} slides</Badge>
-                    </div>
-                    <p className="text-sm text-gray-600">{template.description}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+      </div>
+      {/* User Prompt Input */}
+      <Card className="shadow-lg rounded-xl border-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
+            <MessageSquareText className="h-5 w-5 text-apple-blue-600" />
+            <span>Content Request & Format</span>
+          </CardTitle>
+          <CardDescription className="text-gray-600">
+            Describe your requirements or upload an existing analyst report to match its format
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0 pb-4 px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Text Input - Left Side */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Content Requirements</Label>
+              <Textarea
+                value={userPrompt}
+                onChange={(e) => setUserPrompt(e.target.value)}
+                placeholder="e.g., 'Focus on our strong NIM growth and capital adequacy, and briefly mention challenges in fee income.' or 'Draft a summary for the audit committee, highlighting compliance and risk controls.'"
+                className="min-h-[120px] rounded-lg border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500 text-gray-800 p-3"
+              />
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Custom Instructions</CardTitle>
-                <CardDescription>Add specific requirements</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="e.g., Focus on digital transformation initiatives, include peer comparisons..."
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  className="min-h-[100px]"
-                />
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="w-full mt-4 bg-apple-blue-600 hover:bg-apple-blue-700"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Generate Deck
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Preview Area */}
-          <div className="lg:col-span-2">
-            <Card className="h-full">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Presentation Preview</CardTitle>
-                    <CardDescription>AI-generated board presentation</CardDescription>
+            {/* File Upload - Right Side */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Format Reference</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors min-h-[120px] flex flex-col justify-center">
+                <div className="text-center">
+                  <Upload className="mx-auto h-6 w-6 text-gray-400 mb-2" />
+                  <div className="text-sm text-gray-600 mb-1">
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer text-apple-blue-600 hover:text-apple-blue-700 font-medium"
+                    >
+                      Upload analyst report
+                    </label>
+                    <span className="text-gray-500"> or drag and drop</span>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
-                      Preview
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                  </div>
+                  <p className="text-xs text-gray-500">PDF, Word, or text files up to 10MB</p>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={handleFileUpload}
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                {isGenerating ? (
-                  <div className="flex items-center justify-center h-96">
-                    <div className="text-center space-y-4">
-                      <Sparkles className="h-12 w-12 text-apple-blue-600 animate-spin mx-auto" />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Generating Your Presentation</h3>
-                        <p className="text-gray-600">AI is crafting your board deck...</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {Array.from({ length: 6 }, (_, i) => (
-                        <div
-                          key={i}
-                          className="aspect-[4/3] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center"
-                        >
-                          <div className="text-center">
-                            <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500">Slide {i + 1}</p>
-                          </div>
-                        </div>
-                      ))}
+
+                {uploadedFile && (
+                  <div className="mt-3 p-3 bg-apple-gray-100 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4 text-apple-blue-600" />
+                      <span className="text-sm font-medium text-gray-800">{uploadedFile.name}</span>
+                      <span className="text-xs text-gray-500">({(uploadedFile.size / 1024).toFixed(1)} KB)</span>
                     </div>
 
-                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                      <h4 className="font-medium text-amber-900 mb-2">Ready to Generate</h4>
-                      <p className="text-amber-800 text-sm">
-                        Select a template and click "Generate Deck" to create your AI-powered board presentation.
-                      </p>
-                    </div>
+                    {isAnalyzing && (
+                      <div className="mt-2 text-sm text-apple-blue-600">Analyzing document structure and format...</div>
+                    )}
+
+                    {analysisResults && (
+                      <div className="mt-3">
+                        <div className="text-xs text-gray-600 mb-2">Analysis Complete:</div>
+                        <div className="text-xs text-gray-700 bg-white p-2 rounded border max-h-24 overflow-y-auto">
+                          {analysisResults.split("\n").map((line, index) => (
+                            <div key={index}>{line}</div>
+                          ))}
+                        </div>
+                        <Button
+                          onClick={applyAnalystFormat}
+                          size="sm"
+                          className="mt-2 bg-apple-blue-600 hover:bg-apple-blue-700 text-white rounded-full"
+                        >
+                          Apply This Format
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+      {/* Controls */}
+      <Card className="shadow-lg rounded-xl border-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
+            <Settings2 className="h-5 w-5 text-apple-blue-600" />
+            <span>Generation Settings</span>
+          </CardTitle>
+          <CardDescription className="text-gray-600">Configure the content generation parameters</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0 pb-4 px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {" "}
+            {/* Adjusted grid for more features */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Quarter</Label>
+              <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
+                <SelectTrigger className="rounded-lg border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500 h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg shadow-md">
+                  <SelectItem value="Q3 2024">Q3 2024</SelectItem>
+                  <SelectItem value="Q2 2024">Q2 2024</SelectItem>
+                  <SelectItem value="Q1 2024">Q1 2024</SelectItem>
+                  <SelectItem value="Q4 2023">Q4 2023</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Tone</Label>
+              <Select value={selectedTone} onValueChange={setSelectedTone}>
+                <SelectTrigger className="rounded-lg border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500 h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg shadow-md">
+                  <SelectItem value="Formal">Formal</SelectItem>
+                  <SelectItem value="Executive">Executive</SelectItem>
+                  <SelectItem value="Analytical">Analytical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Target Audience</Label>
+              <Select value={selectedAudience} onValueChange={setSelectedAudience}>
+                <SelectTrigger className="rounded-lg border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500 h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg shadow-md">
+                  <SelectItem value="Board of Directors">Board of Directors</SelectItem>
+                  <SelectItem value="Investors">Investors</SelectItem>
+                  <SelectItem value="Regulators">Regulators</SelectItem>
+                  <SelectItem value="Internal Team">Internal Team</SelectItem>
+                  <SelectItem value="Analysts">Analysts</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Key Metrics to Emphasize</Label>
+              <MetricMultiSelect
+                metrics={financialRatios}
+                selectedMetrics={selectedKeyMetrics}
+                onSelectChange={setSelectedKeyMetrics}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="target-word-count" className="text-sm font-medium text-gray-700">
+                Target Word Count
+              </Label>
+              <Input
+                id="target-word-count"
+                type="number"
+                value={targetWordCount}
+                onChange={(e) => setTargetWordCount(e.target.value)}
+                placeholder="e.g., 1000"
+                className="rounded-lg border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500 h-10"
+              />
+            </div>
+            <div className="space-y-2 flex flex-col justify-end">
+              {" "}
+              {/* Align button to bottom */}
+              <Label className="text-sm font-medium text-gray-700 opacity-0">Actions</Label>
+              <Button
+                onClick={generateContent}
+                className="w-full flex items-center space-x-2 rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 h-10"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Regenerate</span>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      {/* Content Editor */}
+      <Card className="shadow-lg rounded-xl border-none">
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <div>
+            <CardTitle className="text-xl font-semibold text-gray-800">Board Presentation Content</CardTitle>
+            <CardDescription className="text-gray-600">
+              AI-generated content based on {selectedQuarter} financial data
+            </CardDescription>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600 mr-2">
+              Words: <span className="font-semibold">{generatedWordCount}</span>
+            </span>
+            <span className="text-sm text-gray-600 mr-4">
+              Readability: <span className="font-semibold">{generatedReadabilityScore}</span>
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={generatePowerPoint}
+              className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 h-8 px-3 bg-transparent"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              Export PPT
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToPDF}
+              className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 h-8 px-3 bg-transparent"
+            >
+              Export PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToWord}
+              className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 h-8 px-3 bg-transparent"
+            >
+              Export Word
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const blob = new Blob([content], { type: "text/markdown" })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement("a")
+                a.href = url
+                a.download = `board-deck-${selectedQuarter.replace(" ", "-").toLowerCase()}.md`
+                a.click()
+              }}
+              className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 h-8 px-3"
+            >
+              Export Markdown
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 pb-4 px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Preview Panel */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-800">Preview</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const htmlContent = convertMarkdownToHtml(content)
+                    const printWindow = window.open("", "_blank")
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>Board Deck Preview</title>
+                            <style>
+                              body { 
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                                line-height: 1.7; 
+                                max-width: 800px; 
+                                margin: 0 auto; 
+                                padding: 40px 20px; 
+                                color: #374151;
+                                font-size: 0.95rem;
+                              }
+                              h1 { 
+                                color: #1f2937; 
+                                font-size: 1.5rem; 
+                                font-weight: bold; 
+                                margin: 1.5rem 0 1rem 0; 
+                                border-bottom: 2px solid #3b82f6; 
+                                padding-bottom: 0.5rem; 
+                              }
+                              h2 { 
+                                color: #374151; 
+                                font-size: 1.25rem; 
+                                font-weight: 600; 
+                                margin: 1.25rem 0 0.75rem 0; 
+                              }
+                              h3 { 
+                                color: #4b5563; 
+                                font-size: 1.1rem; 
+                                font-weight: 600; 
+                                margin: 1rem 0 0.5rem 0; 
+                              }
+                              strong { 
+                                color: #1f2937; 
+                                font-weight: 600; 
+                              }
+                              ul { 
+                                margin: 1rem 0; 
+                                padding-left: 1.5rem; 
+                                list-style-type: disc; 
+                              }
+                              li { 
+                                margin-bottom: 0.5rem; 
+                                line-height: 1.6; 
+                              }
+                              p { 
+                                margin: 1rem 0; 
+                                line-height: 1.7; 
+                              }
+                              .highlight { 
+                                background-color: #dbeafe; 
+                                color: #1e40af; 
+                                padding: 2px 6px; 
+                                border-radius: 4px; 
+                                font-weight: 600; 
+                              }
+                            </style>
+                          </head>
+                          <body>${htmlContent}</body>
+                        </html>
+                      `)
+                      printWindow.document.close()
+                    }
+                  }}
+                  className="text-apple-blue-600 hover:text-apple-blue-700"
+                >
+                  Full Screen Preview
+                </Button>
+              </div>
+              <div
+                className="bg-white border border-gray-200 rounded-lg p-8 max-h-[500px] overflow-y-auto"
+                style={{
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontSize: "0.95rem",
+                  lineHeight: "1.7",
+                  color: "#374151",
+                }}
+                dangerouslySetInnerHTML={{ __html: convertMarkdownToHtml(content) }}
+              />
+            </div>
+
+            {/* Editor Panel */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800">Edit Content</h3>
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="min-h-[500px] rounded-lg border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500 text-gray-800 p-3 font-mono text-sm"
+                placeholder="Edit your board presentation content here..."
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

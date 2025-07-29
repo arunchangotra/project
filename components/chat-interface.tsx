@@ -1,16 +1,17 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { AIChatInput } from "./ai-chat-input"
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Building2 } from "lucide-react"
+import { AIChatInput } from "@/components/ai-chat-input"
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface Message {
   id: string
   content: string
-  sender: "user" | "assistant"
+  role: "user" | "assistant"
   timestamp: Date
   citations?: string[]
 }
@@ -22,195 +23,163 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ isMaximized = false, initialMessage }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
+  const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
-  // Generate static response based on user message
+  // Generate static response based on user input
   const generateStaticResponse = (userMessage: string): string => {
     const message = userMessage.toLowerCase()
 
     if (message.includes("nim") || message.includes("net interest margin")) {
-      return `Based on Q3 2024 results, our Net Interest Margin improved to 3.45%, up 12 basis points from Q2. Here's the detailed analysis:
+      return `## Net Interest Margin Analysis - Q3 2024
 
-**Key Drivers:**
-• **Asset Yield Improvement**: +18 bps driven by repricing of floating rate loans
-• **Funding Cost Optimization**: -6 bps through deposit mix shift toward current accounts
-• **SME Portfolio Growth**: Higher-yielding SME loans now represent 34% of total book
+**Key Findings:**
+• NIM improved by 15 basis points to 3.45% in Q3 2024
+• Primary driver was repricing of loan portfolio (+20 bps impact)
+• Deposit cost increases partially offset gains (-5 bps impact)
 
-**Quarterly Trend Analysis:**
-• Q1 2024: 3.21%
-• Q2 2024: 3.33% 
-• Q3 2024: 3.45%
+**Detailed Breakdown:**
+• **Loan Yields:** Increased from 5.2% to 5.6% (+40 bps)
+  - SME loans: 6.8% (+45 bps) due to base rate increases
+  - Retail mortgages: 4.2% (+35 bps) from new originations
+• **Funding Costs:** Rose from 1.9% to 2.15% (+25 bps)
+  - Savings accounts: 1.8% (+20 bps)
+  - Term deposits: 3.2% (+30 bps)
 
 **Forward Outlook:**
-Expected to reach 3.55-3.60% by Q4 2024, supported by continued rate environment and portfolio optimization.
-
-*Source: Internal Financial Reporting, Q3 2024*`
+• Expect additional 5-10 bps improvement in Q4
+• Asset repricing momentum continues
+• Deposit competition may intensify`
     }
 
     if (message.includes("provision") || message.includes("loan loss")) {
-      return `Loan Loss Provisions increased to ₹45.2 crores in Q3 2024, up from ₹38.7 crores in Q2. Here's the breakdown:
+      return `## Loan Loss Provisions Analysis - Q3 2024
 
-**Provision Analysis:**
-• **Specific Provisions**: ₹28.4 crores (up 15% QoQ)
-• **General Provisions**: ₹16.8 crores (up 12% QoQ)
-• **Coverage Ratio**: 68.5% (industry benchmark: 65%)
+**Provision Expense:** $12.3M (+$4.1M vs Q2)
 
-**Key Factors:**
-• Proactive provisioning for 2 large corporate accounts (₹8.5 crores)
-• Seasonal uptick in retail delinquencies post-monsoon
-• Regulatory buffer enhancement ahead of Basel III norms
+**Key Drivers:**
+• **Economic Outlook:** Increased forward-looking provisions by $2.8M
+• **SME Portfolio:** Higher stress in retail/hospitality sectors (+$1.8M)
+• **Model Updates:** Refined probability of default parameters (+$0.9M)
+• **Individual Assessments:** 3 large exposures moved to Stage 2 (+$1.2M)
 
-**Asset Quality Metrics:**
-• Gross NPL: 1.8% (down from 2.1% in Q2)
-• Net NPL: 0.6% (stable)
-• Recovery Rate: 42% (up from 38% in Q2)
+**Credit Quality Metrics:**
+• **NPL Ratio:** 1.8% (vs 1.4% in Q2)
+• **Stage 2 Loans:** 8.2% of portfolio (vs 6.9% in Q2)
+• **Coverage Ratio:** 1.2% (vs 0.9% in Q2)
 
-*Source: Credit Risk Management, Q3 2024*`
+**Portfolio Breakdown:**
+• SME loans: $8.1M provisions (2.1% of portfolio)
+• Retail mortgages: $2.8M provisions (0.4% of portfolio)
+• Personal loans: $1.4M provisions (3.2% of portfolio)`
     }
 
     if (message.includes("scenario") || message.includes("what if")) {
-      return `**Scenario Analysis: 15% Loan Growth Impact**
+      return `## Scenario Analysis: 15% Loan Growth Impact
 
-Here's the projected impact of accelerating loan growth to 15% next quarter:
+**Base Case vs High Growth Scenario:**
 
-**Base Case vs. Growth Scenario:**
+**Revenue Impact:**
+• Additional interest income: +$18.2M annually
+• Assuming average yield of 5.8% on new loans
+• Fee income increase: +$2.1M from origination fees
 
-| Metric | Current (8.5%) | Growth Scenario (15%) | Impact |
-|--------|----------------|----------------------|---------|
-| Loan Book | ₹12,450 cr | ₹13,518 cr | +₹1,068 cr |
-| NII | ₹245.6 cr | ₹267.8 cr | +₹22.2 cr |
-| ROA | 1.42% | 1.51% | +9 bps |
-| ROE | 14.2% | 15.1% | +90 bps |
+**Cost Impact:**
+• Additional funding costs: -$11.4M (assuming 3.2% cost of funds)
+• Incremental operating costs: -$1.8M (staff, systems, compliance)
+• Additional provisions: -$2.2M (assuming 1.2% provision rate)
+
+**Net Impact:**
+• **Net Interest Income:** +$6.8M (+12.3%)
+• **Operating Expenses:** +$1.8M (+3.2%)
+• **Provision Expense:** +$2.2M (+18.9%)
+• **Pre-tax Profit:** +$4.9M (+8.7%)
 
 **Key Assumptions:**
-• Maintain current NIM of 3.45%
-• Credit costs remain at 0.35% of advances
-• Operating leverage drives 65% incremental margin flow-through
-
-**Risk Considerations:**
-• Higher growth may pressure asset quality
-• Funding costs could increase by 5-8 bps
-• Capital adequacy would drop to 16.2% (still above regulatory minimum)
-
-*Model: Strategic Planning Framework v2.1*`
+• Loan mix: 60% SME, 40% retail
+• No significant change in deposit mix
+• Regulatory capital ratios remain above minimums`
     }
 
-    if (message.includes("peer") || message.includes("compare") || message.includes("industry")) {
-      return `**Peer Comparison Analysis - ROE Performance**
+    if (message.includes("peer") || message.includes("compare") || message.includes("roe")) {
+      return `## Peer Comparison Analysis - Q3 2024
 
-Our ROE of 14.2% positions us favorably against industry peers:
+**Return on Equity (ROE):**
+• **Our Bank:** 12.8%
+• **Peer Average:** 11.4%
+• **Best Performer:** Regional Bank A (14.2%)
+• **Ranking:** 2nd out of 8 regional banks
 
-**ROE Benchmarking (Q3 2024):**
-• **Our Bank**: 14.2% ⭐
-• **Peer Average**: 12.8%
-• **Top Quartile**: 15.1%
-• **Industry Median**: 11.9%
+**Key Performance Metrics:**
 
-**Detailed Peer Analysis:**
-• HDFC Bank: 15.8% (premium valuation)
-• ICICI Bank: 14.9% (similar profile)
-• Axis Bank: 13.2% (recovery phase)
-• Kotak Mahindra: 12.1% (conservative approach)
+**Profitability:**
+• ROA: 1.15% (Peer avg: 1.02%)
+• NIM: 3.45% (Peer avg: 3.28%)
+• Cost-to-Income: 58.2% (Peer avg: 62.1%)
 
-**ROE Decomposition:**
-• **Net Margin**: 3.45% vs. peer avg 3.21% ✓
-• **Asset Turnover**: 4.1x vs. peer avg 4.0x ✓
-• **Equity Multiplier**: 10.2x vs. peer avg 10.5x
+**Asset Quality:**
+• NPL Ratio: 1.8% (Peer avg: 2.1%)
+• Provision Rate: 1.2% (Peer avg: 1.4%)
+• Coverage Ratio: 68% (Peer avg: 65%)
 
-**Competitive Positioning:**
-Rank #3 out of 12 comparable private banks. Strong fundamentals with room for optimization in capital efficiency.
+**Capital Strength:**
+• CET1 Ratio: 12.8% (Peer avg: 11.9%)
+• Tier 1 Ratio: 14.2% (Peer avg: 13.1%)
 
-*Source: Bloomberg, Company Filings, Q3 2024*`
+**Growth Metrics:**
+• Loan Growth: 8.2% YoY (Peer avg: 6.8%)
+• Deposit Growth: 5.4% YoY (Peer avg: 4.9%)`
     }
 
-    if (message.includes("executive") || message.includes("summary") || message.includes("q3")) {
-      return `**Executive Summary - Q3 2024 Performance**
+    if (message.includes("board") || message.includes("executive") || message.includes("summary")) {
+      return `## Executive Summary - Q3 2024 Results
 
 **Financial Highlights:**
-• **Net Profit**: ₹89.4 crores (+18% YoY, +12% QoQ)
-• **ROE**: 14.2% (up 90 bps from Q2)
-• **ROA**: 1.42% (industry-leading performance)
-• **Book Value**: ₹245 per share (+8% QoQ)
+• **Net Profit:** $28.4M (+15.2% YoY, +8.7% QoQ)
+• **ROE:** 12.8% (vs 11.1% in Q3 2023)
+• **ROA:** 1.15% (vs 1.02% in Q3 2023)
 
-**Operational Excellence:**
-• **NIM Expansion**: 3.45% (+12 bps QoQ) driven by yield optimization
-• **Cost Efficiency**: CIR improved to 52.3% (-180 bps QoQ)
-• **Credit Quality**: GNPL at 1.8% (-30 bps QoQ), best in 3 years
+**Key Performance Drivers:**
 
-**Growth Momentum:**
-• **Loan Growth**: 8.5% QoQ (annualized 34%)
-• **Deposit Growth**: 6.2% QoQ with CASA at 42%
-• **Fee Income**: ₹89.3 crores (+15% YoY)
+**Revenue Growth:**
+• Net Interest Income: $52.1M (+12.3% YoY)
+• Fee Income: $8.7M (+6.8% YoY)
+• NIM expansion: 15 bps improvement to 3.45%
+
+**Cost Management:**
+• Operating Expenses: $30.2M (+4.1% YoY)
+• Cost-to-Income Ratio: 58.2% (improved from 61.4%)
+• Productivity gains from digital initiatives
+
+**Credit Quality:**
+• Provision Expense: $12.3M (vs $8.2M in Q2)
+• NPL Ratio: 1.8% (manageable increase)
+• Proactive risk management approach
 
 **Strategic Progress:**
-• Digital transformation: 78% transactions now digital
-• SME focus: Portfolio up 24% YoY, contributing 34% of loan book
-• ESG initiatives: Green financing book at ₹1,200 crores
+• Digital banking adoption: 78% (+12 pts YoY)
+• SME lending growth: 11.2% YoY
+• ESG initiatives on track
 
 **Outlook:**
-Well-positioned for sustained growth with strong fundamentals and improving operating leverage.
-
-*Prepared by: AI Earnings Assistant | Date: Q3 2024*`
+• Cautiously optimistic for Q4
+• Continued NIM expansion expected
+• Monitoring economic headwinds`
     }
 
     // Default response
     return `Thank you for your question about "${userMessage}". 
 
-I'm analyzing the latest financial data and market trends to provide you with comprehensive insights. Here are some key points I can share:
+I'm here to help with financial analysis and earnings insights. I can assist with:
 
-**Current Financial Position:**
-• Strong balance sheet fundamentals with improving profitability metrics
-• Healthy capital adequacy ratios above regulatory requirements
-• Diversified revenue streams with growing fee income contribution
+• **Variance Analysis** - Understanding changes in financial metrics
+• **Scenario Planning** - "What if" analysis for business decisions  
+• **Peer Comparisons** - Benchmarking against industry standards
+• **Board Reporting** - Executive summaries and presentations
+• **Risk Assessment** - Credit quality and provision analysis
 
-**Market Context:**
-• Operating in a favorable interest rate environment
-• Competitive positioning remains strong across key segments
-• Digital transformation initiatives showing positive ROI
-
-**Key Recommendations:**
-• Continue focus on high-quality asset growth
-• Maintain disciplined approach to risk management
-• Leverage technology for operational efficiency gains
-
-Would you like me to dive deeper into any specific aspect of our financial performance or provide more detailed analysis on particular metrics?
-
-*Source: Internal Management Reports, Q3 2024*`
-  }
-
-  const handleSendMessage = async (content: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      sender: "user",
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setIsLoading(true)
-
-    // Simulate AI response delay
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: generateStaticResponse(content),
-        sender: "assistant",
-        timestamp: new Date(),
-        citations: ["Internal Financial Reporting", "Risk Management Dashboard", "Strategic Planning Framework"],
-      }
-
-      setMessages((prev) => [...prev, assistantMessage])
-      setIsLoading(false)
-    }, 1500)
-  }
-
-  const copyToClipboard = (content: string) => {
-    navigator.clipboard.writeText(content)
-  }
-
-  const formatTimestamp = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+Please feel free to ask about specific financial metrics, ratios, or analysis you'd like me to help with. I have access to Q3 2024 financial data and can provide detailed insights.`
   }
 
   // Handle initial message
@@ -220,53 +189,127 @@ Would you like me to dive deeper into any specific aspect of our financial perfo
     }
   }, [initialMessage])
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom when new messages are added
   useEffect(() => {
     if (scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
-      if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight
+      const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight
       }
     }
   }, [messages])
 
+  const handleSendMessage = async (message: string) => {
+    if (!message.trim()) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: message,
+      role: "user",
+      timestamp: new Date(),
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+    setInputValue("")
+    setIsLoading(true)
+
+    // Simulate AI response delay
+    setTimeout(() => {
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: generateStaticResponse(message),
+        role: "assistant",
+        timestamp: new Date(),
+        citations: ["Q3 2024 Financial Statements", "Internal Risk Reports", "Peer Analysis Database"],
+      }
+
+      setMessages((prev) => [...prev, aiResponse])
+      setIsLoading(false)
+    }, 1500)
+  }
+
+  const handleCopyMessage = (content: string) => {
+    navigator.clipboard.writeText(content)
+  }
+
+  const formatMessageContent = (content: string) => {
+    // Simple markdown-like formatting
+    return content
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/^## (.*$)/gm, '<h3 class="text-lg font-semibold text-gray-900 mb-2">$1</h3>')
+      .replace(/^• (.*$)/gm, '<li class="ml-4">$1</li>')
+      .replace(/\n/g, "<br>")
+  }
+
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={cn("flex flex-col", isMaximized ? "h-screen" : "h-[600px]")}>
       <CardHeader className="pb-1 border-b border-gray-100">
-        <div className="flex items-center space-x-2">
-          <Building2 className="h-5 w-5 text-apple-blue-600" />
-          <h3 className="font-semibold text-gray-900">AI Earnings Assistant</h3>
-          <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">Online</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Bot className="h-5 w-5 text-apple-blue-600" />
+            <h3 className="font-semibold text-gray-900">AI Earnings Assistant</h3>
+          </div>
+          <div className="text-xs text-gray-500">{messages.length > 0 && `${messages.length} messages`}</div>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 flex flex-col min-h-0">
+      <CardContent className="flex-1 flex flex-col p-0">
         <ScrollArea ref={scrollAreaRef} className="flex-1 p-2">
           <div className="space-y-3">
+            {messages.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>Start a conversation to get financial insights and analysis.</p>
+              </div>
+            )}
+
             {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={message.id}
+                className={cn("flex space-x-3", message.role === "user" ? "justify-end" : "justify-start")}
+              >
+                {message.role === "assistant" && (
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 bg-apple-blue-100 rounded-full flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-apple-blue-600" />
+                    </div>
+                  </div>
+                )}
+
                 <div
-                  className={`max-w-[92%] rounded-lg p-2.5 ${
-                    message.sender === "user" ? "bg-apple-blue-600 text-white" : "bg-gray-100 text-gray-900"
-                  }`}
+                  className={cn(
+                    "max-w-[92%] rounded-lg p-2.5",
+                    message.role === "user" ? "bg-apple-blue-600 text-white" : "bg-gray-50 text-gray-900",
+                  )}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+                  <div
+                    className="text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: formatMessageContent(message.content),
+                    }}
+                  />
 
                   {message.citations && (
-                    <div className="mt-1.5 pt-1.5 border-t border-gray-200 text-xs text-gray-600">
-                      <strong>Sources:</strong> {message.citations.join(", ")}
+                    <div className="mt-1.5 pt-1.5 border-t border-gray-200">
+                      <p className="text-xs text-gray-600 mb-1">Sources:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {message.citations.map((citation, index) => (
+                          <span key={index} className="text-xs bg-white px-2 py-1 rounded border text-gray-700">
+                            {citation}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mt-1.5">
-                    <span className="text-xs opacity-70">{formatTimestamp(message.timestamp)}</span>
-
-                    {message.sender === "assistant" && (
+                  {message.role === "assistant" && (
+                    <div className="flex items-center justify-between mt-1.5">
                       <div className="flex items-center space-x-1">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => copyToClipboard(message.content)}
+                          onClick={() => handleCopyMessage(message.content)}
                           className="h-5 w-5 text-gray-500 hover:text-gray-700"
                         >
                           <Copy className="h-3 w-3" />
@@ -281,28 +324,44 @@ Would you like me to dive deeper into any specific aspect of our financial perfo
                           <RotateCcw className="h-3 w-3" />
                         </Button>
                       </div>
-                    )}
-                  </div>
+                      <span className="text-xs text-gray-500">
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {message.role === "user" && (
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-gray-600" />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
 
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg p-2.5 max-w-[92%]">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.1s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                    </div>
-                    <span className="text-sm text-gray-600">AI is analyzing...</span>
+              <div className="flex space-x-3 justify-start">
+                <div className="flex-shrink-0">
+                  <div className="h-8 w-8 bg-apple-blue-100 rounded-full flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-apple-blue-600" />
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2.5">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.1s" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.2s" }}
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -310,11 +369,13 @@ Would you like me to dive deeper into any specific aspect of our financial perfo
           </div>
         </ScrollArea>
 
-        <div className="p-2 border-t border-gray-100 pt-1">
+        <div className="p-2 border-t border-gray-100">
           <AIChatInput
-            onSendMessage={handleSendMessage}
+            value={inputValue}
+            onChange={setInputValue}
+            onSubmit={handleSendMessage}
             disabled={isLoading}
-            placeholder="Ask about financial metrics, run scenarios, or request analysis..."
+            placeholder="Ask about financial metrics, scenarios, or analysis..."
           />
         </div>
       </CardContent>
