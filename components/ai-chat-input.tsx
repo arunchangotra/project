@@ -59,7 +59,7 @@ export function AIChatInput({
   }, [value])
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative w-full", className)}>
       <div className="relative flex items-end space-x-2 p-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus-within:border-apple-blue-300 focus-within:ring-2 focus-within:ring-apple-blue-100 transition-all duration-200">
         {/* Attachment Button */}
         <Button
@@ -106,10 +106,10 @@ export function AIChatInput({
         </Button>
       </div>
 
-      {/* Character count or other info */}
+      {/* Helper text */}
       <div className="flex justify-between items-center mt-2 px-3 text-xs text-gray-500">
         <span>Press Enter to send, Shift+Enter for new line</span>
-        <span>{value.length}/2000</span>
+        <span className="text-right">{value.length}/2000</span>
       </div>
     </div>
   )
