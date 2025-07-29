@@ -19,7 +19,7 @@ import {
   DollarSign,
   Target,
   Activity,
-  Compass,
+  Wrench,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
@@ -43,6 +43,8 @@ interface ExploreItem {
   icon: React.ComponentType<{ className?: string }>
   route?: string
   action?: () => void
+  isActive: boolean
+  description?: string
 }
 
 export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
@@ -89,37 +91,49 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
       title: "Earnings Overview",
       icon: BarChart3,
       route: "/dashboard",
+      isActive: true,
+      description: "Get quarterly performance snapshots and KPI summaries",
     },
     {
       id: "variance-analysis",
       title: "Variance Analysis",
       icon: TrendingUp,
       route: "/variance",
+      isActive: true,
+      description: "Drill down into specific changes with AI explanations",
     },
     {
       id: "what-if-scenarios",
       title: "What-If Scenarios",
       icon: Calculator,
       route: "/scenarios",
+      isActive: true,
+      description: "Simulate impact of business levers on key metrics",
     },
     {
       id: "board-deck",
       title: "Board Deck",
       icon: FileText,
       route: "/board-deck",
+      isActive: true,
+      description: "Generate AI-powered narratives for presentations",
     },
     {
       id: "peer-comparison",
       title: "Peer Benchmarking",
       icon: Users,
+      isActive: false,
+      description: "Compare performance against industry peers",
       action: () => {
         /* Handle peer comparison */
       },
     },
     {
       id: "profitability",
-      title: "Profitability",
+      title: "Profitability Deep Dive",
       icon: DollarSign,
+      isActive: false,
+      description: "Analyze ROE, ROA, and margin trends",
       action: () => {
         /* Handle profitability analysis */
       },
@@ -128,14 +142,18 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
       id: "risk-metrics",
       title: "Risk Assessment",
       icon: Target,
+      isActive: false,
+      description: "Review NPL ratios, provisions, and asset quality",
       action: () => {
         /* Handle risk assessment */
       },
     },
     {
       id: "efficiency",
-      title: "Efficiency",
+      title: "Operational Efficiency",
       icon: Activity,
+      isActive: false,
+      description: "Cost-to-income ratios and productivity metrics",
       action: () => {
         /* Handle efficiency metrics */
       },
@@ -145,6 +163,8 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
 
   const handleExploreItemClick = (item: ExploreItem) => {
+    if (!item.isActive) return
+
     if (item.route) {
       router.push(item.route)
     } else if (item.action) {
@@ -179,26 +199,63 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
           </Button>
         </div>
 
-        {/* Start Exploring Section */}
+        {/* Tools Section */}
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center text-sm font-medium text-gray-700 mb-3">
-            <Compass className="h-4 w-4 mr-2 text-apple-blue-600" />
-            Start exploring
+            <Wrench className="h-4 w-4 mr-2 text-apple-blue-600" />
+            Tools
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
             {exploreItems.map((item) => {
               const IconComponent = item.icon
               return (
-                <Button
+                <div
                   key={item.id}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleExploreItemClick(item)}
-                  className="h-auto p-3 flex flex-col items-center justify-center text-center hover:bg-apple-gray-50 rounded-lg border border-transparent hover:border-apple-blue-200 transition-all duration-200"
+                  className={cn(
+                    "relative group rounded-lg border transition-all duration-200",
+                    item.isActive
+                      ? "border-gray-200 hover:border-apple-blue-200 hover:bg-apple-blue-50 cursor-pointer"
+                      : "border-gray-100 bg-gray-50 cursor-not-allowed",
+                  )}
                 >
-                  <IconComponent className="h-5 w-5 text-apple-blue-600 mb-1" />
-                  <span className="text-xs text-gray-700 leading-tight">{item.title}</span>
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleExploreItemClick(item)}
+                    disabled={!item.isActive}
+                    className={cn(
+                      "w-full h-auto p-3 flex items-start justify-start text-left hover:bg-transparent",
+                      item.isActive ? "text-gray-900" : "text-gray-400",
+                    )}
+                  >
+                    <IconComponent
+                      className={cn(
+                        "h-5 w-5 mr-3 mt-0.5 flex-shrink-0",
+                        item.isActive ? "text-apple-blue-600" : "text-gray-300",
+                      )}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className={cn(
+                            "text-sm font-medium truncate",
+                            item.isActive ? "text-gray-900" : "text-gray-400",
+                          )}
+                        >
+                          {item.title}
+                        </span>
+                        {!item.isActive && (
+                          <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full ml-2 flex-shrink-0">
+                            Coming soon
+                          </span>
+                        )}
+                      </div>
+                      <p className={cn("text-xs leading-tight", item.isActive ? "text-gray-600" : "text-gray-400")}>
+                        {item.description}
+                      </p>
+                    </div>
+                  </Button>
+                </div>
               )
             })}
           </div>

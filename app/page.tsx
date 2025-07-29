@@ -1,106 +1,122 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, Send, Sparkles } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { AiChatInput } from "@/components/ai-chat-input"
+import { ChatInterface } from "@/components/chat-interface"
+import { ChatSidebar } from "@/components/chat-sidebar"
+import { Navigation } from "@/components/navigation"
+import { Brain, MessageSquare, TrendingUp, Calculator, FileText } from "lucide-react"
 
-export default function ChatDashboard() {
-  const [chatInput, setChatInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
+export default function HomePage() {
+  const [showChat, setShowChat] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   const quickPrompts = [
-    "Why did NIM improve this quarter?",
-    "What drove the increase in provisions?",
-    "How do we compare to peers on ROE?",
-    "Explain the variance in fee income",
-    "What if loan growth was 15%?",
-    "Draft board summary for Q3 results",
+    {
+      id: "nim-analysis",
+      text: "Why did net interest margin improve this quarter?",
+      icon: TrendingUp,
+    },
+    {
+      id: "provision-variance",
+      text: "What drove the increase in loan loss provisions?",
+      icon: Calculator,
+    },
+    {
+      id: "peer-comparison",
+      text: "How do we compare to industry peers on ROE?",
+      icon: MessageSquare,
+    },
+    {
+      id: "board-summary",
+      text: "Draft executive summary for Q3 results",
+      icon: FileText,
+    },
   ]
 
-  const handleSendMessage = () => {
-    if (!chatInput.trim()) return
-
-    setIsTyping(true)
-    // Simulate AI response delay
-    setTimeout(() => {
-      setIsTyping(false)
-      // Here you would typically handle the chat interaction
-      // For now, we'll just clear the input
-      setChatInput("")
-    }, 2000)
+  const handlePromptClick = (prompt: string) => {
+    setShowChat(true)
+    // Here you would typically send the prompt to the chat
   }
 
-  const handleQuickPrompt = (prompt: string) => {
-    setChatInput(prompt)
+  const handleChatSubmit = (message: string) => {
+    setShowChat(true)
+    // Handle the chat message
+  }
+
+  if (showChat) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation onToggleSidebar={setIsSidebarOpen} />
+        <ChatSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+        <div className={`transition-all duration-300 ${isSidebarOpen ? "ml-80" : "ml-0"}`}>
+          <ChatInterface />
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto">
-      {/* Main Header */}
-      <div className="text-center py-12">
-        <div className="flex items-center justify-center mb-4">
-          <Sparkles className="h-8 w-8 text-apple-blue-600 mr-3" />
-          <h1 className="text-4xl font-bold text-gray-900">What can I help with?</h1>
-        </div>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Ask me anything about your Q3 2024 financial performance, or choose from the options below
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation onToggleSidebar={setIsSidebarOpen} />
+      <ChatSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
 
-      {/* Chat Input */}
-      <div className="mb-8">
-        <div className="relative max-w-2xl mx-auto">
-          <div className="flex items-center space-x-3 p-4 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
-            <Input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask about earnings, metrics, comparisons, or scenarios..."
-              className="flex-1 border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base bg-transparent"
-              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!chatInput.trim() || isTyping}
-              className="rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 h-10 w-10 p-0"
-            >
-              {isTyping ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+      <div className={`transition-all duration-300 ${isSidebarOpen ? "ml-80" : "ml-0"}`}>
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          {/* Main Header */}
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center mb-6">
+              <div className="bg-apple-blue-100 p-4 rounded-2xl">
+                <Brain className="h-12 w-12 text-apple-blue-600" />
+              </div>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">What can I help with?</h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Your AI-powered earnings assistant for financial analysis, variance insights, and strategic planning.
+            </p>
           </div>
-        </div>
-      </div>
 
-      {/* Quick Prompts */}
-      <div className="mb-12">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4 text-center">Quick Questions</h2>
-        <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
-          {quickPrompts.map((prompt, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              size="sm"
-              onClick={() => handleQuickPrompt(prompt)}
-              className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-white text-sm px-4 py-2"
-            >
-              {prompt}
-            </Button>
-          ))}
-        </div>
-      </div>
+          {/* Chat Input */}
+          <div className="mb-12">
+            <AiChatInput
+              onSubmit={handleChatSubmit}
+              placeholder="Ask about earnings, variances, scenarios, or any financial question..."
+            />
+          </div>
 
-      {/* Recent Activity Hint */}
-      <div className="text-center py-8 border-t border-gray-100">
-        <p className="text-sm text-gray-500 mb-4">Recent conversations and analysis will appear here</p>
-        <div className="flex justify-center space-x-2">
-          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-          <div className="w-2 h-2 bg-apple-blue-600 rounded-full"></div>
-          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+          {/* Quick Prompts */}
+          <div className="mb-12">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6 text-center">Or try these popular questions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {quickPrompts.map((prompt) => {
+                const IconComponent = prompt.icon
+                return (
+                  <Card
+                    key={prompt.id}
+                    className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-apple-blue-200 group"
+                    onClick={() => handlePromptClick(prompt.text)}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="bg-apple-blue-50 p-3 rounded-lg group-hover:bg-apple-blue-100 transition-colors">
+                          <IconComponent className="h-6 w-6 text-apple-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-gray-900 font-medium leading-relaxed">{prompt.text}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Recent Activity Hint */}
+          <div className="text-center">
+            <p className="text-gray-500 text-sm">Start a conversation to see your recent activity and saved analyses</p>
+          </div>
         </div>
       </div>
     </div>
