@@ -1,90 +1,166 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { TrendingUp, Calculator, FileText, BarChart3 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { TrendingUp, Calculator, FileText } from "lucide-react"
 import { AIChatInput } from "@/components/ai-chat-input"
 
-export default function HomePage() {
-  const [input, setInput] = useState("")
+interface QuickPrompt {
+  id: string
+  text: string
+  icon: React.ComponentType<{ className?: string }>
+  category: "analysis" | "scenario" | "reporting"
+}
 
-  const quickPrompts = [
+interface ChatDashboardProps {
+  onSendMessage?: (message: string) => void
+  onOpenChat?: () => void
+}
+
+export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboardProps) {
+  const [inputValue, setInputValue] = useState("")
+
+  const quickPrompts: QuickPrompt[] = [
     {
-      icon: TrendingUp,
+      id: "nim-analysis",
       text: "Why did net interest margin improve this quarter?",
-      color: "bg-blue-50 hover:bg-blue-100 border-blue-200",
+      icon: TrendingUp,
+      category: "analysis",
     },
     {
+      id: "provision-variance",
+      text: "What drove the increase in loan loss provisions?",
+      icon: TrendingUp,
+      category: "analysis",
+    },
+    {
+      id: "scenario-growth",
+      text: "What if loan growth was 15% next quarter?",
       icon: Calculator,
-      text: "What would happen if we reduce loan loss provisions by 10%?",
-      color: "bg-green-50 hover:bg-green-100 border-green-200",
+      category: "scenario",
     },
     {
+      id: "board-summary",
+      text: "Generate executive summary for Q3 results",
       icon: FileText,
-      text: "Generate executive summary for board presentation",
-      color: "bg-purple-50 hover:bg-purple-100 border-purple-200",
+      category: "reporting",
     },
     {
-      icon: BarChart3,
-      text: "Compare our ROE with industry benchmarks",
-      color: "bg-orange-50 hover:bg-orange-100 border-orange-200",
+      id: "peer-comparison",
+      text: "How do we compare to industry peers on ROE?",
+      icon: TrendingUp,
+      category: "analysis",
+    },
+    {
+      id: "efficiency-metrics",
+      text: "Analyze our cost-to-income ratio trends",
+      icon: Calculator,
+      category: "analysis",
     },
   ]
 
-  const handlePromptClick = (promptText: string) => {
-    setInput(promptText)
+  const handlePromptClick = (prompt: QuickPrompt) => {
+    if (onSendMessage) {
+      onSendMessage(prompt.text)
+    }
   }
 
-  const handleSubmit = (message: string) => {
-    console.log("Submitted message:", message)
-    // Handle the chat submission here
+  const handleInputSubmit = (message: string) => {
+    if (onSendMessage) {
+      onSendMessage(message)
+    }
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case "analysis":
+        return "bg-blue-50 text-blue-700 border-blue-200"
+      case "scenario":
+        return "bg-green-50 text-green-700 border-green-200"
+      case "reporting":
+        return "bg-purple-50 text-purple-700 border-purple-200"
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200"
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center px-4">
+      <div className="w-full max-w-4xl mx-auto space-y-8">
         {/* Main Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">What can I help with?</h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Your AI-powered earnings assistant for comprehensive financial analysis and insights
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">What can I help with?</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Your AI-powered earnings assistant for banking insights, variance analysis, and strategic planning.
           </p>
         </div>
 
         {/* Chat Input */}
-        <div className="mb-8">
+        <div className="w-full max-w-2xl mx-auto">
           <AIChatInput
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSubmit}
-            placeholder="Ask about earnings, variance analysis, scenarios, or request board deck content..."
+            value={inputValue}
+            onChange={setInputValue}
+            onSubmit={handleInputSubmit}
+            placeholder="Ask about earnings, run scenarios, or request analysis..."
+            className="w-full"
           />
         </div>
 
         {/* Quick Prompts */}
-        <div className="mb-12">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">Popular questions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {quickPrompts.map((prompt, index) => {
+        <div className="space-y-4">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Popular questions</h2>
+            <p className="text-sm text-gray-600">Get started with these common financial analysis queries</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+            {quickPrompts.map((prompt) => {
               const IconComponent = prompt.icon
               return (
-                <button
-                  key={index}
-                  onClick={() => handlePromptClick(prompt.text)}
-                  className={`p-4 rounded-lg border-2 text-left transition-all duration-200 ${prompt.color}`}
+                <Card
+                  key={prompt.id}
+                  className="group cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] border border-gray-200 hover:border-apple-blue-300"
+                  onClick={() => handlePromptClick(prompt)}
                 >
-                  <div className="flex items-start space-x-3">
-                    <IconComponent className="h-5 w-5 mt-0.5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-800">{prompt.text}</span>
-                  </div>
-                </button>
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="p-2 bg-apple-blue-50 rounded-lg flex-shrink-0 group-hover:bg-apple-blue-100 transition-colors">
+                        <IconComponent className="h-5 w-5 text-apple-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 leading-relaxed group-hover:text-apple-blue-900 transition-colors">
+                          {prompt.text}
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className={`mt-2 text-xs ${getCategoryColor(prompt.category)} capitalize`}
+                        >
+                          {prompt.category}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )
             })}
           </div>
         </div>
 
         {/* Recent Activity Hint */}
-        <div className="text-center text-gray-500">
-          <p className="text-sm">Start a conversation or explore our tools to get financial insights</p>
+        <div className="text-center text-sm text-gray-500 max-w-md mx-auto">
+          <p>
+            Start a conversation above or explore your{" "}
+            <button
+              onClick={onOpenChat}
+              className="text-apple-blue-600 hover:text-apple-blue-700 font-medium underline"
+            >
+              recent conversations
+            </button>{" "}
+            to continue where you left off.
+          </p>
         </div>
       </div>
     </div>
