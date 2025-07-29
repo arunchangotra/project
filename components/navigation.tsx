@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building2, Menu, MessageSquare, LayoutDashboard } from "lucide-react"
+import { Building2, Menu, MessageSquare } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
@@ -44,19 +44,6 @@ export function Navigation({ onSidebarToggle }: NavigationProps) {
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* Dashboard Link */}
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
-          >
-            <Link href="/agen-dashboard">
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Dashboard</span>
-            </Link>
-          </Button>
-
           {/* Chat Toggle */}
           <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
             <MessageSquare className="h-4 w-4" />

@@ -20,6 +20,7 @@ import {
   Activity,
   ArrowRight,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 interface FeatureCard {
@@ -28,15 +29,12 @@ interface FeatureCard {
   description: string
   icon: React.ComponentType<{ className?: string }>
   color: string
-  chatPrompt: string // Changed from route/action to chatPrompt
+  route?: string
+  action?: () => void
 }
 
-interface ChatDashboardProps {
-  onSendMessage: (message: string) => void
-  onOpenChat: () => void
-}
-
-export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboardProps) {
+export default function ChatDashboard() {
+  const router = useRouter()
   const [chatInput, setChatInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
 
@@ -47,7 +45,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Get quarterly performance snapshots and KPI summaries",
       icon: BarChart3,
       color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
-      chatPrompt: "Show me the Q3 2024 earnings overview with key performance indicators and quarterly snapshot",
+      route: "/dashboard",
     },
     {
       id: "variance-analysis",
@@ -55,7 +53,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Drill down into specific changes with AI explanations",
       icon: TrendingUp,
       color: "bg-green-50 border-green-200 hover:bg-green-100",
-      chatPrompt: "Perform a detailed variance analysis for Q3 2024, showing line item changes and explanations",
+      route: "/variance",
     },
     {
       id: "what-if-scenarios",
@@ -63,7 +61,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Simulate impact of business levers on key metrics",
       icon: Calculator,
       color: "bg-purple-50 border-purple-200 hover:bg-purple-100",
-      chatPrompt: "Open the what-if scenario builder to simulate impact of business changes on financial metrics",
+      route: "/scenarios",
     },
     {
       id: "board-deck",
@@ -71,7 +69,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Generate AI-powered narratives for presentations",
       icon: FileText,
       color: "bg-orange-50 border-orange-200 hover:bg-orange-100",
-      chatPrompt: "Help me draft a board presentation narrative for Q3 2024 financial results",
+      route: "/board-deck",
     },
     {
       id: "peer-comparison",
@@ -79,7 +77,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Compare performance against industry peers",
       icon: Users,
       color: "bg-indigo-50 border-indigo-200 hover:bg-indigo-100",
-      chatPrompt: "Show me how we compare to industry peers across key financial metrics",
+      action: () => handleQuickAction("Show me how we compare to industry peers"),
     },
     {
       id: "profitability-analysis",
@@ -87,7 +85,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Analyze ROE, ROA, and margin trends",
       icon: DollarSign,
       color: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
-      chatPrompt: "Analyze our profitability metrics including ROE, ROA, and margin trends",
+      action: () => handleQuickAction("Analyze our profitability metrics and trends"),
     },
     {
       id: "risk-metrics",
@@ -95,7 +93,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Review NPL ratios, provisions, and asset quality",
       icon: Target,
       color: "bg-red-50 border-red-200 hover:bg-red-100",
-      chatPrompt: "What's our current risk profile and asset quality assessment?",
+      action: () => handleQuickAction("What's our current risk profile and asset quality?"),
     },
     {
       id: "efficiency-metrics",
@@ -103,7 +101,7 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
       description: "Cost-to-income ratios and productivity metrics",
       icon: Activity,
       color: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100",
-      chatPrompt: "How efficient are our operations this quarter? Show cost-to-income and productivity metrics",
+      action: () => handleQuickAction("How efficient are our operations this quarter?"),
     },
   ]
 
@@ -117,21 +115,34 @@ export default function ChatDashboard({ onSendMessage, onOpenChat }: ChatDashboa
   ]
 
   const handleCardClick = (card: FeatureCard) => {
-    onSendMessage(card.chatPrompt)
-    onOpenChat()
+    if (card.route) {
+      router.push(card.route)
+    } else if (card.action) {
+      card.action()
+    }
+  }
+
+  const handleQuickAction = (prompt: string) => {
+    setChatInput(prompt)
+    // This would typically open the chat interface with the prompt
+    // For now, we'll simulate it by setting the input
   }
 
   const handleSendMessage = () => {
     if (!chatInput.trim()) return
 
-    onSendMessage(chatInput)
-    onOpenChat()
-    setChatInput("")
+    setIsTyping(true)
+    // Simulate AI response delay
+    setTimeout(() => {
+      setIsTyping(false)
+      // Here you would typically handle the chat interaction
+      // For now, we'll just clear the input
+      setChatInput("")
+    }, 2000)
   }
 
   const handleQuickPrompt = (prompt: string) => {
-    onSendMessage(prompt)
-    onOpenChat()
+    setChatInput(prompt)
   }
 
   return (

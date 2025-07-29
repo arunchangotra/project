@@ -5,7 +5,6 @@ import { useState, useEffect } from "react"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { CFOChatWidget } from "@/components/cfo-chat-widget"
-import ChatDashboard from "./page"
 import { cn } from "@/lib/utils"
 
 export default function ClientLayout({
@@ -17,7 +16,6 @@ export default function ClientLayout({
   const [isChatMaximized, setIsChatMaximized] = useState(false)
   const [initialChatMessage, setInitialChatMessage] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [currentView, setCurrentView] = useState<"dashboard" | "other">("dashboard")
 
   // Function to handle sending a message from anywhere in the app
   const handleSendInitialMessage = (message: string) => {
@@ -45,9 +43,6 @@ export default function ClientLayout({
     setIsSidebarOpen(isOpen)
   }
 
-  // Determine if we should show the main dashboard or other content
-  const isMainDashboard = typeof window !== "undefined" && window.location.pathname === "/"
-
   return (
     <html lang="en">
       <body className={cn(isChatMaximized && "overflow-hidden")}>
@@ -65,11 +60,7 @@ export default function ClientLayout({
                 : "container mx-auto py-8 px-4 md:px-6", // When sidebar is closed: normal container behavior
             )}
           >
-            {isMainDashboard ? (
-              <ChatDashboard onSendMessage={handleSendInitialMessage} onOpenChat={handleOpenChat} />
-            ) : (
-              children
-            )}
+            {children}
           </main>
         </div>
 
