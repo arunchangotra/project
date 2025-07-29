@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { RefreshCw, TrendingUp, TrendingDown, Filter, Check, Plus } from "lucide-react"
+import { RefreshCw, TrendingUp, TrendingDown, Filter, Check, Plus, MessageSquare } from "lucide-react"
 import { financialRatios } from "@/lib/financial-ratios" // Import all financial ratios
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 interface ScenarioInputs {
   loanGrowth: number
@@ -296,296 +297,326 @@ export default function WhatIfScenarios() {
   }
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">What-If Scenario Builder</h1>
-          <p className="text-lg text-gray-600 mt-1">Simulate impact of business levers on Q3 2024 performance</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={resetScenario}
-          className="flex items-center space-x-2 rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent"
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>Reset</span>
-        </Button>
-      </div>
-
-      {/* Metric Selection Cards */}
-      <Card className="shadow-lg rounded-xl border-none">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
-            <Filter className="h-5 w-5 text-apple-blue-600" />
-            <span>Select Metrics to Analyze</span>
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            Choose which metrics to display in the results and comparison chart
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {/* First row - always visible popular metrics */}
-            <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2">
-              {popularMetrics.map((metric) => (
-                <Card
-                  key={metric.id}
-                  className={cn(
-                    "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
-                    selectedDisplayMetrics.has(metric.id)
-                      ? "border-apple-blue-600 bg-apple-blue-50"
-                      : "border-gray-200 hover:border-gray-300",
-                  )}
-                  onClick={() => toggleMetric(metric.id)}
-                >
-                  <CardContent className="p-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">{metric.name}</h3>
-                        <p className="text-xs text-gray-500 truncate">{metric.category}</p>
-                      </div>
-                      {selectedDisplayMetrics.has(metric.id) && (
-                        <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
-                      )}
-                    </div>
-                    <div className="text-sm font-bold text-gray-900">
-                      {formatDisplayValue(results[metric.id] || metric.historicalData[0]?.value || 0, metric.unit)}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-10">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold text-gray-900 tracking-tight">What-If Scenario Builder</h1>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                Simulate impact of business levers on Q3 2024 performance
+              </p>
             </div>
-
-            {/* Second row - additional metrics, shown when expanded */}
-            {showAllMetrics && (
-              <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2">
-                {otherMetrics.map((metric) => (
-                  <Card
-                    key={metric.id}
-                    className={cn(
-                      "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
-                      selectedDisplayMetrics.has(metric.id)
-                        ? "border-apple-blue-600 bg-apple-blue-50"
-                        : "border-gray-200 hover:border-gray-300",
-                    )}
-                    onClick={() => toggleMetric(metric.id)}
-                  >
-                    <CardContent className="p-2">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">{metric.name}</h3>
-                          <p className="text-xs text-gray-500 truncate">{metric.category}</p>
-                        </div>
-                        {selectedDisplayMetrics.has(metric.id) && (
-                          <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
-                        )}
-                      </div>
-                      <div className="text-sm font-bold text-gray-900">
-                        {formatDisplayValue(results[metric.id] || metric.historicalData[0]?.value || 0, metric.unit)}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-            {/* Show More/Less button */}
-            {otherMetrics.length > 0 && (
-              <div className="flex justify-center pt-2">
-                {!showAllMetrics ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAllMetrics(true)}
-                    className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Show {otherMetrics.length} More Metrics
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAllMetrics(false)}
-                    className="border-gray-300 text-gray-600 hover:bg-gray-50"
-                  >
-                    Show Less
-                  </Button>
-                )}
-              </div>
-            )}
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-apple-blue-300 text-apple-blue-700 hover:bg-apple-blue-50 bg-transparent px-6 py-2"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Ask AI about scenarios
+              </Button>
+              <Button
+                variant="outline"
+                onClick={resetScenario}
+                className="flex items-center space-x-2 rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent px-6 py-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Reset</span>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent px-6 py-2"
+              >
+                <Link href="/">Back to Dashboard</Link>
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Input Controls */}
-        <Card className="shadow-lg rounded-xl border-none">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-800">Scenario Inputs</CardTitle>
-            <CardDescription className="text-gray-600">Adjust key business levers to see impact</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            <div className="space-y-3">
-              <Label className="text-gray-700 font-medium">Loan Growth (%)</Label>
-              <div className="px-3">
-                <Slider
-                  value={[inputs.loanGrowth]}
-                  onValueChange={(value) => setInputs((prev) => ({ ...prev, loanGrowth: value[0] }))}
-                  max={20}
-                  min={-10}
-                  step={1}
-                  className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                />
-              </div>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>-10%</span>
-                <span className="font-medium text-gray-800">{inputs.loanGrowth}%</span>
-                <span>+20%</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Label className="text-gray-700 font-medium">Deposit Rate Change (bps)</Label>
-              <div className="px-3">
-                <Slider
-                  value={[inputs.depositRateChange]}
-                  onValueChange={(value) => setInputs((prev) => ({ ...prev, depositRateChange: value[0] }))}
-                  max={100}
-                  min={-50}
-                  step={5}
-                  className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                />
-              </div>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>-50bps</span>
-                <span className="font-medium text-gray-800">{inputs.depositRateChange}bps</span>
-                <span>+100bps</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Label className="text-gray-700 font-medium">Provisioning Change (%)</Label>
-              <div className="px-3">
-                <Slider
-                  value={[inputs.provisioningChange]}
-                  onValueChange={(value) => setInputs((prev) => ({ ...prev, provisioningChange: value[0] }))}
-                  max={50}
-                  min={-25}
-                  step={5}
-                  className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                />
-              </div>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>-25%</span>
-                <span className="font-medium text-gray-800">{inputs.provisioningChange}%</span>
-                <span>+50%</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Label className="text-gray-700 font-medium">Fee Income Growth (%)</Label>
-              <div className="px-3">
-                <Slider
-                  value={[inputs.feeGrowth]}
-                  onValueChange={(value) => setInputs((prev) => ({ ...prev, feeGrowth: value[0] }))}
-                  max={15}
-                  min={-15}
-                  step={1}
-                  className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                />
-              </div>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>-15%</span>
-                <span className="font-medium text-gray-800">{inputs.feeGrowth}%</span>
-                <span>+15%</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Label className="text-gray-700 font-medium">Operating Cost Growth (%)</Label>
-              <div className="px-3">
-                <Slider
-                  value={[inputs.costGrowth]}
-                  onValueChange={(value) => setInputs((prev) => ({ ...prev, costGrowth: value[0] }))}
-                  max={10}
-                  min={-10}
-                  step={1}
-                  className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                />
-              </div>
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>-10%</span>
-                <span className="font-medium text-gray-800">{inputs.costGrowth}%</span>
-                <span>+10%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Metric Selection Cards */}
+          <Card className="shadow-lg rounded-xl border-none bg-white">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
+                <Filter className="h-5 w-5 text-apple-blue-600" />
+                <span>Select Metrics to Analyze</span>
+              </CardTitle>
+              <CardDescription className="text-gray-600 text-base leading-relaxed">
+                Choose which metrics to display in the results and comparison chart
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-6 pb-6">
+              <div className="space-y-4">
+                {/* First row - always visible popular metrics */}
+                <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
+                  {popularMetrics.map((metric) => (
+                    <Card
+                      key={metric.id}
+                      className={cn(
+                        "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
+                        selectedDisplayMetrics.has(metric.id)
+                          ? "border-apple-blue-600 bg-apple-blue-50"
+                          : "border-gray-200 hover:border-gray-300",
+                      )}
+                      onClick={() => toggleMetric(metric.id)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">
+                              {metric.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 truncate mt-1">{metric.category}</p>
+                          </div>
+                          {selectedDisplayMetrics.has(metric.id) && (
+                            <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
+                          )}
+                        </div>
+                        <div className="text-sm font-bold text-gray-900">
+                          {formatDisplayValue(results[metric.id] || metric.historicalData[0]?.value || 0, metric.unit)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
 
-        {/* Results */}
-        <Card className="shadow-lg rounded-xl border-none">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-800">Scenario Results</CardTitle>
-            <CardDescription className="text-gray-600">Impact on selected financial metrics</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-6 mb-8">
-              {Array.from(selectedDisplayMetrics).map((metricId) => {
-                const data = getMetricDisplayData(metricId)
-                if (!data) return null
-
-                const isPositive = data.change > 0
-                const isNegative = data.change < 0
-
-                return (
-                  <div key={data.id} className="space-y-2">
-                    <div className="text-sm text-gray-600">{data.name}</div>
-                    <div className="text-3xl font-bold text-gray-900">
-                      {formatDisplayValue(data.scenario, data.unit)}
-                    </div>
-                    {data.isDynamicallyCalculated && (
-                      <div
-                        className={`text-sm flex items-center space-x-1 ${
-                          isPositive ? "text-green-600" : isNegative ? "text-red-600" : "text-gray-500"
-                        }`}
+                {/* Second row - additional metrics, shown when expanded */}
+                {showAllMetrics && (
+                  <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
+                    {otherMetrics.map((metric) => (
+                      <Card
+                        key={metric.id}
+                        className={cn(
+                          "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
+                          selectedDisplayMetrics.has(metric.id)
+                            ? "border-apple-blue-600 bg-apple-blue-50"
+                            : "border-gray-200 hover:border-gray-300",
+                        )}
+                        onClick={() => toggleMetric(metric.id)}
                       >
-                        {data.change !== 0 &&
-                          (isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
-                        <span>{formatDisplayChange(data.change, data.unit, data.id)}</span>
-                      </div>
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">
+                                {metric.name}
+                              </h3>
+                              <p className="text-xs text-gray-500 truncate mt-1">{metric.category}</p>
+                            </div>
+                            {selectedDisplayMetrics.has(metric.id) && (
+                              <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
+                            )}
+                          </div>
+                          <div className="text-sm font-bold text-gray-900">
+                            {formatDisplayValue(
+                              results[metric.id] || metric.historicalData[0]?.value || 0,
+                              metric.unit,
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Show More/Less button */}
+                {otherMetrics.length > 0 && (
+                  <div className="flex justify-center pt-4">
+                    {!showAllMetrics ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAllMetrics(true)}
+                        className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Show {otherMetrics.length} More Metrics
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAllMetrics(false)}
+                        className="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
+                      >
+                        Show Less
+                      </Button>
                     )}
                   </div>
-                )
-              })}
-            </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-            <ChartContainer
-              config={{
-                baseline: { label: "Baseline", color: "hsl(var(--chart-1))" },
-                scenario: { label: "Scenario", color: "hsl(var(--chart-2))" },
-              }}
-              className={`min-h-[200px] h-[${Math.max(200, selectedDisplayMetrics.size * 50 + 100)}px]`}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="metric" tickLine={false} axisLine={false} interval={0} tick={{ fontSize: 12 }} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="baseline" fill="var(--color-baseline)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="scenario" fill="var(--color-scenario)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Input Controls */}
+            <Card className="shadow-lg rounded-xl border-none bg-white">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-xl font-semibold text-gray-800">Scenario Inputs</CardTitle>
+                <CardDescription className="text-gray-600">Adjust key business levers to see impact</CardDescription>
+              </CardHeader>
+              <CardContent className="px-6 pb-6 space-y-8">
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Loan Growth (%)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.loanGrowth]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, loanGrowth: value[0] }))}
+                      max={20}
+                      min={-10}
+                      step={1}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-10%</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.loanGrowth}%</span>
+                    <span>+20%</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Deposit Rate Change (bps)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.depositRateChange]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, depositRateChange: value[0] }))}
+                      max={100}
+                      min={-50}
+                      step={5}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-50bps</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.depositRateChange}bps</span>
+                    <span>+100bps</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Provisioning Change (%)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.provisioningChange]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, provisioningChange: value[0] }))}
+                      max={50}
+                      min={-25}
+                      step={5}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-25%</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.provisioningChange}%</span>
+                    <span>+50%</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Fee Income Growth (%)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.feeGrowth]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, feeGrowth: value[0] }))}
+                      max={15}
+                      min={-15}
+                      step={1}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-15%</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.feeGrowth}%</span>
+                    <span>+15%</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Operating Cost Growth (%)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.costGrowth]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, costGrowth: value[0] }))}
+                      max={10}
+                      min={-10}
+                      step={1}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-10%</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.costGrowth}%</span>
+                    <span>+10%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Results */}
+            <Card className="shadow-lg rounded-xl border-none bg-white">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-xl font-semibold text-gray-800">Scenario Results</CardTitle>
+                <CardDescription className="text-gray-600">Impact on selected financial metrics</CardDescription>
+              </CardHeader>
+              <CardContent className="px-6 pb-6">
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  {Array.from(selectedDisplayMetrics).map((metricId) => {
+                    const data = getMetricDisplayData(metricId)
+                    if (!data) return null
+
+                    const isPositive = data.change > 0
+                    const isNegative = data.change < 0
+
+                    return (
+                      <div key={data.id} className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                        <div className="text-sm text-gray-600 font-medium">{data.name}</div>
+                        <div className="text-3xl font-bold text-gray-900">
+                          {formatDisplayValue(data.scenario, data.unit)}
+                        </div>
+                        {data.isDynamicallyCalculated && (
+                          <div
+                            className={`text-sm flex items-center space-x-1 ${
+                              isPositive ? "text-green-600" : isNegative ? "text-red-600" : "text-gray-500"
+                            }`}
+                          >
+                            {data.change !== 0 &&
+                              (isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                            <span className="font-medium">{formatDisplayChange(data.change, data.unit, data.id)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <ChartContainer
+                  config={{
+                    baseline: { label: "Baseline", color: "hsl(var(--chart-1))" },
+                    scenario: { label: "Scenario", color: "hsl(var(--chart-2))" },
+                  }}
+                  className={`min-h-[200px] h-[${Math.max(200, selectedDisplayMetrics.size * 50 + 100)}px]`}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="metric" tickLine={false} axisLine={false} interval={0} tick={{ fontSize: 12 }} />
+                      <YAxis tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="baseline" fill="var(--color-baseline)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="scenario" fill="var(--color-scenario)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI Summary */}
+          <Card className="shadow-lg rounded-xl border-none bg-white">
+            <CardHeader className="pb-6">
+              <CardTitle className="text-xl font-semibold text-gray-800">AI Impact Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="px-6 pb-6">
+              <p className="text-gray-700 leading-relaxed text-base">{generateAISummary()}</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      {/* AI Summary */}
-      <Card className="shadow-lg rounded-xl border-none">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800">AI Impact Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-700 leading-relaxed">{generateAISummary()}</p>
-        </CardContent>
-      </Card>
     </div>
   )
 }
