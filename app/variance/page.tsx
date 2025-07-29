@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { detailedVarianceData, type LineItem } from "@/lib/sample-data"
 import { financialRatios } from "@/lib/financial-ratios"
-import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus } from "lucide-react"
+import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   LineChart,
@@ -417,13 +417,23 @@ export default function VarianceAnalysis() {
           <h1 className="text-4xl font-bold text-gray-900">Variance Analysis</h1>
           <p className="text-lg text-gray-600 mt-1">Financial metrics analysis and line item breakdown</p>
         </div>
-        <Button
-          asChild
-          variant="outline"
-          className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent"
-        >
-          <Link href="/">Back to Dashboard</Link>
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full border-apple-blue-300 text-apple-blue-700 hover:bg-apple-blue-50 bg-transparent"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Ask AI about this data
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent"
+          >
+            <Link href="/">Back to Dashboard</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Metric Selection Cards */}

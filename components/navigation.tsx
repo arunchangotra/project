@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Building2, Menu, MessageSquare } from "lucide-react"
+import { Building2, Menu } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -37,12 +37,6 @@ export function Navigation({ onSidebarToggle }: NavigationProps) {
       </div>
 
       <div className="flex items-center space-x-4">
-        {/* Chat Toggle */}
-        <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-          <MessageSquare className="h-4 w-4" />
-          <span>Chat</span>
-        </Button>
-
         {/* User Avatar Placeholder */}
         <div className="h-8 w-8 bg-apple-blue-600 rounded-full flex items-center justify-center">
           <span className="text-white text-sm font-medium">CF</span>

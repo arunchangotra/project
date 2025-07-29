@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import { usePathname } from "next/navigation"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { ChatSidebar } from "@/components/chat-sidebar"
@@ -13,10 +14,15 @@ export function ClientLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const pathname = usePathname()
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isChatMaximized, setIsChatMaximized] = useState(false)
   const [initialChatMessage, setInitialChatMessage] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Define tool routes where chat widget should be available
+  const toolRoutes = ["/variance", "/scenarios", "/board-deck", "/dashboard"]
+  const isChatEnabled = toolRoutes.includes(pathname)
 
   // Function to handle sending a message from anywhere in the app
   const handleSendInitialMessage = (message: string) => {
@@ -38,6 +44,14 @@ export function ClientLayout({
       return () => clearTimeout(timer)
     }
   }, [isChatOpen, initialChatMessage])
+
+  // Close chat when navigating away from tool routes
+  useEffect(() => {
+    if (!isChatEnabled && (isChatOpen || isChatMaximized)) {
+      setIsChatOpen(false)
+      setIsChatMaximized(false)
+    }
+  }, [pathname, isChatEnabled])
 
   // Handle sidebar toggle
   const handleSidebarToggle = (isOpen: boolean) => {
@@ -64,14 +78,16 @@ export function ClientLayout({
         <div className="fixed inset-0 bg-black/20 z-10 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      {/* Floating CFO Chat Widget - always available */}
-      <CFOChatWidget
-        isChatOpen={isChatOpen}
-        setIsChatOpen={setIsChatOpen}
-        isMaximized={isChatMaximized}
-        setIsMaximized={setIsChatMaximized}
-        initialMessage={initialChatMessage}
-      />
+      {/* Floating CFO Chat Widget - only available on tool screens */}
+      {isChatEnabled && (
+        <CFOChatWidget
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+          isMaximized={isChatMaximized}
+          setIsMaximized={setIsChatMaximized}
+          initialMessage={initialChatMessage}
+        />
+      )}
     </div>
   )
 }
