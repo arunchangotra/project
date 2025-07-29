@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Copy } from "lucide-react"
+import { Send, Copy, Sparkles, ChevronUp, ChevronDown } from "lucide-react"
 
 interface ChatMessage {
   id: string
@@ -21,6 +21,14 @@ interface ChatInterfaceProps {
   initialMessage: string | null
 }
 
+const promptSuggestions = [
+  "Why did net interest margin drop?",
+  "How did SME loans perform vs last quarter?",
+  "What drove the increase in provisions?",
+  "Compare our NIM to industry peers",
+  "Explain the fee income variance",
+]
+
 export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -33,6 +41,7 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showQuickQuestions, setShowQuickQuestions] = useState(true)
 
   // Effect to handle initial message from AIChatInput
   useEffect(() => {
@@ -97,6 +106,46 @@ export function ChatInterface({ isMaximized, initialMessage }: ChatInterfaceProp
 
   return (
     <div className="flex flex-col h-full">
+      {isMaximized && (
+        <Card className="shadow-lg rounded-xl border-none mb-4">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-semibold flex items-center space-x-2 text-gray-800">
+                <Sparkles className="h-4 w-4 text-apple-blue-600" />
+                <span>Quick Questions</span>
+              </CardTitle>
+              <CardDescription className="text-sm text-gray-600">Click to ask common questions</CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowQuickQuestions((prev) => !prev)}
+              className="h-8 w-8 text-gray-600 hover:bg-gray-100"
+            >
+              {showQuickQuestions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              <span className="sr-only">{showQuickQuestions ? "Collapse" : "Expand"} quick questions</span>
+            </Button>
+          </CardHeader>
+          {showQuickQuestions && (
+            <CardContent>
+              <div className="space-y-2">
+                {promptSuggestions.map((suggestion, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-left justify-start h-auto p-2 text-xs rounded-lg border-gray-300 text-gray-700 hover:bg-apple-gray-100"
+                    onClick={() => handleSend(suggestion)}
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       <Card className="shadow-lg rounded-xl border-none flex flex-col flex-1">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold text-gray-800">Chat</CardTitle>
