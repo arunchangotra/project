@@ -2,10 +2,13 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import { Inter } from "next/font/google"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { CFOChatWidget } from "@/components/cfo-chat-widget"
 import { cn } from "@/lib/utils"
+
+const inter = Inter({ subsets: ["latin"] })
 
 export default function ClientLayout({
   children,
@@ -45,8 +48,8 @@ export default function ClientLayout({
 
   return (
     <html lang="en">
-      <body className={cn(isChatMaximized && "overflow-hidden")}>
-        <div className="flex flex-col min-h-screen bg-apple-gray-50">
+      <body className={cn(inter.className, isChatMaximized && "overflow-hidden")}>
+        <div className="flex flex-col min-h-screen bg-gray-50">
           <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-lg supports-[backdrop-filter]:bg-white/80 border-b border-gray-200 shadow-sm">
             <div className="container mx-auto flex h-16 items-center px-4 md:px-6">
               <Navigation onSidebarToggle={handleSidebarToggle} />

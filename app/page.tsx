@@ -94,9 +94,7 @@ export default function ChatDashboard() {
   if (showChat) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3">
-          <Navigation onToggleSidebar={setIsSidebarOpen} />
-        </div>
+        <Navigation onToggleSidebar={setIsSidebarOpen} />
         <ChatSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
         <div className={`transition-all duration-300 ${isSidebarOpen ? "ml-80" : "ml-0"}`}>
           <div className="p-4">
@@ -110,9 +108,7 @@ export default function ChatDashboard() {
   // Show the main dashboard
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3">
-        <Navigation onToggleSidebar={setIsSidebarOpen} />
-      </div>
+      <Navigation onToggleSidebar={setIsSidebarOpen} />
       <ChatSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
 
       <div className={`transition-all duration-300 ${isSidebarOpen ? "ml-80" : "ml-0"}`}>

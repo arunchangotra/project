@@ -133,147 +133,153 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 shadow-lg">
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onToggle(false)}
-            className="h-8 w-8 text-gray-500 hover:text-gray-700"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black/20 z-40 lg:hidden" onClick={() => onToggle(false)} />
 
-        <ScrollArea className="flex-1 overflow-hidden">
-          <div className="p-4 space-y-6">
-            {/* New Chat Button */}
-            <Button className="w-full bg-apple-blue-600 hover:bg-apple-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              New Chat
+      {/* Sidebar */}
+      <div className="fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 shadow-lg">
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onToggle(false)}
+              className="h-8 w-8 text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-4 w-4" />
             </Button>
+          </div>
 
-            {/* Tools Section */}
-            <div className="space-y-3">
-              <Button
-                variant="ghost"
-                onClick={() => setShowTools(!showTools)}
-                className="w-full justify-start p-0 h-auto text-left font-medium text-gray-900 hover:bg-transparent"
-              >
-                <div className="flex items-center space-x-2">
-                  <Wrench className="h-4 w-4 text-gray-600" />
-                  <span>Tools</span>
-                  {showTools ? (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                  )}
-                </div>
+          <ScrollArea className="flex-1 overflow-hidden">
+            <div className="p-4 space-y-6">
+              {/* New Chat Button */}
+              <Button className="w-full bg-apple-blue-600 hover:bg-apple-blue-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                New Chat
               </Button>
 
-              {showTools && (
-                <div className="space-y-2 ml-2">
-                  {tools.map((tool) => {
-                    const IconComponent = tool.icon
-                    return (
-                      <Card
-                        key={tool.id}
-                        className={`cursor-pointer transition-all duration-200 border ${
-                          tool.isActive
-                            ? "hover:shadow-sm hover:border-apple-blue-200 border-gray-200"
-                            : "border-gray-100 bg-gray-50 cursor-not-allowed"
-                        }`}
-                        onClick={() => handleToolClick(tool)}
-                      >
-                        <CardContent className="p-3">
-                          <div className="flex items-start space-x-3">
-                            <div
-                              className={`p-2 rounded-lg flex-shrink-0 ${
-                                tool.isActive ? "bg-apple-blue-50 text-apple-blue-600" : "bg-gray-100 text-gray-400"
-                              }`}
-                            >
-                              <IconComponent className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center space-x-2">
-                                <h3
-                                  className={`text-sm font-medium truncate ${
-                                    tool.isActive ? "text-gray-900" : "text-gray-500"
-                                  }`}
-                                >
-                                  {tool.title}
-                                </h3>
-                                {!tool.isActive && (
-                                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                                    Coming soon
-                                  </Badge>
-                                )}
-                              </div>
-                              <p
-                                className={`text-xs mt-1 line-clamp-2 ${
-                                  tool.isActive ? "text-gray-600" : "text-gray-400"
+              {/* Tools Section */}
+              <div className="space-y-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowTools(!showTools)}
+                  className="w-full justify-start p-0 h-auto text-left font-medium text-gray-900 hover:bg-transparent"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Wrench className="h-4 w-4 text-gray-600" />
+                    <span>Tools</span>
+                    {showTools ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                </Button>
+
+                {showTools && (
+                  <div className="space-y-2 ml-2">
+                    {tools.map((tool) => {
+                      const IconComponent = tool.icon
+                      return (
+                        <Card
+                          key={tool.id}
+                          className={`cursor-pointer transition-all duration-200 border ${
+                            tool.isActive
+                              ? "hover:shadow-sm hover:border-apple-blue-200 border-gray-200"
+                              : "border-gray-100 bg-gray-50 cursor-not-allowed"
+                          }`}
+                          onClick={() => handleToolClick(tool)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-start space-x-3">
+                              <div
+                                className={`p-2 rounded-lg flex-shrink-0 ${
+                                  tool.isActive ? "bg-apple-blue-50 text-apple-blue-600" : "bg-gray-100 text-gray-400"
                                 }`}
                               >
-                                {tool.description}
-                              </p>
+                                <IconComponent className="h-4 w-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2">
+                                  <h3
+                                    className={`text-sm font-medium truncate ${
+                                      tool.isActive ? "text-gray-900" : "text-gray-500"
+                                    }`}
+                                  >
+                                    {tool.title}
+                                  </h3>
+                                  {!tool.isActive && (
+                                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                      Coming soon
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p
+                                  className={`text-xs mt-1 line-clamp-2 ${
+                                    tool.isActive ? "text-gray-600" : "text-gray-400"
+                                  }`}
+                                >
+                                  {tool.description}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Recent Chats Section */}
+              <div className="space-y-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowRecentChats(!showRecentChats)}
+                  className="w-full justify-start p-0 h-auto text-left font-medium text-gray-900 hover:bg-transparent"
+                >
+                  <div className="flex items-center space-x-2">
+                    <MessageSquare className="h-4 w-4 text-gray-600" />
+                    <span>Recent Chats</span>
+                    {showRecentChats ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                </Button>
+
+                {showRecentChats && (
+                  <div className="space-y-2 ml-2">
+                    {recentChats.map((chat) => (
+                      <Card
+                        key={chat.id}
+                        className="cursor-pointer hover:shadow-sm hover:border-apple-blue-200 transition-all duration-200 border border-gray-200"
+                      >
+                        <CardContent className="p-3">
+                          <div className="space-y-2">
+                            <h3 className="text-sm font-medium text-gray-900 truncate">{chat.title}</h3>
+                            <p className="text-xs text-gray-600 line-clamp-2">{chat.preview}</p>
+                            <div className="flex items-center space-x-1 text-xs text-gray-500">
+                              <Clock className="h-3 w-3" />
+                              <span>{chat.timestamp}</span>
                             </div>
                           </div>
                         </CardContent>
                       </Card>
-                    )
-                  })}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-
-            <Separator />
-
-            {/* Recent Chats Section */}
-            <div className="space-y-3">
-              <Button
-                variant="ghost"
-                onClick={() => setShowRecentChats(!showRecentChats)}
-                className="w-full justify-start p-0 h-auto text-left font-medium text-gray-900 hover:bg-transparent"
-              >
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="h-4 w-4 text-gray-600" />
-                  <span>Recent Chats</span>
-                  {showRecentChats ? (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                  )}
-                </div>
-              </Button>
-
-              {showRecentChats && (
-                <div className="space-y-2 ml-2">
-                  {recentChats.map((chat) => (
-                    <Card
-                      key={chat.id}
-                      className="cursor-pointer hover:shadow-sm hover:border-apple-blue-200 transition-all duration-200 border border-gray-200"
-                    >
-                      <CardContent className="p-3">
-                        <div className="space-y-2">
-                          <h3 className="text-sm font-medium text-gray-900 truncate">{chat.title}</h3>
-                          <p className="text-xs text-gray-600 line-clamp-2">{chat.preview}</p>
-                          <div className="flex items-center space-x-1 text-xs text-gray-500">
-                            <Clock className="h-3 w-3" />
-                            <span>{chat.timestamp}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </ScrollArea>
+          </ScrollArea>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
