@@ -1,19 +1,10 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import {
   X,
-  MessageSquare,
-  Clock,
-  Bookmark,
-  Settings,
-  HelpCircle,
+  ChevronDown,
+  ChevronRight,
   Wrench,
   BarChart3,
   TrendingUp,
@@ -21,39 +12,29 @@ import {
   FileText,
   Users,
   DollarSign,
-  Target,
+  Shield,
   Activity,
-  ArrowRight,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 interface ChatSidebarProps {
   isOpen: boolean
-  onToggle: (open: boolean) => void
-}
-
-interface ToolCard {
-  id: string
-  title: string
-  description: string
-  icon: React.ComponentType<{ className?: string }>
-  route?: string
-  isActive: boolean
+  onToggle: (isOpen: boolean) => void
 }
 
 export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
-  const router = useRouter()
-  const [activeSection, setActiveSection] = useState<string | null>(null)
+  const [isToolsExpanded, setIsToolsExpanded] = useState(true)
 
-  const toolCards: ToolCard[] = [
+  const tools = [
     {
       id: "earnings-overview",
       title: "Earnings Overview",
       description: "Get quarterly performance snapshots and KPI summaries",
       icon: BarChart3,
       route: "/dashboard",
-      isActive: true,
+      active: true,
     },
     {
       id: "variance-analysis",
@@ -61,7 +42,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
       description: "Drill down into specific changes with AI explanations",
       icon: TrendingUp,
       route: "/variance",
-      isActive: true,
+      active: true,
     },
     {
       id: "what-if-scenarios",
@@ -69,7 +50,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
       description: "Simulate impact of business levers on key metrics",
       icon: Calculator,
       route: "/scenarios",
-      isActive: true,
+      active: true,
     },
     {
       id: "board-deck",
@@ -77,220 +58,158 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
       description: "Generate AI-powered narratives for presentations",
       icon: FileText,
       route: "/board-deck",
-      isActive: true,
+      active: true,
     },
     {
-      id: "peer-comparison",
+      id: "peer-benchmarking",
       title: "Peer Benchmarking",
       description: "Compare performance against industry peers",
       icon: Users,
-      isActive: false,
+      active: false,
     },
     {
-      id: "profitability-analysis",
+      id: "profitability",
       title: "Profitability Deep Dive",
       description: "Analyze ROE, ROA, and margin trends",
       icon: DollarSign,
-      isActive: false,
+      active: false,
     },
     {
-      id: "risk-metrics",
+      id: "risk-assessment",
       title: "Risk Assessment",
       description: "Review NPL ratios, provisions, and asset quality",
-      icon: Target,
-      isActive: false,
+      icon: Shield,
+      active: false,
     },
     {
-      id: "efficiency-metrics",
+      id: "efficiency",
       title: "Operational Efficiency",
       description: "Cost-to-income ratios and productivity metrics",
       icon: Activity,
-      isActive: false,
+      active: false,
     },
   ]
 
-  const handleToolClick = (tool: ToolCard) => {
-    if (tool.isActive && tool.route) {
-      router.push(tool.route)
+  const handleToolClick = (tool: (typeof tools)[0]) => {
+    if (tool.active && tool.route) {
       onToggle(false) // Close sidebar after navigation
     }
   }
 
-  const toggleSection = (section: string) => {
-    setActiveSection(activeSection === section ? null : section)
-  }
-
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 shadow-lg">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
-        <Button variant="ghost" size="icon" onClick={() => onToggle(false)} className="h-8 w-8">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+    <div
+      className={`fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-20 ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+          <Button variant="ghost" size="icon" onClick={() => onToggle(false)} className="h-8 w-8 hover:bg-gray-100">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
 
-      <ScrollArea className="flex-1 h-[calc(100vh-80px)]">
-        <div className="p-4 space-y-6">
-          {/* Recent Conversations */}
-          <div>
-            <Button
-              variant="ghost"
-              className="w-full justify-between p-2 h-auto"
-              onClick={() => toggleSection("recent")}
-            >
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="h-4 w-4" />
-                <span className="font-medium">Recent</span>
-              </div>
-              <ArrowRight
-                className={cn("h-4 w-4 transition-transform", activeSection === "recent" ? "rotate-90" : "")}
-              />
-            </Button>
-            {activeSection === "recent" && (
-              <div className="mt-2 space-y-2 pl-6">
-                <p className="text-sm text-gray-500">No recent conversations</p>
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4">
           {/* Tools Section */}
-          <div>
+          <div className="mb-6">
             <Button
               variant="ghost"
-              className="w-full justify-between p-2 h-auto"
-              onClick={() => toggleSection("tools")}
+              onClick={() => setIsToolsExpanded(!isToolsExpanded)}
+              className="w-full justify-between p-2 h-auto hover:bg-gray-50"
             >
               <div className="flex items-center space-x-2">
-                <Wrench className="h-4 w-4" />
-                <span className="font-medium">Tools</span>
+                <Wrench className="h-4 w-4 text-gray-600" />
+                <span className="font-medium text-gray-900">Tools</span>
               </div>
-              <ArrowRight
-                className={cn("h-4 w-4 transition-transform", activeSection === "tools" ? "rotate-90" : "")}
-              />
+              {isToolsExpanded ? (
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+              )}
             </Button>
-            {activeSection === "tools" && (
+
+            {isToolsExpanded && (
               <div className="mt-3 space-y-2">
-                {toolCards.map((tool) => {
+                {tools.map((tool) => {
                   const IconComponent = tool.icon
-                  return (
-                    <Card
-                      key={tool.id}
-                      className={cn(
-                        "transition-all duration-200 border",
-                        tool.isActive
-                          ? "cursor-pointer hover:shadow-md hover:border-apple-blue-200 bg-white"
-                          : "cursor-not-allowed bg-gray-50 border-gray-200",
-                      )}
-                      onClick={() => handleToolClick(tool)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-start space-x-3">
-                          <div
-                            className={cn(
-                              "p-2 rounded-lg flex-shrink-0",
-                              tool.isActive ? "bg-apple-blue-50" : "bg-gray-100",
-                            )}
-                          >
-                            <IconComponent
-                              className={cn("h-4 w-4", tool.isActive ? "text-apple-blue-600" : "text-gray-400")}
-                            />
-                          </div>
+
+                  if (tool.active && tool.route) {
+                    return (
+                      <Link key={tool.id} href={tool.route}>
+                        <div
+                          onClick={() => handleToolClick(tool)}
+                          className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
+                        >
+                          <IconComponent className="h-5 w-5 text-blue-600 mt-0.5 group-hover:text-blue-700" />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <h4
-                                className={cn("text-sm font-medium", tool.isActive ? "text-gray-900" : "text-gray-500")}
-                              >
-                                {tool.title}
-                              </h4>
-                              {!tool.isActive && (
-                                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
-                                  Coming soon
-                                </span>
-                              )}
-                            </div>
-                            <p
-                              className={cn(
-                                "text-xs mt-1 leading-relaxed",
-                                tool.isActive ? "text-gray-600" : "text-gray-400",
-                              )}
-                            >
-                              {tool.description}
-                            </p>
+                            <h3 className="text-sm font-medium text-gray-900 group-hover:text-gray-800">
+                              {tool.title}
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">{tool.description}</p>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </Link>
+                    )
+                  }
+
+                  return (
+                    <div
+                      key={tool.id}
+                      className="flex items-start space-x-3 p-3 rounded-lg cursor-not-allowed opacity-60"
+                    >
+                      <IconComponent className="h-5 w-5 text-gray-400 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-sm font-medium text-gray-500">{tool.title}</h3>
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500">
+                            Coming soon
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">{tool.description}</p>
+                      </div>
+                    </div>
                   )
                 })}
               </div>
             )}
           </div>
 
-          <Separator />
-
-          {/* History */}
-          <div>
-            <Button
-              variant="ghost"
-              className="w-full justify-between p-2 h-auto"
-              onClick={() => toggleSection("history")}
-            >
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4" />
-                <span className="font-medium">History</span>
+          {/* Recent Conversations */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Recent Conversations</h3>
+            <div className="space-y-2">
+              <div className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <p className="text-sm text-gray-700">Q3 variance analysis discussion</p>
+                <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
               </div>
-              <ArrowRight
-                className={cn("h-4 w-4 transition-transform", activeSection === "history" ? "rotate-90" : "")}
-              />
-            </Button>
-            {activeSection === "history" && (
-              <div className="mt-2 space-y-2 pl-6">
-                <p className="text-sm text-gray-500">No conversation history</p>
+              <div className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <p className="text-sm text-gray-700">Board deck preparation</p>
+                <p className="text-xs text-gray-500 mt-1">Yesterday</p>
               </div>
-            )}
+              <div className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <p className="text-sm text-gray-700">Risk assessment review</p>
+                <p className="text-xs text-gray-500 mt-1">3 days ago</p>
+              </div>
+            </div>
           </div>
 
-          <Separator />
-
-          {/* Saved */}
+          {/* Settings */}
           <div>
-            <Button
-              variant="ghost"
-              className="w-full justify-between p-2 h-auto"
-              onClick={() => toggleSection("saved")}
-            >
-              <div className="flex items-center space-x-2">
-                <Bookmark className="h-4 w-4" />
-                <span className="font-medium">Saved</span>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Settings</h3>
+            <div className="space-y-2">
+              <div className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <p className="text-sm text-gray-700">Preferences</p>
               </div>
-              <ArrowRight
-                className={cn("h-4 w-4 transition-transform", activeSection === "saved" ? "rotate-90" : "")}
-              />
-            </Button>
-            {activeSection === "saved" && (
-              <div className="mt-2 space-y-2 pl-6">
-                <p className="text-sm text-gray-500">No saved items</p>
+              <div className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <p className="text-sm text-gray-700">Help & Support</p>
               </div>
-            )}
+            </div>
           </div>
         </div>
-
-        {/* Bottom Actions */}
-        <div className="p-4 border-t border-gray-200 space-y-2">
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="sm">
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Help & Support
-          </Button>
-        </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
