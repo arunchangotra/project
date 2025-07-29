@@ -29,7 +29,7 @@ export interface PeerMetricValue {
 export interface FinancialRatio {
   id: string // Unique identifier for the ratio (e.g., "ROA", "CET1")
   name: string // Display name (e.g., "Return on Assets (ROA)")
-  category: MetricCategory
+  category: MetricCategory | "profitability" | "efficiency" | "asset_quality" | "capital"
   unit: string // e.g., "%", "x", "$M"
   description: string // Short description of the ratio
   formula: string // The mathematical formula for the ratio
@@ -38,6 +38,8 @@ export interface FinancialRatio {
   historicalData: MetricValue[] // Data for "Our Bank" over time (last 4 quarters)
   peerData: PeerMetricValue[] // Current quarter data for peers
   isPopular?: boolean // Flag for popular metrics to show in card view
+  trend?: "up" | "down" | "stable"
+  benchmark?: number
 }
 
 // Helper to generate realistic interconnected historical data
@@ -131,6 +133,8 @@ export const financialRatios: FinancialRatio[] = [
     historicalData: generateRealisticHistoricalData(3.45, "%", quarters, "improving", "low"),
     peerData: generateRealisticPeerData(3.45, 0.15, 0.08),
     isPopular: true,
+    trend: "up",
+    benchmark: 3.21,
   },
   {
     id: "ROA",
@@ -144,6 +148,8 @@ export const financialRatios: FinancialRatio[] = [
     historicalData: generateRealisticHistoricalData(1.28, "%", quarters, "improving", "medium"),
     peerData: generateRealisticPeerData(1.28, 0.05, 0.02),
     isPopular: true,
+    trend: "up",
+    benchmark: 1.25,
   },
   {
     id: "ROE",
@@ -158,6 +164,8 @@ export const financialRatios: FinancialRatio[] = [
     historicalData: generateRealisticHistoricalData(12.8, "%", quarters, "improving", "medium"),
     peerData: generateRealisticPeerData(12.8, 0.8, 0.3),
     isPopular: true,
+    trend: "up",
+    benchmark: 12.5,
   },
   {
     id: "ER",
@@ -171,6 +179,8 @@ export const financialRatios: FinancialRatio[] = [
     historicalData: generateRealisticHistoricalData(58.2, "%", quarters, "improving", "low"),
     peerData: generateRealisticPeerData(58.2, -1.6, -0.8),
     isPopular: true,
+    trend: "down",
+    benchmark: 55.8,
   },
   {
     id: "CAR",
@@ -184,6 +194,8 @@ export const financialRatios: FinancialRatio[] = [
     historicalData: generateRealisticHistoricalData(14.5, "%", quarters, "stable", "low"),
     peerData: generateRealisticPeerData(14.5, 0.2, 0.1),
     isPopular: true,
+    trend: "stable",
+    benchmark: 14.5,
   },
   {
     id: "CET1",
@@ -210,6 +222,8 @@ export const financialRatios: FinancialRatio[] = [
     historicalData: generateRealisticHistoricalData(1.8, "%", quarters, "declining", "medium"),
     peerData: generateRealisticPeerData(1.8, -0.1, -0.05),
     isPopular: true,
+    trend: "down",
+    benchmark: 2.1,
   },
   {
     id: "LDR",
@@ -297,5 +311,76 @@ export const financialRatios: FinancialRatio[] = [
     lowerMeans: "Perceived undervaluation or weak performance",
     historicalData: generateRealisticHistoricalData(1.2, "x", quarters, "stable", "medium"),
     peerData: generateRealisticPeerData(1.2, 0.05, 0.02),
+  },
+]
+
+export const calculateROE = (netIncome: number, shareholderEquity: number): number => {
+  return (netIncome / shareholderEquity) * 100
+}
+
+export const calculateROA = (netIncome: number, totalAssets: number): number => {
+  return (netIncome / totalAssets) * 100
+}
+
+export const calculateNIM = (netInterestIncome: number, averageEarningAssets: number): number => {
+  return (netInterestIncome / averageEarningAssets) * 100
+}
+
+export const calculateCIR = (operatingExpenses: number, operatingIncome: number): number => {
+  return (operatingExpenses / operatingIncome) * 100
+}
+
+export const calculateNPLRatio = (nonPerformingLoans: number, totalLoans: number): number => {
+  return (nonPerformingLoans / totalLoans) * 100
+}
+
+export const sampleRatios: FinancialRatio[] = [
+  {
+    name: "Return on Equity",
+    value: 14.2,
+    unit: "%",
+    category: "profitability",
+    trend: "up",
+    benchmark: 12.5,
+  },
+  {
+    name: "Return on Assets",
+    value: 1.42,
+    unit: "%",
+    category: "profitability",
+    trend: "up",
+    benchmark: 1.25,
+  },
+  {
+    name: "Net Interest Margin",
+    value: 3.45,
+    unit: "%",
+    category: "profitability",
+    trend: "up",
+    benchmark: 3.21,
+  },
+  {
+    name: "Cost-to-Income Ratio",
+    value: 52.3,
+    unit: "%",
+    category: "efficiency",
+    trend: "down",
+    benchmark: 55.8,
+  },
+  {
+    name: "NPL Ratio",
+    value: 1.8,
+    unit: "%",
+    category: "asset_quality",
+    trend: "down",
+    benchmark: 2.1,
+  },
+  {
+    name: "Capital Adequacy Ratio",
+    value: 16.8,
+    unit: "%",
+    category: "capital",
+    trend: "stable",
+    benchmark: 14.5,
   },
 ]

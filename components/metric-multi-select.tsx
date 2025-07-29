@@ -1,87 +1,75 @@
 "use client"
 
-import * as React from "react"
-import { Check, ChevronDown } from "lucide-react"
-
-import { cn } from "@/lib/utils"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
-import type { FinancialRatio } from "@/lib/financial-ratios"
+import { ChevronDown } from "lucide-react"
 
-interface MetricMultiSelectProps {
-  metrics: FinancialRatio[]
-  selectedMetrics: Set<string>
-  onSelectChange: (newSelectedMetrics: Set<string>) => void
+interface MetricOption {
+  id: string
+  label: string
+  category?: string
 }
 
-export function MetricMultiSelect({ metrics, selectedMetrics, onSelectChange }: MetricMultiSelectProps) {
-  const [open, setOpen] = React.useState(false)
-  const [searchTerm, setSearchTerm] = React.useState("")
+interface MetricMultiSelectProps {
+  options: MetricOption[]
+  selectedValues: string[]
+  onSelectionChange: (values: string[]) => void
+  placeholder?: string
+}
 
-  const handleSelect = (metricId: string) => {
-    const newSelected = new Set(selectedMetrics)
-    if (newSelected.has(metricId)) {
-      newSelected.delete(metricId)
-    } else {
-      newSelected.add(metricId)
-    }
-    onSelectChange(newSelected)
+export function MetricMultiSelect({
+  options,
+  selectedValues,
+  onSelectionChange,
+  placeholder = "Select metrics...",
+}: MetricMultiSelectProps) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const handleToggle = (value: string) => {
+    const newSelection = selectedValues.includes(value)
+      ? selectedValues.filter((v) => v !== value)
+      : [...selectedValues, value]
+
+    onSelectionChange(newSelection)
   }
 
-  const filteredMetrics = React.useMemo(() => {
-    if (!searchTerm) return metrics
-    const lowerSearchTerm = searchTerm.toLowerCase()
-    return metrics.filter(
-      (metric) =>
-        metric.name.toLowerCase().includes(lowerSearchTerm) ||
-        metric.id.toLowerCase().includes(lowerSearchTerm) ||
-        metric.category.toLowerCase().includes(lowerSearchTerm),
-    )
-  }, [metrics, searchTerm])
+  const selectedLabels = options.filter((option) => selectedValues.includes(option.id)).map((option) => option.label)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between rounded-lg border-gray-300 focus:ring-apple-blue-500 focus:border-apple-blue-500"
-        >
-          {selectedMetrics.size > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {Array.from(selectedMetrics).map((metricId) => {
-                const metric = metrics.find((m) => m.id === metricId)
-                return (
-                  <Badge key={metricId} variant="secondary" className="rounded-full px-2 py-0.5 text-xs">
-                    {metric?.name || metricId}
-                  </Badge>
-                )
-              })}
-            </div>
-          ) : (
-            "Select metrics..."
-          )}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        <Button variant="outline" className="w-full justify-between text-left font-normal bg-transparent">
+          <span className="truncate">
+            {selectedLabels.length > 0
+              ? selectedLabels.length === 1
+                ? selectedLabels[0]
+                : `${selectedLabels.length} metrics selected`
+              : placeholder}
+          </span>
+          <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 rounded-lg shadow-md">
-        <Command>
-          <CommandInput placeholder="Search metrics..." value={searchTerm} onValueChange={setSearchTerm} />
-          <CommandList>
-            <CommandEmpty>No metrics found.</CommandEmpty>
-            <CommandGroup>
-              {filteredMetrics.map((metric) => (
-                <CommandItem key={metric.id} value={metric.name} onSelect={() => handleSelect(metric.id)}>
-                  <Check className={cn("mr-2 h-4 w-4", selectedMetrics.has(metric.id) ? "opacity-100" : "opacity-0")} />
-                  {metric.name} ({metric.unit})
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+      <PopoverContent className="w-80 p-0" align="start">
+        <div className="max-h-64 overflow-y-auto">
+          {options.map((option) => (
+            <div key={option.id} className="flex items-center space-x-2 p-3 hover:bg-gray-50">
+              <Checkbox
+                id={option.id}
+                checked={selectedValues.includes(option.id)}
+                onCheckedChange={() => handleToggle(option.id)}
+              />
+              <label
+                htmlFor={option.id}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+              >
+                {option.label}
+                {option.category && <span className="text-xs text-gray-500 block">{option.category}</span>}
+              </label>
+            </div>
+          ))}
+        </div>
       </PopoverContent>
     </Popover>
   )

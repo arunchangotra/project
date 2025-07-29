@@ -8,15 +8,15 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "AI Earnings Assistant",
-  description: "AI-powered financial analysis and earnings insights for CFOs",
+  description: "AI-powered earnings assistant for banking insights, variance analysis, and strategic planning",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
       <body className={inter.className}>

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { detailedVarianceData, type LineItem } from "@/lib/sample-data"
 import { financialRatios } from "@/lib/financial-ratios"
-import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus } from "lucide-react"
+import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, AlertCircle, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   LineChart,
@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useState, useMemo, useEffect, useRef } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { sampleVarianceData } from "@/lib/sample-data"
 
 // Helper function to format currency
 const formatCurrency = (value: number) => `$${Math.abs(value)}M`
@@ -175,6 +176,7 @@ export default function VarianceAnalysis() {
   })
   const [selectedSegment, setSelectedSegment] = useState("All")
   const [selectedItem, setSelectedItem] = useState<LineItem | null>(null)
+  const [selectedMetricDetail, setSelectedMetricDetail] = useState<string | null>(null)
 
   // Period selection for line item analysis
   const [currentPeriod, setCurrentPeriod] = useState("Jul-Sep 2024")
@@ -410,81 +412,140 @@ export default function VarianceAnalysis() {
   }, [searchParams, popularMetrics])
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">Variance Analysis</h1>
-          <p className="text-lg text-gray-600 mt-1">Financial metrics analysis and line item breakdown</p>
+    <div className="space-y-10 min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900">Variance Analysis</h1>
+            <p className="text-lg text-gray-600 mt-1">Financial metrics analysis and line item breakdown</p>
+          </div>
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent"
+          >
+            <Link href="/">Back to Dashboard</Link>
+          </Button>
         </div>
-        <Button
-          asChild
-          variant="outline"
-          className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent"
-        >
-          <Link href="/">Back to Dashboard</Link>
-        </Button>
-      </div>
 
-      {/* Metric Selection Cards */}
-      <Card className="shadow-lg rounded-xl border-none">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
-            <Filter className="h-5 w-5 text-apple-blue-600" />
-            <span>Select Metrics to Analyze</span>
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            Choose multiple metrics to compare their historical trends and peer performance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {/* First row - always visible popular metrics */}
-            <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2">
-              {popularMetrics.map((metric) => (
-                <Card
-                  key={metric.id}
-                  className={cn(
-                    "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
-                    selectedMetrics.has(metric.id)
-                      ? "border-apple-blue-600 bg-apple-blue-50"
-                      : "border-gray-200 hover:border-gray-300",
+        {/* Variance Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {sampleVarianceData.map((item, index) => (
+            <Card key={index} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{item.metric}</CardTitle>
+                  {item.variance > 0 ? (
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-5 w-5 text-red-600" />
                   )}
-                  onClick={() => toggleMetric(metric.id)}
-                >
-                  <CardContent className="p-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">{metric.name}</h3>
-                        <p className="text-xs text-gray-500 truncate">{metric.category}</p>
-                      </div>
-                      {selectedMetrics.has(metric.id) && (
-                        <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold text-gray-900">
-                        {formatValue(metric.historicalData[0]?.value || 0, metric.unit)}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        <span
-                          className={cn(
-                            (metric.historicalData[0]?.yoyChange || 0) > 0 ? "text-green-600" : "text-red-600",
-                          )}
-                        >
-                          {formatChange(metric.historicalData[0]?.yoyChange || 0, metric.unit)}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Actual</p>
+                    <p className="font-semibold">₹{item.actual.toFixed(1)}M</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Budget</p>
+                    <p className="font-semibold">₹{item.budget.toFixed(1)}M</p>
+                  </div>
+                </div>
 
-            {/* Second row - additional metrics, shown when expanded */}
-            {showAllMetrics && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Variance</span>
+                    <Badge variant={item.variance > 0 ? "default" : "destructive"}>
+                      {item.variance > 0 ? "+" : ""}₹{item.variance.toFixed(1)}M ({item.variancePercent > 0 ? "+" : ""}
+                      {item.variancePercent.toFixed(1)}%)
+                    </Badge>
+                  </div>
+
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-start space-x-2">
+                      {item.variance > 0 ? (
+                        <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      )}
+                      <p className="text-sm text-gray-700">{item.explanation}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full bg-transparent"
+                  onClick={() => setSelectedMetricDetail(item.metric)}
+                >
+                  View Details
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Detailed Analysis */}
+        {selectedMetricDetail && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Detailed Analysis: {selectedMetricDetail}</CardTitle>
+              <CardDescription>AI-powered insights and recommendations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">AI Insights</h4>
+                  <p className="text-blue-800 text-sm">
+                    Based on historical patterns and current market conditions, this variance is within expected ranges.
+                    Key drivers include seasonal factors and strategic initiatives implemented in Q3.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <h5 className="font-medium mb-2">Contributing Factors</h5>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Market rate changes (+15 bps impact)</li>
+                      <li>• Portfolio mix optimization</li>
+                      <li>• Seasonal business patterns</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-4 border rounded-lg">
+                    <h5 className="font-medium mb-2">Recommendations</h5>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Monitor trend continuation</li>
+                      <li>• Adjust Q4 forecasts accordingly</li>
+                      <li>• Review pricing strategies</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Metric Selection Cards */}
+        <Card className="shadow-lg rounded-xl border-none">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
+              <Filter className="h-5 w-5 text-apple-blue-600" />
+              <span>Select Metrics to Analyze</span>
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Choose multiple metrics to compare their historical trends and peer performance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {/* First row - always visible popular metrics */}
               <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2">
-                {otherMetrics.map((metric) => (
+                {popularMetrics.map((metric) => (
                   <Card
                     key={metric.id}
                     className={cn(
@@ -523,361 +584,407 @@ export default function VarianceAnalysis() {
                   </Card>
                 ))}
               </div>
-            )}
 
-            {/* Show More/Less button */}
-            {otherMetrics.length > 0 && (
-              <div className="flex justify-center pt-2">
-                {!showAllMetrics ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAllMetrics(true)}
-                    className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Show {otherMetrics.length} More Metrics
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAllMetrics(false)}
-                    className="border-gray-300 text-gray-600 hover:bg-gray-50"
-                  >
-                    Show Less
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Charts Section */}
-      {selectedMetrics.size > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Historical Trend Chart */}
-          <Card className="shadow-lg rounded-xl border-none">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-800">Historical Trend</CardTitle>
-              <CardDescription className="text-gray-600">Performance over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={Object.fromEntries(
-                  selectedMetricsData.map((metric, index) => [
-                    metric!.id,
-                    {
-                      label: metric!.name,
-                      color: `hsl(var(--chart-${(index % 5) + 1}))`,
-                    },
-                  ]),
-                )}
-                className="h-[300px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="quarter" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <Tooltip />
-                    <Legend />
-                    {selectedMetricsData.map((metric, index) => (
-                      <Line
-                        key={metric!.id}
-                        type="monotone"
-                        dataKey={metric!.id}
-                        stroke={`var(--color-${metric!.id})`}
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                        name={metric!.name}
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          {/* Peer Comparison Chart */}
-          <Card className="shadow-lg rounded-xl border-none">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-800">Peer Comparison</CardTitle>
-              <CardDescription className="text-gray-600">
-                Current period comparison with YoY and QoQ changes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={Object.fromEntries(
-                  selectedMetricsData.map((metric, index) => [
-                    `${metric!.id}_value`,
-                    {
-                      label: metric!.name,
-                      color: `hsl(var(--chart-${(index % 5) + 1}))`,
-                    },
-                  ]),
-                )}
-                className="h-[300px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={peerComparisonData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="bank" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <Tooltip />
-                    <Legend />
-                    {selectedMetricsData.map((metric, index) => (
-                      <Bar
-                        key={metric!.id}
-                        dataKey={`${metric!.id}_value`}
-                        fill={`var(--color-${metric!.id}_value)`}
-                        radius={[4, 4, 0, 0]}
-                        name={metric!.name}
-                      />
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Line Item Analysis Table */}
-      <Card className="shadow-lg rounded-xl border-none">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800">Line Item Analysis</CardTitle>
-          <CardDescription className="text-gray-600">
-            Click on any row to view detailed driver breakdown
-          </CardDescription>
-          <div className="flex items-center space-x-4 mt-4">
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Current Period:</label>
-              <Select value={currentPeriod} onValueChange={setCurrentPeriod}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Jul-Sep 2024">Jul-Sep 2024</SelectItem>
-                  <SelectItem value="Apr-Jun 2024">Apr-Jun 2024</SelectItem>
-                  <SelectItem value="Jan-Mar 2024">Jan-Mar 2024</SelectItem>
-                  <SelectItem value="Oct-Dec 2023">Oct-Dec 2023</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Previous Period:</label>
-              <Select value={previousPeriod} onValueChange={setPreviousPeriod}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Apr-Jun 2024">Apr-Jun 2024</SelectItem>
-                  <SelectItem value="Jan-Mar 2024">Jan-Mar 2024</SelectItem>
-                  <SelectItem value="Oct-Dec 2023">Oct-Dec 2023</SelectItem>
-                  <SelectItem value="Jul-Sep 2023">Jul-Sep 2023</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Segment:</label>
-              <Select value={selectedSegment} onValueChange={setSelectedSegment}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Retail">Retail</SelectItem>
-                  <SelectItem value="Corporate">Corporate</SelectItem>
-                  <SelectItem value="Treasury">Treasury</SelectItem>
-                  <SelectItem value="Operational">Operational</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table className="w-full">
-            <TableHeader>
-              <TableRow className="bg-apple-gray-100 hover:bg-apple-gray-100">
-                <TableHead className="text-gray-700 font-semibold">Line Item</TableHead>
-                <TableHead className="text-right text-gray-700 font-semibold">{currentPeriod}</TableHead>
-                <TableHead className="text-right text-gray-700 font-semibold">{previousPeriod}</TableHead>
-                <TableHead className="text-right text-gray-700 font-semibold">Variance ($)</TableHead>
-                <TableHead className="text-right text-gray-700 font-semibold">Variance (%)</TableHead>
-                <TableHead className="text-gray-700 font-semibold">Segment</TableHead>
-                <TableHead className="text-gray-700 font-semibold">AI Explanation</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {renderableData.map((item) => {
-                const isParent = item.level !== 2
-                const isExpanded = expandedRows.has(item.id)
-
-                return (
-                  <Sheet
-                    key={item.id}
-                    open={selectedItem?.id === item.id}
-                    onOpenChange={(open) => !open && setSelectedItem(null)}
-                  >
-                    <SheetTrigger asChild>
-                      <TableRow
-                        className={cn(
-                          "cursor-pointer hover:bg-apple-gray-50 transition-colors duration-200 border-b border-gray-100",
-                          item.level === 0 && "font-bold bg-apple-gray-100 hover:bg-apple-gray-200",
-                          item.level === 1 && "font-semibold",
-                        )}
-                        onClick={() => {
-                          setSelectedItem(item)
-                          if (isParent) {
-                            toggleRow(item.id)
-                          }
-                        }}
-                      >
-                        {renderCells(item, isExpanded)}
-                      </TableRow>
-                    </SheetTrigger>
-                    {selectedItem?.id === item.id && (
-                      <SheetContent className="w-[600px] sm:w-[600px] bg-white shadow-xl rounded-l-xl">
-                        <SheetHeader className="pb-4 border-b border-gray-200">
-                          <SheetTitle className="text-2xl font-bold text-gray-900">
-                            {selectedItem?.category} - Detailed Analysis
-                          </SheetTitle>
-                          <SheetDescription className="text-gray-600">
-                            Driver breakdown and variance explanation
-                          </SheetDescription>
-                        </SheetHeader>
-                        <div className="mt-6 space-y-6">
-                          {selectedItem?.current !== undefined && selectedItem?.previous !== undefined && (
-                            <div className="grid grid-cols-2 gap-4">
-                              <Card className="shadow-md rounded-xl border-none">
-                                <CardHeader className="pb-2">
-                                  <CardTitle className="text-sm text-gray-600">{currentPeriod}</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="text-2xl font-bold text-gray-900">
-                                    {formatCurrency(selectedItem.current)}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                              <Card className="shadow-md rounded-xl border-none">
-                                <CardHeader className="pb-2">
-                                  <CardTitle className="text-sm text-gray-600">{previousPeriod}</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="text-2xl font-bold text-gray-900">
-                                    {formatCurrency(selectedItem.previous)}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </div>
-                          )}
-
-                          {selectedItem?.aiExplanation && (
-                            <Card className="shadow-md rounded-xl border-none">
-                              <CardHeader>
-                                <CardTitle className="text-sm text-gray-600">AI Analysis</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <p className="text-gray-700">{selectedItem.aiExplanation}</p>
-                              </CardContent>
-                            </Card>
-                          )}
-
-                          {selectedItem?.drivers && selectedItem.drivers.length > 0 && (
-                            <Card className="shadow-md rounded-xl border-none">
-                              <CardHeader>
-                                <CardTitle className="text-sm text-gray-600">Key Drivers</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <ul className="space-y-2 text-gray-700">
-                                  {selectedItem.drivers.map((driver, index) => (
-                                    <li key={index} className="flex justify-between items-center">
-                                      <span>{driver.name}</span>
-                                      <span
-                                        className={cn(
-                                          driver.impact === "positive" && "text-green-600",
-                                          driver.impact === "negative" && "text-red-600",
-                                          driver.impact === "neutral" && "text-gray-500",
-                                        )}
-                                      >
-                                        {driver.impact === "positive" && "+"}
-                                        {driver.impact === "negative" && "-"}
-                                        {formatCurrency(driver.value)}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </CardContent>
-                            </Card>
-                          )}
-
-                          {selectedItem?.relatedMetrics && selectedItem.relatedMetrics.length > 0 && (
-                            <Card className="shadow-md rounded-xl border-none">
-                              <CardHeader>
-                                <CardTitle className="text-sm text-gray-600">Related Metrics</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <ul className="space-y-2 text-gray-700">
-                                  {selectedItem.relatedMetrics.map((metricId) => {
-                                    const metric = financialRatios.find((r) => r.id === metricId)
-                                    if (metric) {
-                                      return (
-                                        <li key={metric.id} className="flex justify-between items-start">
-                                          <span className="font-medium">{metric.name}</span>
-                                          <span className="text-sm text-gray-500 ml-2">{metric.description}</span>
-                                        </li>
-                                      )
-                                    } else {
-                                      return (
-                                        <li key={metricId} className="flex justify-between items-start">
-                                          <span className="font-medium">{metricId}</span>
-                                          <span className="text-sm text-gray-500 ml-2">
-                                            (Metric details not available)
-                                          </span>
-                                        </li>
-                                      )
-                                    }
-                                  })}
-                                </ul>
-                              </CardContent>
-                            </Card>
-                          )}
-
-                          {selectedItem?.newsArticles && selectedItem.newsArticles.length > 0 && (
-                            <Card className="shadow-md rounded-xl border-none">
-                              <CardHeader>
-                                <CardTitle className="text-sm text-gray-600">Relevant News</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <ul className="space-y-2 text-gray-700">
-                                  {selectedItem.newsArticles.map((article, index) => (
-                                    <li key={index}>
-                                      <a
-                                        href={article.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-apple-blue-600 hover:underline text-sm"
-                                      >
-                                        {article.title}
-                                      </a>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </CardContent>
-                            </Card>
+              {/* Second row - additional metrics, shown when expanded */}
+              {showAllMetrics && (
+                <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2">
+                  {otherMetrics.map((metric) => (
+                    <Card
+                      key={metric.id}
+                      className={cn(
+                        "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
+                        selectedMetrics.has(metric.id)
+                          ? "border-apple-blue-600 bg-apple-blue-50"
+                          : "border-gray-200 hover:border-gray-300",
+                      )}
+                      onClick={() => toggleMetric(metric.id)}
+                    >
+                      <CardContent className="p-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">
+                              {metric.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 truncate">{metric.category}</p>
+                          </div>
+                          {selectedMetrics.has(metric.id) && (
+                            <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
                           )}
                         </div>
-                      </SheetContent>
-                    )}
-                  </Sheet>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-bold text-gray-900">
+                            {formatValue(metric.historicalData[0]?.value || 0, metric.unit)}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            <span
+                              className={cn(
+                                (metric.historicalData[0]?.yoyChange || 0) > 0 ? "text-green-600" : "text-red-600",
+                              )}
+                            >
+                              {formatChange(metric.historicalData[0]?.yoyChange || 0, metric.unit)}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Show More/Less button */}
+              {otherMetrics.length > 0 && (
+                <div className="flex justify-center pt-2">
+                  {!showAllMetrics ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAllMetrics(true)}
+                      className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Show {otherMetrics.length} More Metrics
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAllMetrics(false)}
+                      className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                    >
+                      Show Less
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Charts Section */}
+        {selectedMetrics.size > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Historical Trend Chart */}
+            <Card className="shadow-lg rounded-xl border-none">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold text-gray-800">Historical Trend</CardTitle>
+                <CardDescription className="text-gray-600">Performance over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={Object.fromEntries(
+                    selectedMetricsData.map((metric, index) => [
+                      metric!.id,
+                      {
+                        label: metric!.name,
+                        color: `hsl(var(--chart-${(index % 5) + 1}))`,
+                      },
+                    ]),
+                  )}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="quarter" tickLine={false} axisLine={false} />
+                      <YAxis tickLine={false} axisLine={false} />
+                      <Tooltip />
+                      <Legend />
+                      {selectedMetricsData.map((metric, index) => (
+                        <Line
+                          key={metric!.id}
+                          type="monotone"
+                          dataKey={metric!.id}
+                          stroke={`var(--color-${metric!.id})`}
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                          name={metric!.name}
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            {/* Peer Comparison Chart */}
+            <Card className="shadow-lg rounded-xl border-none">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold text-gray-800">Peer Comparison</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Current period comparison with YoY and QoQ changes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={Object.fromEntries(
+                    selectedMetricsData.map((metric, index) => [
+                      `${metric!.id}_value`,
+                      {
+                        label: metric!.name,
+                        color: `hsl(var(--chart-${(index % 5) + 1}))`,
+                      },
+                    ]),
+                  )}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={peerComparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="bank" tickLine={false} axisLine={false} />
+                      <YAxis tickLine={false} axisLine={false} />
+                      <Tooltip />
+                      <Legend />
+                      {selectedMetricsData.map((metric, index) => (
+                        <Bar
+                          key={metric!.id}
+                          dataKey={`${metric!.id}_value`}
+                          fill={`var(--color-${metric!.id}_value)`}
+                          radius={[4, 4, 0, 0]}
+                          name={metric!.name}
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Line Item Analysis Table */}
+        <Card className="shadow-lg rounded-xl border-none">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-gray-800">Line Item Analysis</CardTitle>
+            <CardDescription className="text-gray-600">
+              Click on any row to view detailed driver breakdown
+            </CardDescription>
+            <div className="flex items-center space-x-4 mt-4">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">Current Period:</label>
+                <Select value={currentPeriod} onValueChange={setCurrentPeriod}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Jul-Sep 2024">Jul-Sep 2024</SelectItem>
+                    <SelectItem value="Apr-Jun 2024">Apr-Jun 2024</SelectItem>
+                    <SelectItem value="Jan-Mar 2024">Jan-Mar 2024</SelectItem>
+                    <SelectItem value="Oct-Dec 2023">Oct-Dec 2023</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">Previous Period:</label>
+                <Select value={previousPeriod} onValueChange={setPreviousPeriod}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Apr-Jun 2024">Apr-Jun 2024</SelectItem>
+                    <SelectItem value="Jan-Mar 2024">Jan-Mar 2024</SelectItem>
+                    <SelectItem value="Oct-Dec 2023">Oct-Dec 2023</SelectItem>
+                    <SelectItem value="Jul-Sep 2023">Jul-Sep 2023</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">Segment:</label>
+                <Select value={selectedSegment} onValueChange={setSelectedSegment}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="Retail">Retail</SelectItem>
+                    <SelectItem value="Corporate">Corporate</SelectItem>
+                    <SelectItem value="Treasury">Treasury</SelectItem>
+                    <SelectItem value="Operational">Operational</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow className="bg-apple-gray-100 hover:bg-apple-gray-100">
+                  <TableHead className="text-gray-700 font-semibold">Line Item</TableHead>
+                  <TableHead className="text-right text-gray-700 font-semibold">{currentPeriod}</TableHead>
+                  <TableHead className="text-right text-gray-700 font-semibold">{previousPeriod}</TableHead>
+                  <TableHead className="text-right text-gray-700 font-semibold">Variance ($)</TableHead>
+                  <TableHead className="text-right text-gray-700 font-semibold">Variance (%)</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">Segment</TableHead>
+                  <TableHead className="text-gray-700 font-semibold">AI Explanation</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {renderableData.map((item) => {
+                  const isParent = item.level !== 2
+                  const isExpanded = expandedRows.has(item.id)
+
+                  return (
+                    <Sheet
+                      key={item.id}
+                      open={selectedItem?.id === item.id}
+                      onOpenChange={(open) => !open && setSelectedItem(null)}
+                    >
+                      <SheetTrigger asChild>
+                        <TableRow
+                          className={cn(
+                            "cursor-pointer hover:bg-apple-gray-50 transition-colors duration-200 border-b border-gray-100",
+                            item.level === 0 && "font-bold bg-apple-gray-100 hover:bg-apple-gray-200",
+                            item.level === 1 && "font-semibold",
+                          )}
+                          onClick={() => {
+                            setSelectedItem(item)
+                            if (isParent) {
+                              toggleRow(item.id)
+                            }
+                          }}
+                        >
+                          {renderCells(item, isExpanded)}
+                        </TableRow>
+                      </SheetTrigger>
+                      {selectedItem?.id === item.id && (
+                        <SheetContent className="w-[600px] sm:w-[600px] bg-white shadow-xl rounded-l-xl">
+                          <SheetHeader className="pb-4 border-b border-gray-200">
+                            <SheetTitle className="text-2xl font-bold text-gray-900">
+                              {selectedItem?.category} - Detailed Analysis
+                            </SheetTitle>
+                            <SheetDescription className="text-gray-600">
+                              Driver breakdown and variance explanation
+                            </SheetDescription>
+                          </SheetHeader>
+                          <div className="mt-6 space-y-6">
+                            {selectedItem?.current !== undefined && selectedItem?.previous !== undefined && (
+                              <div className="grid grid-cols-2 gap-4">
+                                <Card className="shadow-md rounded-xl border-none">
+                                  <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm text-gray-600">{currentPeriod}</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                      {formatCurrency(selectedItem.current)}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                                <Card className="shadow-md rounded-xl border-none">
+                                  <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm text-gray-600">{previousPeriod}</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                      {formatCurrency(selectedItem.previous)}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            )}
+
+                            {selectedItem?.aiExplanation && (
+                              <Card className="shadow-md rounded-xl border-none">
+                                <CardHeader>
+                                  <CardTitle className="text-sm text-gray-600">AI Analysis</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <p className="text-gray-700">{selectedItem.aiExplanation}</p>
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {selectedItem?.drivers && selectedItem.drivers.length > 0 && (
+                              <Card className="shadow-md rounded-xl border-none">
+                                <CardHeader>
+                                  <CardTitle className="text-sm text-gray-600">Key Drivers</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <ul className="space-y-2 text-gray-700">
+                                    {selectedItem.drivers.map((driver, index) => (
+                                      <li key={index} className="flex justify-between items-center">
+                                        <span>{driver.name}</span>
+                                        <span
+                                          className={cn(
+                                            driver.impact === "positive" && "text-green-600",
+                                            driver.impact === "negative" && "text-red-600",
+                                            driver.impact === "neutral" && "text-gray-500",
+                                          )}
+                                        >
+                                          {driver.impact === "positive" && "+"}
+                                          {driver.impact === "negative" && "-"}
+                                          {formatCurrency(driver.value)}
+                                        </span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {selectedItem?.relatedMetrics && selectedItem.relatedMetrics.length > 0 && (
+                              <Card className="shadow-md rounded-xl border-none">
+                                <CardHeader>
+                                  <CardTitle className="text-sm text-gray-600">Related Metrics</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <ul className="space-y-2 text-gray-700">
+                                    {selectedItem.relatedMetrics.map((metricId) => {
+                                      const metric = financialRatios.find((r) => r.id === metricId)
+                                      if (metric) {
+                                        return (
+                                          <li key={metric.id} className="flex justify-between items-start">
+                                            <span className="font-medium">{metric.name}</span>
+                                            <span className="text-sm text-gray-500 ml-2">{metric.description}</span>
+                                          </li>
+                                        )
+                                      } else {
+                                        return (
+                                          <li key={metricId} className="flex justify-between items-start">
+                                            <span className="font-medium">{metricId}</span>
+                                            <span className="text-sm text-gray-500 ml-2">
+                                              (Metric details not available)
+                                            </span>
+                                          </li>
+                                        )
+                                      }
+                                    })}
+                                  </ul>
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {selectedItem?.newsArticles && selectedItem.newsArticles.length > 0 && (
+                              <Card className="shadow-md rounded-xl border-none">
+                                <CardHeader>
+                                  <CardTitle className="text-sm text-gray-600">Relevant News</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <ul className="space-y-2 text-gray-700">
+                                    {selectedItem.newsArticles.map((article, index) => (
+                                      <li key={index}>
+                                        <a
+                                          href={article.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-apple-blue-600 hover:underline text-sm"
+                                        >
+                                          {article.title}
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </div>
+                        </SheetContent>
+                      )}
+                    </Sheet>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
