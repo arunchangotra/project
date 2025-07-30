@@ -404,9 +404,9 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
     return content
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/^## (.*$)/gm, '<h3 class="text-lg font-semibold text-gray-900 mb-3 mt-4 first:mt-0">$1</h3>')
-      .replace(/^### (.*$)/gm, '<h4 class="text-base font-semibold text-gray-800 mb-2 mt-3">$1</h4>')
-      .replace(/^• (.*$)/gm, '<li class="ml-4 mb-1">$1</li>')
+      .replace(/^## (.*$)/gm, '<h3 class="text-sm font-semibold text-gray-900 mb-1.5 mt-2 first:mt-0">$1</h3>')
+      .replace(/^### (.*$)/gm, '<h4 class="text-xs font-semibold text-gray-800 mb-1 mt-1.5">$1</h4>')
+      .replace(/^• (.*$)/gm, '<li class="ml-3 mb-0.5 text-xs leading-tight">$1</li>')
       .replace(/\n\n/g, "<br><br>")
       .replace(/\n/g, "<br>")
   }
@@ -427,8 +427,8 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col p-0 min-h-0">
-          <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-            <div className="space-y-4">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 p-3">
+            <div className="space-y-2">
               {messages.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -439,7 +439,7 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={cn("flex space-x-3", message.role === "user" ? "justify-end" : "justify-start")}
+                  className={cn("flex space-x-2", message.role === "user" ? "justify-end" : "justify-start")}
                 >
                   {message.role === "assistant" && (
                     <div className="flex-shrink-0">
@@ -451,19 +451,19 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
 
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-lg p-3",
+                      "max-w-[85%] rounded-lg p-2",
                       message.role === "user" ? "bg-apple-blue-600 text-white" : "bg-gray-50 text-gray-900",
                     )}
                   >
                     <div
-                      className="text-sm leading-relaxed prose prose-sm max-w-none"
+                      className="text-xs leading-snug prose prose-xs max-w-none"
                       dangerouslySetInnerHTML={{
                         __html: formatMessageContent(message.content),
                       }}
                     />
 
                     {message.isStreaming && (
-                      <div className="flex items-center mt-2">
+                      <div className="flex items-center mt-1">
                         <div className="flex space-x-1">
                           <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
                           <div
@@ -479,11 +479,11 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
                     )}
 
                     {message.citations && !message.isStreaming && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs text-gray-600 mb-2">Sources:</p>
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <p className="text-xs text-gray-600 mb-1">Sources:</p>
                         <div className="flex flex-wrap gap-1">
                           {message.citations.map((citation, index) => (
-                            <span key={index} className="text-xs bg-white px-2 py-1 rounded border text-gray-700">
+                            <span key={index} className="text-xs bg-white px-1.5 py-0.5 rounded border text-gray-700">
                               {citation}
                             </span>
                           ))}
@@ -492,24 +492,24 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
                     )}
 
                     {message.role === "assistant" && !message.isStreaming && (
-                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
-                        <div className="flex items-center space-x-1">
+                      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-200">
+                        <div className="flex items-center space-x-0.5">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleCopyMessage(message.content)}
-                            className="h-6 w-6 text-gray-500 hover:text-gray-700"
+                            className="h-5 w-5 text-gray-500 hover:text-gray-700"
                           >
-                            <Copy className="h-3 w-3" />
+                            <Copy className="h-2.5 w-2.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
-                            <ThumbsUp className="h-3 w-3" />
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                            <ThumbsUp className="h-2.5 w-2.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
-                            <ThumbsDown className="h-3 w-3" />
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                            <ThumbsDown className="h-2.5 w-2.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-500 hover:text-gray-700">
-                            <RotateCcw className="h-3 w-3" />
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                            <RotateCcw className="h-2.5 w-2.5" />
                           </Button>
                         </div>
                         <span className="text-xs text-gray-500">
@@ -561,7 +561,7 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
           </ScrollArea>
 
           {/* Input area with ref for scrolling */}
-          <div ref={inputAreaRef} className="p-4 border-t border-gray-100 flex-shrink-0 bg-white">
+          <div ref={inputAreaRef} className="p-3 border-t border-gray-100 flex-shrink-0 bg-white">
             <AIChatInput
               value={inputValue}
               onChange={setInputValue}
