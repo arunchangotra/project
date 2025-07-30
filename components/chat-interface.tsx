@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AIChatInput } from "@/components/ai-chat-input"
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot } from "lucide-react"
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw, User, Bot, X, Minimize2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Message {
@@ -20,9 +20,11 @@ interface Message {
 interface ChatInterfaceProps {
   isMaximized?: boolean
   initialMessage?: string | null
+  onClose?: () => void
+  onMinimize?: () => void
 }
 
-export function ChatInterface({ isMaximized = false, initialMessage }: ChatInterfaceProps) {
+export function ChatInterface({ isMaximized = false, initialMessage, onClose, onMinimize }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -411,6 +413,191 @@ I'm ready to dive deep into any financial topic you'd like to explore!`
       .replace(/\n/g, "<br>")
   }
 
+  // Render maximized version without Card wrapper
+  if (isMaximized) {
+    return (
+      <div ref={chatContainerRef} className="flex flex-col h-screen bg-white">
+        {/* Single header for maximized mode */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0">
+          <div className="flex items-center space-x-2">
+            <Bot className="h-5 w-5 text-apple-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-900">AI Earnings Assistant</h2>
+            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">BETA</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="text-xs text-gray-500">
+              {messages.length > 0 && `${Math.floor(messages.length / 2)} conversations`}
+            </div>
+            {onMinimize && (
+              <Button variant="ghost" size="icon" onClick={onMinimize} className="h-8 w-8">
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+            )}
+            {onClose && (
+              <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Chat content area */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 p-3">
+            <div className="space-y-2 max-w-4xl mx-auto">
+              {messages.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <Bot className="h-16 w-16 mx-auto mb-6 text-gray-300" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to AI Earnings Assistant</h3>
+                  <p className="text-sm max-w-md mx-auto">
+                    Start a conversation to get financial insights, variance analysis, scenario planning, and more.
+                  </p>
+                </div>
+              )}
+
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn("flex space-x-2", message.role === "user" ? "justify-end" : "justify-start")}
+                >
+                  {message.role === "assistant" && (
+                    <div className="flex-shrink-0">
+                      <div className="h-8 w-8 bg-apple-blue-100 rounded-full flex items-center justify-center">
+                        <Bot className="h-4 w-4 text-apple-blue-600" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-lg p-3",
+                      message.role === "user" ? "bg-apple-blue-600 text-white" : "bg-gray-50 text-gray-900",
+                    )}
+                  >
+                    <div
+                      className="text-xs leading-snug prose prose-xs max-w-none"
+                      dangerouslySetInnerHTML={{
+                        __html: formatMessageContent(message.content),
+                      }}
+                    />
+
+                    {message.isStreaming && (
+                      <div className="flex items-center mt-1">
+                        <div className="flex space-x-1">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div
+                            className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.1s" }}
+                          ></div>
+                          <div
+                            className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {message.citations && !message.isStreaming && (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <p className="text-xs text-gray-600 mb-1">Sources:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {message.citations.map((citation, index) => (
+                            <span key={index} className="text-xs bg-white px-1.5 py-0.5 rounded border text-gray-700">
+                              {citation}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {message.role === "assistant" && !message.isStreaming && (
+                      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-200">
+                        <div className="flex items-center space-x-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCopyMessage(message.content)}
+                            className="h-5 w-5 text-gray-500 hover:text-gray-700"
+                          >
+                            <Copy className="h-2.5 w-2.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                            <ThumbsUp className="h-2.5 w-2.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                            <ThumbsDown className="h-2.5 w-2.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-gray-500 hover:text-gray-700">
+                            <RotateCcw className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {message.timestamp.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {message.role === "user" && (
+                    <div className="flex-shrink-0">
+                      <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-gray-600" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+                <div className="flex space-x-3 justify-start">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 bg-apple-blue-100 rounded-full flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-apple-blue-600" />
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Invisible element to scroll to */}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+
+          {/* Input area */}
+          <div
+            ref={inputAreaRef}
+            className="p-4 border-t border-gray-100 flex-shrink-0 bg-white max-w-4xl mx-auto w-full"
+          >
+            <AIChatInput
+              value={inputValue}
+              onChange={setInputValue}
+              onSubmit={handleSendMessage}
+              disabled={isLoading}
+              placeholder="Ask about financial metrics, scenarios, or analysis..."
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Regular windowed mode
   return (
     <div ref={chatContainerRef} className={cn("flex flex-col", isMaximized ? "h-screen" : "h-full")}>
       <Card className="flex flex-col h-full">
