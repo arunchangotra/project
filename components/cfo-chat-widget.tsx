@@ -1,79 +1,127 @@
 "use client"
+
+import { useState, useEffect } from "react"
+import { MessageSquare, Minimize2, Maximize2, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { MessageSquare, X, Maximize2 } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { ChatInterface } from "./chat-interface"
+import { cn } from "@/lib/utils"
 
 interface CFOChatWidgetProps {
-  isChatOpen: boolean
-  setIsChatOpen: (open: boolean) => void
-  isMaximized: boolean
-  setIsMaximized: (maximized: boolean) => void
-  initialMessage?: string | null
+  isEnabled: boolean
+  onClose?: () => void
 }
 
-export function CFOChatWidget({
-  isChatOpen,
-  setIsChatOpen,
-  isMaximized,
-  setIsMaximized,
-  initialMessage,
-}: CFOChatWidgetProps) {
-  const toggleChat = () => {
-    setIsChatOpen(!isChatOpen)
+export function CFOChatWidget({ isEnabled, onClose }: CFOChatWidgetProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [isMaximized, setIsMaximized] = useState(false)
+
+  // Close chat when it's disabled
+  useEffect(() => {
+    if (!isEnabled && isOpen) {
+      setIsOpen(false)
+      setIsMaximized(false)
+    }
+  }, [isEnabled, isOpen])
+
+  if (!isEnabled) {
+    return null
   }
 
-  const toggleMaximize = () => {
-    setIsMaximized(!isMaximized)
+  const handleToggle = () => {
+    if (isMaximized) {
+      setIsMaximized(false)
+      setIsOpen(false)
+    } else {
+      setIsOpen(!isOpen)
+    }
   }
 
-  const closeChat = () => {
-    setIsChatOpen(false)
+  const handleMaximize = () => {
+    setIsMaximized(true)
+    setIsOpen(false)
+  }
+
+  const handleMinimize = () => {
     setIsMaximized(false)
+    setIsOpen(true)
   }
 
-  if (isMaximized) {
-    return (
-      <div className="fixed inset-0 z-50 bg-white">
-        <div className="h-full">
-          <ChatInterface
-            isMaximized={true}
-            initialMessage={initialMessage}
-            onClose={closeChat}
-            onMinimize={toggleMaximize}
-          />
-        </div>
-      </div>
-    )
+  const handleClose = () => {
+    setIsOpen(false)
+    setIsMaximized(false)
+    onClose?.()
   }
 
   return (
     <>
-      {/* Chat Toggle Button */}
-      {!isChatOpen && (
+      {/* Floating Chat Button */}
+      {!isOpen && !isMaximized && (
         <Button
-          onClick={toggleChat}
-          className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
+          onClick={handleToggle}
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-apple-blue-600 hover:bg-apple-blue-700 shadow-lg z-50"
+          size="icon"
         >
           <MessageSquare className="h-6 w-6 text-white" />
         </Button>
       )}
 
-      {/* Chat Window - Now with dynamic height */}
-      {isChatOpen && !isMaximized && (
-        <div className="fixed bottom-6 right-6 z-40 w-96 bg-white rounded-lg shadow-xl border border-gray-200 flex flex-col max-h-[80vh] min-h-[400px]">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
-            <h3 className="font-semibold text-gray-900">AI Assistant</h3>
+      {/* Windowed Chat */}
+      {isOpen && !isMaximized && (
+        <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col bg-white border-none rounded-xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b bg-white">
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" onClick={toggleMaximize} className="h-8 w-8">
+              <MessageSquare className="h-5 w-5 text-apple-blue-600" />
+              <h3 className="font-semibold text-gray-900">AI Earnings Assistant</h3>
+              <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700">
+                BETA
+              </Badge>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Button variant="ghost" size="sm" onClick={handleMaximize} className="h-8 w-8 p-0">
                 <Maximize2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={closeChat} className="h-8 w-8">
+              <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0">
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          <div className="flex-1 min-h-0">
-            <ChatInterface initialMessage={initialMessage} />
+
+          {/* Chat Content */}
+          <div className="flex-1 overflow-hidden">
+            <ChatInterface isMaximized={false} />
+          </div>
+        </Card>
+      )}
+
+      {/* Maximized Chat */}
+      {isMaximized && (
+        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+          {/* Single Header for Maximized Mode */}
+          <div className="flex items-center justify-between p-4 border-b bg-white">
+            <div className="flex items-center space-x-3">
+              <MessageSquare className="h-6 w-6 text-apple-blue-600" />
+              <h1 className="text-xl font-semibold text-gray-900">AI Earnings Assistant</h1>
+              <Badge variant="secondary" className="text-sm px-3 py-1 bg-blue-100 text-blue-700">
+                BETA
+              </Badge>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500">1 conversation</span>
+              <Button variant="ghost" size="sm" onClick={handleMinimize} className="h-9 w-9 p-0">
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleClose} className="h-9 w-9 p-0">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Chat Content */}
+          <div className="flex-1 overflow-hidden">
+            <ChatInterface isMaximized={true} onClose={handleClose} onMinimize={handleMinimize} />
           </div>
         </div>
       )}
