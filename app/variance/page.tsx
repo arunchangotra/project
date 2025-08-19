@@ -24,10 +24,10 @@ import { ChartContainer } from "@/components/ui/chart"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useState, useMemo, useEffect, useRef } from "react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PeriodFilterComponent } from "@/components/period-filter"
 import { MultiSelectDropdown } from "@/components/multi-select-dropdown"
 import { metricOptions, categoryFilters, bankFilters } from "@/lib/filter-options"
+import { LineItemFilters } from "@/components/line-item-filters"
 
 // Helper function to format currency
 const formatCurrency = (value: number) => `$${Math.abs(value)}M`
@@ -269,6 +269,20 @@ export default function VarianceAnalysis() {
   // State to show all metrics
   const [showAllMetrics, setShowAllMetrics] = useState(false)
 
+  // State variables for line item filters
+  const [selectedBanksForLineItems, setSelectedBanksForLineItems] = useState<string[]>(["ADIB"])
+  const [selectedCategoriesForLineItems, setSelectedCategoriesForLineItems] = useState<string[]>(["P&L"])
+  const [selectedPeriodsForLineItems, setSelectedPeriodsForLineItems] = useState<string[]>(["jas_2024", "amj_2024"])
+  const [selectedColumnsForLineItems, setSelectedColumnsForLineItems] = useState<string[]>([
+    "item",
+    "current_period",
+    "previous_period",
+    "variance",
+    "variance_percent",
+    "segment",
+    "ai_explanation",
+  ])
+
   // Helper function to get data based on filter type
   const getDataByFilter = (metric: any, filterType: ChartFilterType, dataType: "historical" | "peer") => {
     if (dataType === "historical") {
@@ -409,61 +423,87 @@ export default function VarianceAnalysis() {
 
     return (
       <>
-        <TableCell className={cn("font-medium text-gray-800", `pl-${item.level * 4 + 4}`)}>
-          <div className="flex items-center gap-2">
-            {item.category}
-            {(item.level === 0 || item.level === 1) && ( // Only show chevron for collapsible parents
-              <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isExpanded ? "rotate-180" : "")} />
-            )}
-          </div>
-        </TableCell>
-        <TableCell className="text-right text-gray-700">
-          {item.current !== undefined ? formatCurrency(item.current) : "-"}
-        </TableCell>
-        <TableCell className="text-right text-gray-700">
-          {item.previous !== undefined ? formatCurrency(item.previous) : "-"}
-        </TableCell>
-        <TableCell className="text-right">
-          {item.variance !== undefined ? (
-            <div
-              className={cn(
-                "flex items-center justify-end space-x-1",
-                variancePositive ? "text-green-600" : varianceNegative ? "text-red-600" : "text-gray-500",
+        {selectedColumnsForLineItems.includes("item") && (
+          <TableCell className={cn("font-medium text-gray-800", `pl-${item.level * 4 + 4}`)}>
+            <div className="flex items-center gap-2">
+              {item.category}
+              {(item.level === 0 || item.level === 1) && ( // Only show chevron for collapsible parents
+                <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isExpanded ? "rotate-180" : "")} />
               )}
-            >
-              {item.variance !== 0 &&
-                (variancePositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />)}
-              <span>{formatCurrency(item.variance)}</span>
             </div>
-          ) : (
-            "-"
-          )}
-        </TableCell>
-        <TableCell className="text-right">
-          {item.variancePercent !== undefined ? (
-            <Badge
-              variant={variancePercentPositive ? "default" : "destructive"}
-              className={cn("text-xs rounded-full px-2 py-0.5", variancePercentNegative && "bg-red-100 text-red-600")}
-            >
-              {formatPercent(item.variancePercent)}
-            </Badge>
-          ) : (
-            "-"
-          )}
-        </TableCell>
-        <TableCell>
-          {item.segment ? (
-            <Badge
-              variant="outline"
-              className="rounded-full px-2 py-0.5 bg-apple-gray-100 text-gray-600 border-gray-200"
-            >
-              {item.segment}
-            </Badge>
-          ) : (
-            "-"
-          )}
-        </TableCell>
-        <TableCell className="max-w-xs truncate text-gray-700">{item.aiExplanation || "-"}</TableCell>
+          </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("current_period") && (
+          <TableCell className="text-right text-gray-700">
+            {item.current !== undefined ? formatCurrency(item.current) : "-"}
+          </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("previous_period") && (
+          <TableCell className="text-right text-gray-700">
+            {item.previous !== undefined ? formatCurrency(item.previous) : "-"}
+          </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("variance") && (
+          <TableCell className="text-right">
+            {item.variance !== undefined ? (
+              <div
+                className={cn(
+                  "flex items-center justify-end space-x-1",
+                  variancePositive ? "text-green-600" : varianceNegative ? "text-red-600" : "text-gray-500",
+                )}
+              >
+                {item.variance !== 0 &&
+                  (variancePositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />)}
+                <span>{formatCurrency(item.variance)}</span>
+              </div>
+            ) : (
+              "-"
+            )}
+          </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("variance_percent") && (
+          <TableCell className="text-right">
+            {item.variancePercent !== undefined ? (
+              <Badge
+                variant={variancePercentPositive ? "default" : "destructive"}
+                className={cn("text-xs rounded-full px-2 py-0.5", variancePercentNegative && "bg-red-100 text-red-600")}
+              >
+                {formatPercent(item.variancePercent)}
+              </Badge>
+            ) : (
+              "-"
+            )}
+          </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("yoy_change") && (
+          <TableCell className="text-right text-gray-700">
+            {/* YoY data would come from the master CSV */}
+            <span className="text-green-600">+8.2%</span>
+          </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("qoq_change") && (
+          <TableCell className="text-right text-gray-700">
+            {/* QoQ data would come from the master CSV */}
+            <span className="text-blue-600">+2.9%</span>
+          </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("segment") && (
+          <TableCell>
+            {item.segment ? (
+              <Badge
+                variant="outline"
+                className="rounded-full px-2 py-0.5 bg-apple-gray-100 text-gray-600 border-gray-200"
+              >
+                {item.segment}
+              </Badge>
+            ) : (
+              "-"
+            )}
+          </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("ai_explanation") && (
+          <TableCell className="max-w-xs truncate text-gray-700">{item.aiExplanation || "-"}</TableCell>
+        )}
       </>
     )
   }
@@ -895,73 +935,107 @@ export default function VarianceAnalysis() {
           )}
 
           {/* Line Item Analysis Table */}
-          <Card className="shadow-lg rounded-xl border-none bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-semibold text-gray-800">Line Item Analysis</CardTitle>
-              <CardDescription className="text-gray-600 mb-6">
-                Click on any row to view detailed driver breakdown
-              </CardDescription>
-              <div className="flex flex-wrap items-center gap-6">
-                <div className="flex items-center space-x-3">
-                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Segment:</label>
-                  <Select value="All" onValueChange={() => {}}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">All</SelectItem>
-                      <SelectItem value="Retail">Retail</SelectItem>
-                      <SelectItem value="Corporate">Corporate</SelectItem>
-                      <SelectItem value="Treasury">Treasury</SelectItem>
-                      <SelectItem value="Operational">Operational</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="px-6 pb-6">
-              <div className="overflow-x-auto">
-                <Table className="w-full">
-                  <TableHeader>
-                    <TableRow className="bg-apple-gray-100 hover:bg-apple-gray-100">
-                      <TableHead className="text-gray-700 font-semibold py-4">Line Item</TableHead>
-                      <TableHead className="text-right text-gray-700 font-semibold py-4">Current</TableHead>
-                      <TableHead className="text-right text-gray-700 font-semibold py-4">Previous</TableHead>
-                      <TableHead className="text-right text-gray-700 font-semibold py-4">Variance ($)</TableHead>
-                      <TableHead className="text-right text-gray-700 font-semibold py-4">Variance (%)</TableHead>
-                      <TableHead className="text-gray-700 font-semibold py-4">Segment</TableHead>
-                      <TableHead className="text-gray-700 font-semibold py-4">AI Explanation</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {renderableData.map((item) => {
-                      const isParent = item.level !== 2
-                      const isExpanded = expandedRows.has(item.id)
+          <div className="space-y-6">
+            {/* Line Item Filters */}
+            <LineItemFilters
+              selectedBanks={selectedBanksForLineItems}
+              selectedCategories={selectedCategoriesForLineItems}
+              selectedPeriods={selectedPeriodsForLineItems}
+              selectedColumns={selectedColumnsForLineItems}
+              onBanksChange={setSelectedBanksForLineItems}
+              onCategoriesChange={setSelectedCategoriesForLineItems}
+              onPeriodsChange={setSelectedPeriodsForLineItems}
+              onColumnsChange={setSelectedColumnsForLineItems}
+            />
 
-                      return (
-                        <TableRow
-                          key={item.id}
-                          className={cn(
-                            "cursor-pointer hover:bg-apple-gray-50 transition-colors duration-200 border-b border-gray-100",
-                            item.level === 0 && "font-bold bg-apple-gray-100 hover:bg-apple-gray-200",
-                            item.level === 1 && "font-semibold",
-                          )}
-                          onClick={() => {
-                            if (isParent) {
-                              toggleRow(item.id)
-                            }
-                          }}
-                        >
-                          {renderCells(item, isExpanded)}
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+            {/* Enhanced Line Item Analysis Table */}
+            <Card className="shadow-lg rounded-xl border-none bg-white">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-semibold text-gray-800">Line Item Analysis</CardTitle>
+                    <CardDescription className="text-gray-600 mt-2">
+                      Click on any row to view detailed driver breakdown
+                      {selectedBanksForLineItems.length > 0 && (
+                        <span className="block text-sm text-apple-blue-600 mt-1">
+                          Showing data for: {selectedBanksForLineItems.join(", ")}
+                        </span>
+                      )}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="outline" className="text-xs px-2 py-1">
+                      {renderableData.length} items
+                    </Badge>
+                    <Badge variant="outline" className="text-xs px-2 py-1">
+                      {selectedColumnsForLineItems.length} columns
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-6">
+                <div className="overflow-x-auto">
+                  <Table className="w-full">
+                    <TableHeader>
+                      <TableRow className="bg-apple-gray-100 hover:bg-apple-gray-100">
+                        {selectedColumnsForLineItems.includes("item") && (
+                          <TableHead className="text-gray-700 font-semibold py-4">Line Item</TableHead>
+                        )}
+                        {selectedColumnsForLineItems.includes("current_period") && (
+                          <TableHead className="text-right text-gray-700 font-semibold py-4">Current</TableHead>
+                        )}
+                        {selectedColumnsForLineItems.includes("previous_period") && (
+                          <TableHead className="text-right text-gray-700 font-semibold py-4">Previous</TableHead>
+                        )}
+                        {selectedColumnsForLineItems.includes("variance") && (
+                          <TableHead className="text-right text-gray-700 font-semibold py-4">Variance ($)</TableHead>
+                        )}
+                        {selectedColumnsForLineItems.includes("variance_percent") && (
+                          <TableHead className="text-right text-gray-700 font-semibold py-4">Variance (%)</TableHead>
+                        )}
+                        {selectedColumnsForLineItems.includes("yoy_change") && (
+                          <TableHead className="text-right text-gray-700 font-semibold py-4">YoY Change</TableHead>
+                        )}
+                        {selectedColumnsForLineItems.includes("qoq_change") && (
+                          <TableHead className="text-right text-gray-700 font-semibold py-4">QoQ Change</TableHead>
+                        )}
+                        {selectedColumnsForLineItems.includes("segment") && (
+                          <TableHead className="text-gray-700 font-semibold py-4">Segment</TableHead>
+                        )}
+                        {selectedColumnsForLineItems.includes("ai_explanation") && (
+                          <TableHead className="text-gray-700 font-semibold py-4">AI Explanation</TableHead>
+                        )}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {renderableData.map((item) => {
+                        const isParent = item.level !== 2
+                        const isExpanded = expandedRows.has(item.id)
+
+                        return (
+                          <TableRow
+                            key={item.id}
+                            className={cn(
+                              "cursor-pointer hover:bg-apple-gray-50 transition-colors duration-200 border-b border-gray-100",
+                              item.level === 0 && "font-bold bg-apple-gray-100 hover:bg-apple-gray-200",
+                              item.level === 1 && "font-semibold",
+                            )}
+                            onClick={() => {
+                              if (isParent) {
+                                toggleRow(item.id)
+                              }
+                            }}
+                          >
+                            {renderCells(item, isExpanded)}
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
