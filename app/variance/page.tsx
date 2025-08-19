@@ -53,6 +53,9 @@ const formatChange = (value: number, unit: string) => {
   return `${sign}${value.toFixed(1)}`
 }
 
+// Chart filter types
+type ChartFilterType = "Actual" | "QoQ" | "YoY" | "Year"
+
 // Helper function to calculate aggregates for parent line items
 const calculateAggregates = (data: LineItem[]): LineItem[] => {
   const processedData: LineItem[] = JSON.parse(JSON.stringify(data)) // Deep copy
@@ -160,6 +163,10 @@ export default function VarianceAnalysis() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["P&L"])
   const [selectedBanks, setSelectedBanks] = useState<string[]>(["ADIB"])
 
+  // Chart filter states
+  const [historicalChartFilter, setHistoricalChartFilter] = useState<ChartFilterType>("Actual")
+  const [peerChartFilter, setPeerChartFilter] = useState<ChartFilterType>("Actual")
+
   // Multiple metrics selection state for charts - this will be filtered based on above filters
   const [selectedMetricsForChart, setSelectedMetricsForChart] = useState<Set<string>>(() => {
     const metricId = searchParams.get("metricId")
@@ -262,7 +269,43 @@ export default function VarianceAnalysis() {
   // State to show all metrics
   const [showAllMetrics, setShowAllMetrics] = useState(false)
 
-  // Prepare chart data for multiple metrics
+  // Helper function to get data based on filter type
+  const getDataByFilter = (metric: any, filterType: ChartFilterType, dataType: "historical" | "peer") => {
+    if (dataType === "historical") {
+      return metric.historicalData.map((d: any) => {
+        switch (filterType) {
+          case "Actual":
+            return { ...d, value: d.value }
+          case "QoQ":
+            return { ...d, value: d.qoqChange || 0 }
+          case "YoY":
+            return { ...d, value: d.yoyChange || 0 }
+          case "Year":
+            // For year view, we'll show the actual values but group by year
+            return { ...d, value: d.value }
+          default:
+            return { ...d, value: d.value }
+        }
+      })
+    } else {
+      return metric.peerData.map((d: any) => {
+        switch (filterType) {
+          case "Actual":
+            return { ...d, value: d.value }
+          case "QoQ":
+            return { ...d, value: d.qoqChange || 0 }
+          case "YoY":
+            return { ...d, value: d.yoyChange || 0 }
+          case "Year":
+            return { ...d, value: d.value }
+          default:
+            return { ...d, value: d.value }
+        }
+      })
+    }
+  }
+
+  // Prepare chart data for multiple metrics with filter support
   const chartData = useMemo(() => {
     if (selectedMetricsData.length === 0) return []
 
@@ -273,7 +316,8 @@ export default function VarianceAnalysis() {
       .map((quarter) => {
         const dataPoint: any = { quarter }
         selectedMetricsData.forEach((metric) => {
-          const quarterData = metric?.historicalData.find((d) => d.quarter === quarter)
+          const filteredData = getDataByFilter(metric, historicalChartFilter, "historical")
+          const quarterData = filteredData.find((d: any) => d.quarter === quarter)
           if (quarterData) {
             dataPoint[metric.id] = quarterData.value
           }
@@ -281,9 +325,9 @@ export default function VarianceAnalysis() {
         return dataPoint
       })
       .reverse() // Show chronologically
-  }, [selectedMetricsData])
+  }, [selectedMetricsData, historicalChartFilter])
 
-  // Prepare peer comparison data
+  // Prepare peer comparison data with filter support
   const peerComparisonData = useMemo(() => {
     if (selectedMetricsData.length === 0) return []
 
@@ -292,16 +336,15 @@ export default function VarianceAnalysis() {
     return banks.map((bank) => {
       const dataPoint: any = { bank }
       selectedMetricsData.forEach((metric) => {
-        const bankData = metric?.peerData.find((p) => p.bank === bank)
+        const filteredData = getDataByFilter(metric, peerChartFilter, "peer")
+        const bankData = filteredData.find((p: any) => p.bank === bank)
         if (bankData) {
           dataPoint[`${metric.id}_value`] = bankData.value
-          dataPoint[`${metric.id}_yoy`] = bankData.yoyChange || 0
-          dataPoint[`${metric.id}_qoq`] = bankData.qoqChange || 0
         }
       })
       return dataPoint
     })
-  }, [selectedMetricsData])
+  }, [selectedMetricsData, peerChartFilter])
 
   // Filtered and visible data for rendering
   const renderableData = useMemo(() => {
@@ -422,6 +465,40 @@ export default function VarianceAnalysis() {
         </TableCell>
         <TableCell className="max-w-xs truncate text-gray-700">{item.aiExplanation || "-"}</TableCell>
       </>
+    )
+  }
+
+  // Chart Filter Button Component
+  const ChartFilterButtons = ({
+    activeFilter,
+    onFilterChange,
+    className = "",
+  }: {
+    activeFilter: ChartFilterType
+    onFilterChange: (filter: ChartFilterType) => void
+    className?: string
+  }) => {
+    const filters: ChartFilterType[] = ["Actual", "QoQ", "YoY", "Year"]
+
+    return (
+      <div className={cn("flex gap-1", className)}>
+        {filters.map((filter) => (
+          <Button
+            key={filter}
+            variant={activeFilter === filter ? "default" : "outline"}
+            size="sm"
+            onClick={() => onFilterChange(filter)}
+            className={cn(
+              "h-7 px-3 text-xs font-medium rounded-md transition-all",
+              activeFilter === filter
+                ? "bg-apple-blue-600 text-white hover:bg-apple-blue-700 border-apple-blue-600"
+                : "bg-white text-gray-600 hover:bg-gray-50 border-gray-300",
+            )}
+          >
+            {filter}
+          </Button>
+        ))}
+      </div>
     )
   }
 
@@ -719,8 +796,16 @@ export default function VarianceAnalysis() {
               {/* Historical Trend Chart */}
               <Card className="shadow-lg rounded-xl border-none bg-white">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-semibold text-gray-800">Historical Trend</CardTitle>
-                  <CardDescription className="text-gray-600">Performance over time</CardDescription>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <CardTitle className="text-xl font-semibold text-gray-800">Historical Trend</CardTitle>
+                      <CardDescription className="text-gray-600">Performance over time</CardDescription>
+                    </div>
+                    <ChartFilterButtons
+                      activeFilter={historicalChartFilter}
+                      onFilterChange={setHistoricalChartFilter}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent className="px-6 pb-6">
                   <ChartContainer
@@ -762,10 +847,15 @@ export default function VarianceAnalysis() {
               {/* Peer Comparison Chart */}
               <Card className="shadow-lg rounded-xl border-none bg-white">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-semibold text-gray-800">Peer Comparison</CardTitle>
-                  <CardDescription className="text-gray-600">
-                    Current period comparison with YoY and QoQ changes
-                  </CardDescription>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <CardTitle className="text-xl font-semibold text-gray-800">Peer Comparison</CardTitle>
+                      <CardDescription className="text-gray-600">
+                        Current period comparison with YoY and QoQ changes
+                      </CardDescription>
+                    </div>
+                    <ChartFilterButtons activeFilter={peerChartFilter} onFilterChange={setPeerChartFilter} />
+                  </div>
                 </CardHeader>
                 <CardContent className="px-6 pb-6">
                   <ChartContainer
