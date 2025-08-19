@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { detailedVarianceData, type LineItem } from "@/lib/sample-data"
 import { financialRatios } from "@/lib/financial-ratios"
-import { TrendingUp, TrendingDown, Filter, Check, Plus, MessageSquare, Building2 } from "lucide-react"
+import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare, Building2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   LineChart,
@@ -28,7 +28,6 @@ import { PeriodFilterComponent } from "@/components/period-filter"
 import { MultiSelectDropdown } from "@/components/multi-select-dropdown"
 import { metricOptions, categoryFilters, bankFilters } from "@/lib/filter-options"
 import { LineItemFilters } from "@/components/line-item-filters"
-import { lineItemData, type LineItemData } from "@/lib/line-item-data"
 
 // Helper function to format currency
 const formatCurrency = (value: number) => `$${Math.abs(value)}M`
@@ -275,7 +274,6 @@ export default function VarianceAnalysis() {
   // State variables for line item filters
   const [selectedBanksForLineItems, setSelectedBanksForLineItems] = useState<string[]>(["ADIB"])
   const [selectedCategoriesForLineItems, setSelectedCategoriesForLineItems] = useState<string[]>(["P&L"])
-  const [selectedSubcategoriesForLineItems, setSelectedSubcategoriesForLineItems] = useState<string[]>([])
   const [selectedPeriodsForLineItems, setSelectedPeriodsForLineItems] = useState<string[]>(["jas_2024", "amj_2024"])
   const [selectedColumnsForLineItems, setSelectedColumnsForLineItems] = useState<string[]>([
     "item",
@@ -283,6 +281,8 @@ export default function VarianceAnalysis() {
     "previous_period",
     "variance",
     "variance_percent",
+    "segment",
+    "ai_explanation",
   ])
 
   // Helper function to get data based on filter type
@@ -481,100 +481,101 @@ export default function VarianceAnalysis() {
     return null
   }
 
-  // Filter line item data based on selected filters
-  const filteredLineItemData = useMemo(() => {
-    let filtered = lineItemData
+  // Filtered and visible data for rendering
+  const renderableData = useMemo(() => {
+    const finalRenderList: LineItem[] = []
+    const tempVisibleSet = new Set<string>() // Tracks all items that should be in the final list
 
-    // Filter by selected banks
-    if (selectedBanksForLineItems.length > 0) {
-      filtered = filtered.filter((item) => selectedBanksForLineItems.includes(item.bank))
-    }
+    // First, identify all level 2 items that match the segment filter
+    aggregatedData.forEach((item) => {
+      if (item.level === 2) {
+        tempVisibleSet.add(item.id)
+      }
+    })
 
-    // Filter by selected categories
-    if (selectedCategoriesForLineItems.length > 0) {
-      filtered = filtered.filter((item) => selectedCategoriesForLineItems.includes(item.category))
-    }
+    // Propagate visibility up to parents for level 2 items
+    aggregatedData.forEach((item) => {
+      if (item.level === 2 && tempVisibleSet.has(item.id)) {
+        let currentItem = item
+        while (currentItem.level > 0) {
+          const parentPrefix = currentItem._prefix?.substring(0, currentItem._prefix.lastIndexOf("."))
+          const parent = aggregatedData.find((p) => p._prefix === parentPrefix && p.level === currentItem.level - 1)
+          if (parent) {
+            tempVisibleSet.add(parent.id)
+            currentItem = parent
+          } else {
+            break
+          }
+        }
+      }
+    })
 
-    // Filter by selected subcategories
-    if (selectedSubcategoriesForLineItems.length > 0) {
-      filtered = filtered.filter(
-        (item) => item.subcategory && selectedSubcategoriesForLineItems.includes(item.subcategory),
-      )
-    }
+    // Now, build the final list, applying expansion logic
+    aggregatedData.forEach((item) => {
+      if (!tempVisibleSet.has(item.id) && item.level === 2) {
+        return // Skip level 2 items not relevant to the segment filter
+      }
 
-    return filtered
-  }, [selectedBanksForLineItems, selectedCategoriesForLineItems, selectedSubcategoriesForLineItems])
+      if (item.level === 0) {
+        finalRenderList.push(item)
+      } else if (item.level === 1) {
+        const parent0 = aggregatedData.find((p) => p.level === 0 && item._prefix?.startsWith(p._prefix + "."))
+        if (parent0 && expandedRows.has(parent0.id)) {
+          finalRenderList.push(item)
+        }
+      } else if (item.level === 2) {
+        const parent1 = aggregatedData.find((p) => p.level === 1 && item._prefix?.startsWith(p._prefix + "."))
+        if (parent1 && expandedRows.has(parent1.id)) {
+          finalRenderList.push(item)
+        }
+      }
+    })
 
-  // Helper function to format line item values
-  const formatLineItemValue = (value: number | string | null, category: string) => {
-    if (value === null || value === undefined) return "-"
+    return finalRenderList
+  }, [aggregatedData, expandedRows])
 
-    if (typeof value === "string") return value
+  // Helper function to render table cells for a given item
+  const renderCells = (item: LineItem, isExpanded?: boolean) => {
+    const variancePositive = item.variance !== undefined && item.variance > 0
+    const varianceNegative = item.variance !== undefined && item.variance < 0
 
-    // Format based on category
-    if (category === "KPI" || category === "Ratios" || category === "Risk") {
-      return `${value.toFixed(2)}%`
-    } else if (category === "Balance Sheet") {
-      return `$${value.toFixed(0)}M`
-    } else {
-      return `$${value.toFixed(0)}M`
-    }
-  }
-
-  // Helper function to render table cells for line items
-  const renderLineItemCells = (item: LineItemData) => {
-    const currentValue = item.periods[selectedCurrentPeriod] || 0
-    const previousValue = item.periods[selectedPreviousPeriod] || 0
-    const variance =
-      typeof currentValue === "number" && typeof previousValue === "number" ? currentValue - previousValue : 0
-    const variancePercent =
-      typeof previousValue === "number" && previousValue !== 0 ? (variance / previousValue) * 100 : 0
-
-    const variancePositive = variance > 0
-    const varianceNegative = variance < 0
+    const variancePercentPositive = item.variancePercent !== undefined && item.variancePercent > 0
+    const variancePercentNegative = item.variancePercent !== undefined && item.variancePercent < 0
 
     return (
       <>
         {selectedColumnsForLineItems.includes("item") && (
-          <TableCell className="font-medium text-gray-800">
+          <TableCell className={cn("font-medium text-gray-800", `pl-${item.level * 4 + 4}`)}>
             <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  item.level === 0 && "font-bold",
-                  item.level === 1 && "font-semibold pl-4",
-                  item.level === 2 && "pl-8",
-                )}
-              >
-                {item.item}
-              </span>
-              {item.subcategory && (
-                <Badge variant="outline" className="text-xs px-1 py-0">
-                  {item.subcategory}
-                </Badge>
+              {item.category}
+              {(item.level === 0 || item.level === 1) && ( // Only show chevron for collapsible parents
+                <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isExpanded ? "rotate-180" : "")} />
               )}
             </div>
           </TableCell>
         )}
         {selectedColumnsForLineItems.includes("current_period") && (
-          <TableCell className="text-right text-gray-700">{formatLineItemValue(currentValue, item.category)}</TableCell>
+          <TableCell className="text-right text-gray-700">
+            {item.current !== undefined ? formatCurrency(item.current) : "-"}
+          </TableCell>
         )}
         {selectedColumnsForLineItems.includes("previous_period") && (
           <TableCell className="text-right text-gray-700">
-            {formatLineItemValue(previousValue, item.category)}
+            {item.previous !== undefined ? formatCurrency(item.previous) : "-"}
           </TableCell>
         )}
         {selectedColumnsForLineItems.includes("variance") && (
           <TableCell className="text-right">
-            {typeof variance === "number" ? (
+            {item.variance !== undefined ? (
               <div
                 className={cn(
                   "flex items-center justify-end space-x-1",
                   variancePositive ? "text-green-600" : varianceNegative ? "text-red-600" : "text-gray-500",
                 )}
               >
-                {variance !== 0 &&
+                {item.variance !== 0 &&
                   (variancePositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />)}
-                <span>{formatLineItemValue(variance, item.category)}</span>
+                <span>{formatCurrency(item.variance)}</span>
               </div>
             ) : (
               "-"
@@ -583,12 +584,12 @@ export default function VarianceAnalysis() {
         )}
         {selectedColumnsForLineItems.includes("variance_percent") && (
           <TableCell className="text-right">
-            {typeof variancePercent === "number" && !isNaN(variancePercent) ? (
+            {item.variancePercent !== undefined ? (
               <Badge
-                variant={variancePercent > 0 ? "default" : "destructive"}
-                className={cn("text-xs rounded-full px-2 py-0.5", variancePercent < 0 && "bg-red-100 text-red-600")}
+                variant={variancePercentPositive ? "default" : "destructive"}
+                className={cn("text-xs rounded-full px-2 py-0.5", variancePercentNegative && "bg-red-100 text-red-600")}
               >
-                {formatPercent(variancePercent)}
+                {formatPercent(item.variancePercent)}
               </Badge>
             ) : (
               "-"
@@ -597,11 +598,13 @@ export default function VarianceAnalysis() {
         )}
         {selectedColumnsForLineItems.includes("yoy_change") && (
           <TableCell className="text-right text-gray-700">
+            {/* YoY data would come from the master CSV */}
             <span className="text-green-600">+8.2%</span>
           </TableCell>
         )}
         {selectedColumnsForLineItems.includes("qoq_change") && (
           <TableCell className="text-right text-gray-700">
+            {/* QoQ data would come from the master CSV */}
             <span className="text-blue-600">+2.9%</span>
           </TableCell>
         )}
@@ -618,6 +621,9 @@ export default function VarianceAnalysis() {
               "-"
             )}
           </TableCell>
+        )}
+        {selectedColumnsForLineItems.includes("ai_explanation") && (
+          <TableCell className="max-w-xs truncate text-gray-700">{item.aiExplanation || "-"}</TableCell>
         )}
       </>
     )
@@ -685,6 +691,20 @@ export default function VarianceAnalysis() {
   useEffect(() => {
     setSelectedBanksForLineItems(selectedBanks)
   }, [selectedBanks])
+
+  const bankFilterOptions = [
+    { value: "ADIB", label: "ADIB" },
+    { value: "FAB", label: "FAB" },
+    { value: "ENBD", label: "ENBD" },
+    { value: "DIB", label: "DIB" },
+  ]
+
+  const categoryFilterOptions = [
+    { value: "income", label: "Income" },
+    { value: "expenses", label: "Expenses" },
+    { value: "assets", label: "Assets" },
+    { value: "liabilities", label: "Liabilities" },
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1067,12 +1087,10 @@ export default function VarianceAnalysis() {
           <LineItemFilters
             selectedBanks={selectedBanksForLineItems}
             selectedCategories={selectedCategoriesForLineItems}
-            selectedSubcategories={selectedSubcategoriesForLineItems}
             selectedPeriods={selectedPeriodsForLineItems}
             selectedColumns={selectedColumnsForLineItems}
             onBanksChange={setSelectedBanksForLineItems}
             onCategoriesChange={setSelectedCategoriesForLineItems}
-            onSubcategoriesChange={setSelectedSubcategoriesForLineItems}
             onPeriodsChange={setSelectedPeriodsForLineItems}
             onColumnsChange={setSelectedColumnsForLineItems}
           />
@@ -1084,7 +1102,7 @@ export default function VarianceAnalysis() {
                 <div>
                   <CardTitle className="text-xl font-semibold text-gray-800">Line Item Analysis</CardTitle>
                   <CardDescription className="text-gray-600 mt-2">
-                    Actual values from financial statements with variance analysis
+                    Click on any row to view detailed driver breakdown
                     {selectedBanksForLineItems.length > 0 && (
                       <span className="block text-sm text-apple-blue-600 mt-1">
                         Showing data for: {selectedBanksForLineItems.join(", ")}
@@ -1094,7 +1112,7 @@ export default function VarianceAnalysis() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge variant="outline" className="text-xs px-2 py-1">
-                    {filteredLineItemData.length} items
+                    {renderableData.length} items
                   </Badge>
                   <Badge variant="outline" className="text-xs px-2 py-1">
                     {selectedColumnsForLineItems.length} columns
@@ -1117,7 +1135,7 @@ export default function VarianceAnalysis() {
                         <TableHead className="text-right text-gray-700 font-semibold py-4">Previous</TableHead>
                       )}
                       {selectedColumnsForLineItems.includes("variance") && (
-                        <TableHead className="text-right text-gray-700 font-semibold py-4">Variance</TableHead>
+                        <TableHead className="text-right text-gray-700 font-semibold py-4">Variance ($)</TableHead>
                       )}
                       {selectedColumnsForLineItems.includes("variance_percent") && (
                         <TableHead className="text-right text-gray-700 font-semibold py-4">Variance (%)</TableHead>
@@ -1131,21 +1149,34 @@ export default function VarianceAnalysis() {
                       {selectedColumnsForLineItems.includes("segment") && (
                         <TableHead className="text-gray-700 font-semibold py-4">Segment</TableHead>
                       )}
+                      {selectedColumnsForLineItems.includes("ai_explanation") && (
+                        <TableHead className="text-gray-700 font-semibold py-4">AI Explanation</TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredLineItemData.map((item) => (
-                      <TableRow
-                        key={item.id}
-                        className={cn(
-                          "hover:bg-apple-gray-50 transition-colors duration-200 border-b border-gray-100",
-                          item.level === 0 && "font-bold bg-apple-gray-100 hover:bg-apple-gray-200",
-                          item.level === 1 && "font-semibold",
-                        )}
-                      >
-                        {renderLineItemCells(item)}
-                      </TableRow>
-                    ))}
+                    {renderableData.map((item) => {
+                      const isParent = item.level !== 2
+                      const isExpanded = expandedRows.has(item.id)
+
+                      return (
+                        <TableRow
+                          key={item.id}
+                          className={cn(
+                            "cursor-pointer hover:bg-apple-gray-50 transition-colors duration-200 border-b border-gray-100",
+                            item.level === 0 && "font-bold bg-apple-gray-100 hover:bg-apple-gray-200",
+                            item.level === 1 && "font-semibold",
+                          )}
+                          onClick={() => {
+                            if (isParent) {
+                              toggleRow(item.id)
+                            }
+                          }}
+                        >
+                          {renderCells(item, isExpanded)}
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
