@@ -31,14 +31,14 @@ export default function VarianceAnalysis() {
   // Get filter options from CSV data
   const filterOptions = useFilterOptions()
 
-  // Filter states
+  // Filter states with safe defaults
   const [selectedBanks, setSelectedBanks] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([])
   const [selectedSegments, setSelectedSegments] = useState<string[]>(["consolidated"])
   const [selectedItems, setSelectedItems] = useState<string[]>([])
 
-  // Chart and display states
+  // Chart and display states with safe defaults
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(["NIM", "ROE", "ROA"])
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     new Set(["item", "bank", "category", "currentValue", "previousValue", "variance", "variancePercent"]),
@@ -49,26 +49,30 @@ export default function VarianceAnalysis() {
   const [periodFilterOpen, setPeriodFilterOpen] = useState(false)
   const [segmentFilterOpen, setSegmentFilterOpen] = useState(false)
 
-  // Initialize filters when data loads
+  // Initialize filters when data loads with proper error handling
   useEffect(() => {
-    if (filterOptions.banks.length > 0 && selectedBanks.length === 0) {
+    if (Array.isArray(filterOptions.banks) && filterOptions.banks.length > 0 && selectedBanks.length === 0) {
       setSelectedBanks([filterOptions.banks[0]])
     }
-  }, [filterOptions.banks])
+  }, [filterOptions.banks, selectedBanks.length])
 
   useEffect(() => {
-    if (filterOptions.categories.length > 0 && selectedCategories.length === 0) {
+    if (
+      Array.isArray(filterOptions.categories) &&
+      filterOptions.categories.length > 0 &&
+      selectedCategories.length === 0
+    ) {
       const defaultCategories = filterOptions.categories.filter((cat) => ["P&L", "KPI"].includes(cat)).slice(0, 2)
       setSelectedCategories(defaultCategories.length > 0 ? defaultCategories : [filterOptions.categories[0]])
     }
-  }, [filterOptions.categories])
+  }, [filterOptions.categories, selectedCategories.length])
 
   useEffect(() => {
-    if (filterOptions.periods.length > 0 && selectedPeriods.length === 0) {
+    if (Array.isArray(filterOptions.periods) && filterOptions.periods.length > 0 && selectedPeriods.length === 0) {
       const latestPeriod = filterOptions.periods.find((p) => p.includes("jas_2024")) || filterOptions.periods[0]
       setSelectedPeriods([latestPeriod])
     }
-  }, [filterOptions.periods])
+  }, [filterOptions.periods, selectedPeriods.length])
 
   // Segment filter options
   const segmentFilterOptions = [
@@ -83,10 +87,10 @@ export default function VarianceAnalysis() {
   // Memoize filter object to prevent infinite loops
   const filters = useMemo(
     () => ({
-      banks: selectedBanks,
-      categories: selectedCategories,
-      periods: selectedPeriods,
-      items: selectedItems,
+      banks: Array.isArray(selectedBanks) ? selectedBanks : [],
+      categories: Array.isArray(selectedCategories) ? selectedCategories : [],
+      periods: Array.isArray(selectedPeriods) ? selectedPeriods : [],
+      items: Array.isArray(selectedItems) ? selectedItems : [],
     }),
     [selectedBanks, selectedCategories, selectedPeriods, selectedItems],
   )
@@ -94,44 +98,68 @@ export default function VarianceAnalysis() {
   // Get filtered line items
   const { data: lineItems, isLoading: lineItemsLoading } = useFilteredLineItems(filters)
 
-  // Get historical data for charts
-  const historicalData = useHistoricalData(selectedBanks[0] || "", selectedMetrics)
+  // Get historical data for charts with safe defaults
+  const historicalData = useHistoricalData(
+    Array.isArray(selectedBanks) && selectedBanks.length > 0 ? selectedBanks[0] : "",
+    Array.isArray(selectedMetrics) ? selectedMetrics : [],
+  )
 
   // Get bank metrics for peer comparison
-  const bankMetrics = useBankMetrics(selectedBanks, selectedMetrics)
+  const bankMetrics = useBankMetrics(
+    Array.isArray(selectedBanks) ? selectedBanks : [],
+    Array.isArray(selectedMetrics) ? selectedMetrics : [],
+  )
 
-  // Filter toggle functions
+  // Filter toggle functions with proper error handling
   const toggleBank = useCallback((bankValue: string) => {
-    setSelectedBanks((prev) => (prev.includes(bankValue) ? prev.filter((b) => b !== bankValue) : [...prev, bankValue]))
+    if (!bankValue) return
+    setSelectedBanks((prev) => {
+      const currentBanks = Array.isArray(prev) ? prev : []
+      return currentBanks.includes(bankValue)
+        ? currentBanks.filter((b) => b !== bankValue)
+        : [...currentBanks, bankValue]
+    })
   }, [])
 
   const toggleCategory = useCallback((categoryValue: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryValue) ? prev.filter((c) => c !== categoryValue) : [...prev, categoryValue],
-    )
+    if (!categoryValue) return
+    setSelectedCategories((prev) => {
+      const currentCategories = Array.isArray(prev) ? prev : []
+      return currentCategories.includes(categoryValue)
+        ? currentCategories.filter((c) => c !== categoryValue)
+        : [...currentCategories, categoryValue]
+    })
   }, [])
 
   const togglePeriod = useCallback((periodValue: string) => {
-    setSelectedPeriods((prev) =>
-      prev.includes(periodValue) ? prev.filter((p) => p !== periodValue) : [...prev, periodValue],
-    )
+    if (!periodValue) return
+    setSelectedPeriods((prev) => {
+      const currentPeriods = Array.isArray(prev) ? prev : []
+      return currentPeriods.includes(periodValue)
+        ? currentPeriods.filter((p) => p !== periodValue)
+        : [...currentPeriods, periodValue]
+    })
   }, [])
 
   const toggleSegment = useCallback((segmentValue: string) => {
-    setSelectedSegments((prev) =>
-      prev.includes(segmentValue) ? prev.filter((s) => s !== segmentValue) : [...prev, segmentValue],
-    )
+    if (!segmentValue) return
+    setSelectedSegments((prev) => {
+      const currentSegments = Array.isArray(prev) ? prev : []
+      return currentSegments.includes(segmentValue)
+        ? currentSegments.filter((s) => s !== segmentValue)
+        : [...currentSegments, segmentValue]
+    })
   }, [])
 
   const clearAllFilters = useCallback(() => {
-    if (filterOptions.banks.length > 0) {
+    if (Array.isArray(filterOptions.banks) && filterOptions.banks.length > 0) {
       setSelectedBanks([filterOptions.banks[0]])
     }
-    if (filterOptions.categories.length > 0) {
+    if (Array.isArray(filterOptions.categories) && filterOptions.categories.length > 0) {
       const defaultCategories = filterOptions.categories.filter((cat) => ["P&L", "KPI"].includes(cat)).slice(0, 2)
       setSelectedCategories(defaultCategories.length > 0 ? defaultCategories : [filterOptions.categories[0]])
     }
-    if (filterOptions.periods.length > 0) {
+    if (Array.isArray(filterOptions.periods) && filterOptions.periods.length > 0) {
       const latestPeriod = filterOptions.periods.find((p) => p.includes("jas_2024")) || filterOptions.periods[0]
       setSelectedPeriods([latestPeriod])
     }
@@ -140,6 +168,7 @@ export default function VarianceAnalysis() {
   }, [filterOptions.banks, filterOptions.categories, filterOptions.periods])
 
   const toggleColumnVisibility = useCallback((column: string) => {
+    if (!column) return
     setVisibleColumns((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(column)) {
@@ -151,9 +180,16 @@ export default function VarianceAnalysis() {
     })
   }, [])
 
-  // Prepare chart data
+  // Prepare chart data with error handling
   const historicalChartData = useMemo(() => {
-    if (!selectedMetrics.length || !selectedBanks.length) return []
+    if (
+      !Array.isArray(selectedMetrics) ||
+      selectedMetrics.length === 0 ||
+      !Array.isArray(selectedBanks) ||
+      selectedBanks.length === 0
+    ) {
+      return []
+    }
 
     const quarters = ["Q1 2023", "Q2 2023", "Q3 2023", "Q4 2023", "Q1 2024", "Q2 2024", "Q3 2024"]
 
@@ -161,8 +197,8 @@ export default function VarianceAnalysis() {
       const dataPoint: any = { quarter }
 
       selectedMetrics.forEach((metricId) => {
-        const data = historicalData[metricId] || []
-        const quarterData = data.find((d) => d.quarter === quarter)
+        const data = historicalData && historicalData[metricId] ? historicalData[metricId] : []
+        const quarterData = Array.isArray(data) ? data.find((d) => d && d.quarter === quarter) : null
         dataPoint[metricId] = quarterData?.value || null
       })
 
@@ -171,17 +207,24 @@ export default function VarianceAnalysis() {
   }, [selectedMetrics, selectedBanks, historicalData])
 
   const peerComparisonData = useMemo(() => {
-    if (!selectedMetrics.length || !selectedBanks.length) return []
+    if (
+      !Array.isArray(selectedMetrics) ||
+      selectedMetrics.length === 0 ||
+      !Array.isArray(selectedBanks) ||
+      selectedBanks.length === 0
+    ) {
+      return []
+    }
 
     return selectedMetrics.map((metricId) => {
-      const metricInfo = financialRatios.find((m) => m.id === metricId)
+      const metricInfo = Array.isArray(financialRatios) ? financialRatios.find((m) => m && m.id === metricId) : null
       const dataPoint: any = {
         metric: metricInfo?.name || metricId,
         metricId,
       }
 
       selectedBanks.forEach((bank) => {
-        const metrics = bankMetrics[bank] || {}
+        const metrics = bankMetrics && bankMetrics[bank] ? bankMetrics[bank] : {}
         dataPoint[bank] = metrics[metricId] || 0
       })
 
@@ -206,6 +249,20 @@ export default function VarianceAnalysis() {
     if (variance < 0) return "text-red-600"
     return "text-gray-500"
   }, [])
+
+  // Safe array access for rendering
+  const safeFilterOptions = {
+    banks: Array.isArray(filterOptions.banks) ? filterOptions.banks : [],
+    categories: Array.isArray(filterOptions.categories) ? filterOptions.categories : [],
+    periods: Array.isArray(filterOptions.periods) ? filterOptions.periods : [],
+    items: Array.isArray(filterOptions.items) ? filterOptions.items : [],
+  }
+
+  const safeLineItems = Array.isArray(lineItems) ? lineItems : []
+  const safeSelectedBanks = Array.isArray(selectedBanks) ? selectedBanks : []
+  const safeSelectedCategories = Array.isArray(selectedCategories) ? selectedCategories : []
+  const safeSelectedPeriods = Array.isArray(selectedPeriods) ? selectedPeriods : []
+  const safeSelectedSegments = Array.isArray(selectedSegments) ? selectedSegments : []
 
   return (
     <DataLoadingWrapper>
@@ -290,11 +347,11 @@ export default function VarianceAnalysis() {
                       <div className="space-y-3">
                         <h4 className="font-medium text-sm text-gray-900">Select Categories</h4>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {filterOptions.categories.map((category) => (
+                          {safeFilterOptions.categories.map((category) => (
                             <div key={category} className="flex items-center space-x-2">
                               <Checkbox
                                 id={category}
-                                checked={selectedCategories.includes(category)}
+                                checked={safeSelectedCategories.includes(category)}
                                 onCheckedChange={() => toggleCategory(category)}
                                 className="h-4 w-4"
                               />
@@ -325,11 +382,11 @@ export default function VarianceAnalysis() {
                       <div className="space-y-3">
                         <h4 className="font-medium text-sm text-gray-900">Time Periods</h4>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {filterOptions.periods.map((period) => (
+                          {safeFilterOptions.periods.map((period) => (
                             <div key={period} className="flex items-center space-x-2">
                               <Checkbox
                                 id={period}
-                                checked={selectedPeriods.includes(period)}
+                                checked={safeSelectedPeriods.includes(period)}
                                 onCheckedChange={() => togglePeriod(period)}
                                 className="h-4 w-4"
                               />
@@ -364,7 +421,7 @@ export default function VarianceAnalysis() {
                             <div key={segment.value} className="flex items-center space-x-2">
                               <Checkbox
                                 id={segment.value}
-                                checked={selectedSegments.includes(segment.value)}
+                                checked={safeSelectedSegments.includes(segment.value)}
                                 onCheckedChange={() => toggleSegment(segment.value)}
                                 className="h-4 w-4"
                               />
@@ -383,15 +440,15 @@ export default function VarianceAnalysis() {
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-gray-700">Select Banks for Analysis</h4>
                   <div className="flex flex-wrap gap-2">
-                    {filterOptions.banks.map((bank) => (
+                    {safeFilterOptions.banks.map((bank) => (
                       <Button
                         key={bank}
-                        variant={selectedBanks.includes(bank) ? "default" : "outline"}
+                        variant={safeSelectedBanks.includes(bank) ? "default" : "outline"}
                         size="sm"
                         onClick={() => toggleBank(bank)}
                         className={cn(
                           "h-9 px-4 text-sm font-medium transition-all",
-                          selectedBanks.includes(bank)
+                          safeSelectedBanks.includes(bank)
                             ? "bg-blue-600 text-white hover:bg-blue-700"
                             : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50",
                         )}
@@ -407,25 +464,25 @@ export default function VarianceAnalysis() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700">Active Filters Summary</span>
                     <Badge variant="outline" className="text-xs">
-                      {selectedBanks.length +
-                        selectedCategories.length +
-                        selectedPeriods.length +
-                        selectedSegments.length}{" "}
+                      {safeSelectedBanks.length +
+                        safeSelectedCategories.length +
+                        safeSelectedPeriods.length +
+                        safeSelectedSegments.length}{" "}
                       filters
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <div className="text-xs text-gray-600">
-                      <strong>Banks:</strong> {selectedBanks.join(", ") || "None"}
+                      <strong>Banks:</strong> {safeSelectedBanks.join(", ") || "None"}
                     </div>
                     <div className="text-xs text-gray-600">
-                      <strong>Categories:</strong> {selectedCategories.join(", ") || "None"}
+                      <strong>Categories:</strong> {safeSelectedCategories.join(", ") || "None"}
                     </div>
                     <div className="text-xs text-gray-600">
-                      <strong>Periods:</strong> {selectedPeriods.join(", ") || "None"}
+                      <strong>Periods:</strong> {safeSelectedPeriods.join(", ") || "None"}
                     </div>
                     <div className="text-xs text-gray-600">
-                      <strong>Segments:</strong> {selectedSegments.join(", ") || "None"}
+                      <strong>Segments:</strong> {safeSelectedSegments.join(", ") || "None"}
                     </div>
                   </div>
                 </div>
@@ -443,18 +500,22 @@ export default function VarianceAnalysis() {
                       selectedMetrics={selectedMetrics}
                       onMetricsChange={setSelectedMetrics}
                       maxSelection={5}
+                      className="w-48"
                     />
                   </div>
                   <CardDescription className="text-gray-600">
-                    Track key metrics over time for {selectedBanks.join(", ") || "selected banks"}
+                    Track key metrics over time for {safeSelectedBanks.join(", ") || "selected banks"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ChartContainer
                     config={{
                       ...selectedMetrics.reduce((acc, metricId, index) => {
+                        const metric = Array.isArray(financialRatios)
+                          ? financialRatios.find((m) => m && m.id === metricId)
+                          : null
                         acc[metricId] = {
-                          label: financialRatios.find((m) => m.id === metricId)?.name || metricId,
+                          label: metric?.name || metricId,
                           color: `hsl(var(--chart-${(index % 5) + 1}))`,
                         }
                         return acc
@@ -496,7 +557,7 @@ export default function VarianceAnalysis() {
                 <CardContent>
                   <ChartContainer
                     config={{
-                      ...selectedBanks.reduce((acc, bank, index) => {
+                      ...safeSelectedBanks.reduce((acc, bank, index) => {
                         acc[bank] = {
                           label: bank,
                           color: `hsl(var(--chart-${(index % 5) + 1}))`,
@@ -521,7 +582,7 @@ export default function VarianceAnalysis() {
                         />
                         <YAxis tickLine={false} axisLine={false} width={60} tick={{ fontSize: 12 }} />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        {selectedBanks.map((bank, index) => (
+                        {safeSelectedBanks.map((bank, index) => (
                           <Bar
                             key={bank}
                             dataKey={bank}
@@ -544,7 +605,7 @@ export default function VarianceAnalysis() {
                   <div>
                     <CardTitle className="text-xl font-semibold text-gray-800">Line Item Analysis</CardTitle>
                     <CardDescription className="text-gray-600 mt-2">
-                      Detailed variance analysis for {lineItems.length} line items
+                      Detailed variance analysis for {safeLineItems.length} line items
                     </CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -592,7 +653,7 @@ export default function VarianceAnalysis() {
                   <div className="flex items-center justify-center py-12">
                     <div className="text-gray-500">Loading line items...</div>
                   </div>
-                ) : lineItems.length === 0 ? (
+                ) : safeLineItems.length === 0 ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="text-gray-500">No line items found for the selected filters</div>
                   </div>
@@ -625,20 +686,22 @@ export default function VarianceAnalysis() {
                         </tr>
                       </thead>
                       <tbody>
-                        {lineItems.slice(0, 50).map((item, index) => (
-                          <tr key={item.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                        {safeLineItems.slice(0, 50).map((item, index) => (
+                          <tr key={item.id || index} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
                             {visibleColumns.has("item") && (
-                              <td className="py-3 px-4 text-sm text-gray-900 max-w-xs truncate">{item.item}</td>
+                              <td className="py-3 px-4 text-sm text-gray-900 max-w-xs truncate">
+                                {item.item || "N/A"}
+                              </td>
                             )}
                             {visibleColumns.has("bank") && (
                               <td className="py-3 px-4 text-sm">
                                 <Badge variant="outline" className="text-xs">
-                                  {item.bank}
+                                  {item.bank || "N/A"}
                                 </Badge>
                               </td>
                             )}
                             {visibleColumns.has("category") && (
-                              <td className="py-3 px-4 text-sm text-gray-600">{item.category}</td>
+                              <td className="py-3 px-4 text-sm text-gray-600">{item.category || "N/A"}</td>
                             )}
                             {visibleColumns.has("currentValue") && (
                               <td className="py-3 px-4 text-sm text-right font-medium">
@@ -679,9 +742,9 @@ export default function VarianceAnalysis() {
                         ))}
                       </tbody>
                     </table>
-                    {lineItems.length > 50 && (
+                    {safeLineItems.length > 50 && (
                       <div className="mt-4 text-center text-sm text-gray-500">
-                        Showing first 50 of {lineItems.length} items
+                        Showing first 50 of {safeLineItems.length} items
                       </div>
                     )}
                   </div>

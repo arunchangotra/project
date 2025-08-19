@@ -53,7 +53,12 @@ export function useFilteredLineItems(filters: Partial<FilterOptions>) {
   // Memoize the filters to prevent unnecessary re-renders
   const memoizedFilters = useMemo(
     () => filters,
-    [filters.banks?.join(","), filters.categories?.join(","), filters.periods?.join(","), filters.items?.join(",")],
+    [
+      Array.isArray(filters.banks) ? filters.banks.join(",") : "",
+      Array.isArray(filters.categories) ? filters.categories.join(",") : "",
+      Array.isArray(filters.periods) ? filters.periods.join(",") : "",
+      Array.isArray(filters.items) ? filters.items.join(",") : "",
+    ],
   )
 
   useEffect(() => {
@@ -66,7 +71,7 @@ export function useFilteredLineItems(filters: Partial<FilterOptions>) {
       try {
         const filteredData = csvDataService.getFilteredData(memoizedFilters)
         if (isMounted) {
-          setData(filteredData)
+          setData(Array.isArray(filteredData) ? filteredData : [])
         }
       } catch (error) {
         console.error("Error filtering data:", error)
@@ -106,10 +111,10 @@ export function useFilterOptions() {
 
     try {
       const newOptions = {
-        banks: csvDataService.getAvailableBanks(),
-        categories: csvDataService.getAvailableCategories(),
-        periods: csvDataService.getAvailablePeriods(),
-        items: csvDataService.getAvailableItems(),
+        banks: csvDataService.getAvailableBanks() || [],
+        categories: csvDataService.getAvailableCategories() || [],
+        periods: csvDataService.getAvailablePeriods() || [],
+        items: csvDataService.getAvailableItems() || [],
       }
 
       if (isMounted) {
@@ -117,6 +122,14 @@ export function useFilterOptions() {
       }
     } catch (error) {
       console.error("Error getting filter options:", error)
+      if (isMounted) {
+        setOptions({
+          banks: [],
+          categories: [],
+          periods: [],
+          items: [],
+        })
+      }
     }
 
     return () => {
@@ -132,11 +145,19 @@ export function useBankMetrics(banks: string[], metricIds: string[]) {
   const { isLoaded } = useCSVData()
 
   // Memoize the dependencies to prevent unnecessary re-renders
-  const memoizedBanks = useMemo(() => banks, [banks.join(",")])
-  const memoizedMetricIds = useMemo(() => metricIds, [metricIds.join(",")])
+  const memoizedBanks = useMemo(() => {
+    return Array.isArray(banks) ? banks : []
+  }, [Array.isArray(banks) ? banks.join(",") : ""])
+
+  const memoizedMetricIds = useMemo(() => {
+    return Array.isArray(metricIds) ? metricIds : []
+  }, [Array.isArray(metricIds) ? metricIds.join(",") : ""])
 
   useEffect(() => {
-    if (!isLoaded || !memoizedBanks.length || !memoizedMetricIds.length) return
+    if (!isLoaded || !memoizedBanks.length || !memoizedMetricIds.length) {
+      setMetrics({})
+      return
+    }
 
     let isMounted = true
 
@@ -144,7 +165,12 @@ export function useBankMetrics(banks: string[], metricIds: string[]) {
       const bankMetrics: Record<string, Record<string, number>> = {}
 
       memoizedBanks.forEach((bank) => {
-        bankMetrics[bank] = csvDataService.getBankMetrics(bank, memoizedMetricIds)
+        try {
+          bankMetrics[bank] = csvDataService.getBankMetrics(bank, memoizedMetricIds) || {}
+        } catch (error) {
+          console.error(`Error getting metrics for bank ${bank}:`, error)
+          bankMetrics[bank] = {}
+        }
       })
 
       if (isMounted) {
@@ -152,6 +178,9 @@ export function useBankMetrics(banks: string[], metricIds: string[]) {
       }
     } catch (error) {
       console.error("Error getting bank metrics:", error)
+      if (isMounted) {
+        setMetrics({})
+      }
     }
 
     return () => {
@@ -167,10 +196,15 @@ export function useHistoricalData(bank: string, metricIds: string[]) {
   const { isLoaded } = useCSVData()
 
   // Memoize the dependencies to prevent unnecessary re-renders
-  const memoizedMetricIds = useMemo(() => metricIds, [metricIds.join(",")])
+  const memoizedMetricIds = useMemo(() => {
+    return Array.isArray(metricIds) ? metricIds : []
+  }, [Array.isArray(metricIds) ? metricIds.join(",") : ""])
 
   useEffect(() => {
-    if (!isLoaded || !bank || !memoizedMetricIds.length) return
+    if (!isLoaded || !bank || !memoizedMetricIds.length) {
+      setData({})
+      return
+    }
 
     let isMounted = true
 
@@ -178,7 +212,12 @@ export function useHistoricalData(bank: string, metricIds: string[]) {
       const historicalData: Record<string, Array<{ quarter: string; value: number }>> = {}
 
       memoizedMetricIds.forEach((metricId) => {
-        historicalData[metricId] = csvDataService.getHistoricalData(bank, metricId)
+        try {
+          historicalData[metricId] = csvDataService.getHistoricalData(bank, metricId) || []
+        } catch (error) {
+          console.error(`Error getting historical data for ${bank} - ${metricId}:`, error)
+          historicalData[metricId] = []
+        }
       })
 
       if (isMounted) {
@@ -186,6 +225,9 @@ export function useHistoricalData(bank: string, metricIds: string[]) {
       }
     } catch (error) {
       console.error("Error getting historical data:", error)
+      if (isMounted) {
+        setData({})
+      }
     }
 
     return () => {
