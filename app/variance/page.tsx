@@ -4,7 +4,6 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { detailedVarianceData, type LineItem } from "@/lib/sample-data"
 import { financialRatios } from "@/lib/financial-ratios"
 import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare } from "lucide-react"
@@ -161,7 +160,7 @@ export default function VarianceAnalysis() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["P&L"])
   const [selectedBanks, setSelectedBanks] = useState<string[]>(["ADIB"])
 
-  // Multiple metrics selection state
+  // Multiple metrics selection state for charts - this will be filtered based on above filters
   const [selectedMetricsForChart, setSelectedMetricsForChart] = useState<Set<string>>(() => {
     const metricId = searchParams.get("metricId")
     if (metricId) {
@@ -170,17 +169,76 @@ export default function VarianceAnalysis() {
     }
     return new Set(["NIM", "ROA"])
   })
-  const [showAllMetrics, setShowAllMetrics] = useState(() => {
-    const metricId = searchParams.get("metricId")
-    if (metricId) {
-      const popularMetrics = financialRatios.filter((metric) => metric.isPopular)
-      const isPopular = popularMetrics.some((m) => m.id === metricId)
-      return !isPopular
+
+  // Filter financial ratios based on selected categories and metrics
+  const filteredFinancialRatios = useMemo(() => {
+    let filtered = financialRatios
+
+    // Filter by selected categories if any are selected
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((ratio) =>
+        selectedCategories.some((category) => {
+          // Map filter categories to metric categories
+          if (category === "P&L") return ["Profitability", "Efficiency"].includes(ratio.category)
+          if (category === "KPI") return ["Profitability", "Efficiency", "Valuation"].includes(ratio.category)
+          if (category === "Balance Sheet")
+            return ["Capital Adequacy", "Liquidity", "Leverage & Capital Adequacy"].includes(ratio.category)
+          if (category === "Ratios") return ["Asset Quality", "Liquidity", "Valuation"].includes(ratio.category)
+          if (category === "Risk") return ["Asset Quality", "Market Risk"].includes(ratio.category)
+          return false
+        }),
+      )
     }
-    return false
-  })
-  const [selectedSegment, setSelectedSegment] = useState("All")
-  const [selectedItem, setSelectedItem] = useState<LineItem | null>(null)
+
+    // Filter by selected metrics if any are selected
+    if (selectedMetrics.length > 0) {
+      filtered = filtered.filter((ratio) => {
+        // Map metric options to ratio IDs
+        const metricToRatioMap: Record<string, string[]> = {
+          net_interest_income: ["NIM"],
+          operating_income: ["NIM", "ER"],
+          net_profit: ["ROE", "ROA", "PER"],
+          nim: ["NIM"],
+          roe: ["ROE"],
+          roa: ["ROA"],
+          cost_to_income: ["ER"],
+          capital_adequacy: ["CAR", "CET1"],
+          tier1_ratio: ["CET1"],
+          npl_ratio: ["NPLR"],
+          eps: ["PER"],
+          loan_growth: ["LDR"],
+          deposit_growth: ["LDR", "CASA"],
+        }
+
+        return selectedMetrics.some((metric) => metricToRatioMap[metric]?.includes(ratio.id) || false)
+      })
+    }
+
+    return filtered
+  }, [selectedCategories, selectedMetrics])
+
+  // Get popular and other metrics from filtered results
+  const popularMetrics = filteredFinancialRatios.filter((metric) => metric.isPopular)
+  const otherMetrics = filteredFinancialRatios.filter((metric) => !metric.isPopular)
+  const displayedMetrics = popularMetrics
+
+  // Toggle metric selection for charts
+  const toggleMetric = (metricId: string) => {
+    setSelectedMetricsForChart((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(metricId)) {
+        newSet.delete(metricId)
+      } else {
+        newSet.add(metricId)
+      }
+      return newSet
+    })
+  }
+
+  // Update the chart selection to only show filtered metrics
+  const selectedMetricsData = Array.from(selectedMetricsForChart)
+    .map((id) => filteredFinancialRatios.find((m) => m.id === id))
+    .filter(Boolean)
 
   // Calculate aggregates for line items
   const aggregatedData = useMemo(() => calculateAggregates(detailedVarianceData), [])
@@ -201,28 +259,8 @@ export default function VarianceAnalysis() {
     })
   }
 
-  // Get popular metrics for card display
-  const popularMetrics = financialRatios.filter((metric) => metric.isPopular)
-  const otherMetrics = financialRatios.filter((metric) => !metric.isPopular)
-  const displayedMetrics = showAllMetrics ? financialRatios : popularMetrics
-
-  // Toggle metric selection for charts
-  const toggleMetric = (metricId: string) => {
-    setSelectedMetricsForChart((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(metricId)) {
-        newSet.delete(metricId)
-      } else {
-        newSet.add(metricId)
-      }
-      return newSet
-    })
-  }
-
-  // Get selected metrics data
-  const selectedMetricsData = Array.from(selectedMetricsForChart)
-    .map((id) => financialRatios.find((m) => m.id === id))
-    .filter(Boolean)
+  // State to show all metrics
+  const [showAllMetrics, setShowAllMetrics] = useState(false)
 
   // Prepare chart data for multiple metrics
   const chartData = useMemo(() => {
@@ -272,7 +310,7 @@ export default function VarianceAnalysis() {
 
     // First, identify all level 2 items that match the segment filter
     aggregatedData.forEach((item) => {
-      if (item.level === 2 && (selectedSegment === "All" || item.segment === selectedSegment)) {
+      if (item.level === 2) {
         tempVisibleSet.add(item.id)
       }
     })
@@ -316,7 +354,7 @@ export default function VarianceAnalysis() {
     })
 
     return finalRenderList
-  }, [aggregatedData, selectedSegment, expandedRows])
+  }, [aggregatedData, expandedRows])
 
   // Helper function to render table cells for a given item
   const renderCells = (item: LineItem, isExpanded?: boolean) => {
@@ -452,6 +490,62 @@ export default function VarianceAnalysis() {
             onPreviousPeriodChange={setSelectedPreviousPeriod}
           />
 
+          {/* Multi-Select Filters */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-700">Select Metrics to Analyze</CardTitle>
+                <CardDescription className="text-xs text-gray-500">
+                  Choose multiple metrics for comparison
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MultiSelectDropdown
+                  options={metricOptions}
+                  selectedValues={selectedMetrics}
+                  onSelectionChange={setSelectedMetrics}
+                  placeholder="Select metrics..."
+                  maxDisplayed={2}
+                />
+                <div className="mt-2 text-xs text-gray-500">{selectedMetrics.length} metrics selected</div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-700">Filter by Category</CardTitle>
+                <CardDescription className="text-xs text-gray-500">
+                  Select financial statement categories
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MultiSelectDropdown
+                  options={categoryFilters}
+                  selectedValues={selectedCategories}
+                  onSelectionChange={setSelectedCategories}
+                  placeholder="Select categories..."
+                  maxDisplayed={2}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-700">Filter by Bank</CardTitle>
+                <CardDescription className="text-xs text-gray-500">Compare with peer banks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MultiSelectDropdown
+                  options={bankFilters}
+                  selectedValues={selectedBanks}
+                  onSelectionChange={setSelectedBanks}
+                  placeholder="Select banks..."
+                  maxDisplayed={2}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Metric Selection Cards */}
           <Card className="shadow-lg rounded-xl border-none bg-white">
             <CardHeader className="pb-6">
@@ -460,59 +554,34 @@ export default function VarianceAnalysis() {
                 <span>Select Metrics for Charts</span>
               </CardTitle>
               <CardDescription className="text-gray-600 text-base leading-relaxed">
-                Choose multiple metrics to compare their historical trends and peer performance
+                Choose from filtered metrics to compare their historical trends and peer performance
+                {filteredFinancialRatios.length < financialRatios.length && (
+                  <span className="block text-sm text-apple-blue-600 mt-1">
+                    Showing {filteredFinancialRatios.length} of {financialRatios.length} metrics based on your filters
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-6 pb-6">
-              <div className="space-y-4">
-                {/* First row - always visible popular metrics */}
-                <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
-                  {popularMetrics.map((metric) => (
-                    <Card
-                      key={metric.id}
-                      className={cn(
-                        "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
-                        selectedMetricsForChart.has(metric.id)
-                          ? "border-apple-blue-600 bg-apple-blue-50"
-                          : "border-gray-200 hover:border-gray-300",
-                      )}
-                      onClick={() => toggleMetric(metric.id)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">
-                              {metric.name}
-                            </h3>
-                            <p className="text-xs text-gray-500 truncate mt-1">{metric.category}</p>
-                          </div>
-                          {selectedMetricsForChart.has(metric.id) && (
-                            <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-bold text-gray-900">
-                            {formatValue(metric.historicalData[0]?.value || 0, metric.unit)}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            <span
-                              className={cn(
-                                (metric.historicalData[0]?.yoyChange || 0) > 0 ? "text-green-600" : "text-red-600",
-                              )}
-                            >
-                              {formatChange(metric.historicalData[0]?.yoyChange || 0, metric.unit)}
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+              {filteredFinancialRatios.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">No metrics match your current filter selection.</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedCategories([])
+                      setSelectedMetrics([])
+                    }}
+                    className="text-apple-blue-600 border-apple-blue-300 hover:bg-apple-blue-50"
+                  >
+                    Clear Filters
+                  </Button>
                 </div>
-
-                {/* Second row - additional metrics, shown when expanded */}
-                {showAllMetrics && (
+              ) : (
+                <div className="space-y-4">
+                  {/* First row - always visible popular metrics */}
                   <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
-                    {otherMetrics.map((metric) => (
+                    {popularMetrics.map((metric) => (
                       <Card
                         key={metric.id}
                         className={cn(
@@ -553,84 +622,78 @@ export default function VarianceAnalysis() {
                       </Card>
                     ))}
                   </div>
-                )}
 
-                {/* Show More/Less button */}
-                {otherMetrics.length > 0 && (
-                  <div className="flex justify-center pt-4">
-                    {!showAllMetrics ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowAllMetrics(true)}
-                        className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Show {otherMetrics.length} More Metrics
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowAllMetrics(false)}
-                        className="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
-                      >
-                        Show Less
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  {/* Second row - additional metrics, shown when expanded */}
+                  {showAllMetrics && (
+                    <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
+                      {otherMetrics.map((metric) => (
+                        <Card
+                          key={metric.id}
+                          className={cn(
+                            "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
+                            selectedMetricsForChart.has(metric.id)
+                              ? "border-apple-blue-600 bg-apple-blue-50"
+                              : "border-gray-200 hover:border-gray-300",
+                          )}
+                          onClick={() => toggleMetric(metric.id)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">
+                                  {metric.name}
+                                </h3>
+                                <p className="text-xs text-gray-500 truncate mt-1">{metric.category}</p>
+                              </div>
+                              {selectedMetricsForChart.has(metric.id) && (
+                                <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-bold text-gray-900">
+                                {formatValue(metric.historicalData[0]?.value || 0, metric.unit)}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                <span
+                                  className={cn(
+                                    (metric.historicalData[0]?.yoyChange || 0) > 0 ? "text-green-600" : "text-red-600",
+                                  )}
+                                >
+                                  {formatChange(metric.historicalData[0]?.yoyChange || 0, metric.unit)}
+                                </span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
 
-          {/* Multi-Select Filters - moved to be under Select Metrics for Charts */}
-          <Card className="shadow-lg rounded-xl border-none bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
-                <Filter className="h-4 w-4 text-apple-blue-600" />
-                <span>Additional Filters</span>
-              </CardTitle>
-              <CardDescription className="text-gray-600 text-sm leading-relaxed">
-                Refine your analysis with category and bank filters
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-6 pb-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Select Metrics to Analyze</label>
-                  <MultiSelectDropdown
-                    options={metricOptions}
-                    selectedValues={selectedMetrics}
-                    onSelectionChange={setSelectedMetrics}
-                    placeholder="Select metrics..."
-                    maxDisplayed={2}
-                  />
-                  <div className="text-xs text-gray-500">{selectedMetrics.length} metrics selected</div>
+                  {/* Show More/Less button */}
+                  {otherMetrics.length > 0 && (
+                    <div className="flex justify-center pt-4">
+                      {!showAllMetrics ? (
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowAllMetrics(true)}
+                          className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Show {otherMetrics.length} More Metrics
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowAllMetrics(false)}
+                          className="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
+                        >
+                          Show Less
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Filter by Category</label>
-                  <MultiSelectDropdown
-                    options={categoryFilters}
-                    selectedValues={selectedCategories}
-                    onSelectionChange={setSelectedCategories}
-                    placeholder="Select categories..."
-                    maxDisplayed={2}
-                  />
-                  <div className="text-xs text-gray-500">{selectedCategories.length} categories selected</div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Filter by Bank</label>
-                  <MultiSelectDropdown
-                    options={bankFilters}
-                    selectedValues={selectedBanks}
-                    onSelectionChange={setSelectedBanks}
-                    placeholder="Select banks..."
-                    maxDisplayed={2}
-                  />
-                  <div className="text-xs text-gray-500">{selectedBanks.length} banks selected</div>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -735,7 +798,7 @@ export default function VarianceAnalysis() {
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center space-x-3">
                   <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Segment:</label>
-                  <Select value={selectedSegment} onValueChange={setSelectedSegment}>
+                  <Select value="All" onValueChange={() => {}}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -771,163 +834,21 @@ export default function VarianceAnalysis() {
                       const isExpanded = expandedRows.has(item.id)
 
                       return (
-                        <Sheet
+                        <TableRow
                           key={item.id}
-                          open={selectedItem?.id === item.id}
-                          onOpenChange={(open) => !open && setSelectedItem(null)}
-                        >
-                          <SheetTrigger asChild>
-                            <TableRow
-                              className={cn(
-                                "cursor-pointer hover:bg-apple-gray-50 transition-colors duration-200 border-b border-gray-100",
-                                item.level === 0 && "font-bold bg-apple-gray-100 hover:bg-apple-gray-200",
-                                item.level === 1 && "font-semibold",
-                              )}
-                              onClick={() => {
-                                setSelectedItem(item)
-                                if (isParent) {
-                                  toggleRow(item.id)
-                                }
-                              }}
-                            >
-                              {renderCells(item, isExpanded)}
-                            </TableRow>
-                          </SheetTrigger>
-                          {selectedItem?.id === item.id && (
-                            <SheetContent className="w-[600px] sm:w-[600px] bg-white shadow-xl rounded-l-xl">
-                              <SheetHeader className="pb-6 border-b border-gray-200">
-                                <SheetTitle className="text-2xl font-bold text-gray-900">
-                                  {selectedItem?.category} - Detailed Analysis
-                                </SheetTitle>
-                                <SheetDescription className="text-gray-600">
-                                  Driver breakdown and variance explanation
-                                </SheetDescription>
-                              </SheetHeader>
-                              <div className="mt-8 space-y-6">
-                                {selectedItem?.current !== undefined && selectedItem?.previous !== undefined && (
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <Card className="shadow-md rounded-xl border-none">
-                                      <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm text-gray-600">Current Period</CardTitle>
-                                      </CardHeader>
-                                      <CardContent>
-                                        <div className="text-2xl font-bold text-gray-900">
-                                          {formatCurrency(selectedItem.current)}
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-                                    <Card className="shadow-md rounded-xl border-none">
-                                      <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm text-gray-600">Previous Period</CardTitle>
-                                      </CardHeader>
-                                      <CardContent>
-                                        <div className="text-2xl font-bold text-gray-900">
-                                          {formatCurrency(selectedItem.previous)}
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-                                  </div>
-                                )}
-
-                                {selectedItem?.aiExplanation && (
-                                  <Card className="shadow-md rounded-xl border-none">
-                                    <CardHeader>
-                                      <CardTitle className="text-sm text-gray-600">AI Analysis</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                      <p className="text-gray-700 leading-relaxed">{selectedItem.aiExplanation}</p>
-                                    </CardContent>
-                                  </Card>
-                                )}
-
-                                {selectedItem?.drivers && selectedItem.drivers.length > 0 && (
-                                  <Card className="shadow-md rounded-xl border-none">
-                                    <CardHeader>
-                                      <CardTitle className="text-sm text-gray-600">Key Drivers</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                      <ul className="space-y-3 text-gray-700">
-                                        {selectedItem.drivers.map((driver, index) => (
-                                          <li key={index} className="flex justify-between items-center py-2">
-                                            <span>{driver.name}</span>
-                                            <span
-                                              className={cn(
-                                                "font-medium",
-                                                driver.impact === "positive" && "text-green-600",
-                                                driver.impact === "negative" && "text-red-600",
-                                                driver.impact === "neutral" && "text-gray-500",
-                                              )}
-                                            >
-                                              {driver.impact === "positive" && "+"}
-                                              {driver.impact === "negative" && "-"}
-                                              {formatCurrency(driver.value)}
-                                            </span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </CardContent>
-                                  </Card>
-                                )}
-
-                                {selectedItem?.relatedMetrics && selectedItem.relatedMetrics.length > 0 && (
-                                  <Card className="shadow-md rounded-xl border-none">
-                                    <CardHeader>
-                                      <CardTitle className="text-sm text-gray-600">Related Metrics</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                      <ul className="space-y-3 text-gray-700">
-                                        {selectedItem.relatedMetrics.map((metricId) => {
-                                          const metric = financialRatios.find((r) => r.id === metricId)
-                                          if (metric) {
-                                            return (
-                                              <li key={metric.id} className="py-2">
-                                                <div className="font-medium text-gray-900 mb-1">{metric.name}</div>
-                                                <div className="text-sm text-gray-600">{metric.description}</div>
-                                              </li>
-                                            )
-                                          } else {
-                                            return (
-                                              <li key={metricId} className="py-2">
-                                                <div className="font-medium text-gray-900 mb-1">{metricId}</div>
-                                                <div className="text-sm text-gray-600">
-                                                  (Metric details not available)
-                                                </div>
-                                              </li>
-                                            )
-                                          }
-                                        })}
-                                      </ul>
-                                    </CardContent>
-                                  </Card>
-                                )}
-
-                                {selectedItem?.newsArticles && selectedItem.newsArticles.length > 0 && (
-                                  <Card className="shadow-md rounded-xl border-none">
-                                    <CardHeader>
-                                      <CardTitle className="text-sm text-gray-600">Relevant News</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                      <ul className="space-y-3 text-gray-700">
-                                        {selectedItem.newsArticles.map((article, index) => (
-                                          <li key={index} className="py-1">
-                                            <a
-                                              href={article.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-apple-blue-600 hover:underline text-sm leading-relaxed"
-                                            >
-                                              {article.title}
-                                            </a>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </CardContent>
-                                  </Card>
-                                )}
-                              </div>
-                            </SheetContent>
+                          className={cn(
+                            "cursor-pointer hover:bg-apple-gray-50 transition-colors duration-200 border-b border-gray-100",
+                            item.level === 0 && "font-bold bg-apple-gray-100 hover:bg-apple-gray-200",
+                            item.level === 1 && "font-semibold",
                           )}
-                        </Sheet>
+                          onClick={() => {
+                            if (isParent) {
+                              toggleRow(item.id)
+                            }
+                          }}
+                        >
+                          {renderCells(item, isExpanded)}
+                        </TableRow>
                       )
                     })}
                   </TableBody>
