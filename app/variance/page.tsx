@@ -6,8 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Tooltip,
+  Legend,
+} from "recharts"
 import {
   TrendingUp,
   TrendingDown,
@@ -249,6 +259,23 @@ export default function VarianceAnalysis() {
     if (variance < 0) return "text-red-600"
     return "text-gray-500"
   }, [])
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-800 mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {`${entry.name}: ${entry.value !== null ? entry.value.toFixed(2) : "N/A"}`}
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
 
   // Safe array access for rendering
   const safeFilterOptions = {
@@ -508,41 +535,32 @@ export default function VarianceAnalysis() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ChartContainer
-                    config={{
-                      ...selectedMetrics.reduce((acc, metricId, index) => {
-                        const metric = Array.isArray(financialRatios)
-                          ? financialRatios.find((m) => m && m.id === metricId)
-                          : null
-                        acc[metricId] = {
-                          label: metric?.name || metricId,
-                          color: `hsl(var(--chart-${(index % 5) + 1}))`,
-                        }
-                        return acc
-                      }, {} as any),
-                    }}
-                    className="h-[300px] w-full"
-                  >
+                  <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={historicalChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis dataKey="quarter" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
                         <YAxis tickLine={false} axisLine={false} width={60} tick={{ fontSize: 12 }} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        {selectedMetrics.map((metricId, index) => (
-                          <Line
-                            key={metricId}
-                            type="monotone"
-                            dataKey={metricId}
-                            stroke={`var(--color-${metricId})`}
-                            strokeWidth={2}
-                            dot={{ r: 4 }}
-                            connectNulls={false}
-                          />
-                        ))}
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        {selectedMetrics.map((metricId, index) => {
+                          const colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"]
+                          return (
+                            <Line
+                              key={metricId}
+                              type="monotone"
+                              dataKey={metricId}
+                              stroke={colors[index % colors.length]}
+                              strokeWidth={2}
+                              dot={{ r: 4 }}
+                              connectNulls={false}
+                              name={financialRatios.find((m) => m.id === metricId)?.name || metricId}
+                            />
+                          )
+                        })}
                       </LineChart>
                     </ResponsiveContainer>
-                  </ChartContainer>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -555,21 +573,10 @@ export default function VarianceAnalysis() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ChartContainer
-                    config={{
-                      ...safeSelectedBanks.reduce((acc, bank, index) => {
-                        acc[bank] = {
-                          label: bank,
-                          color: `hsl(var(--chart-${(index % 5) + 1}))`,
-                        }
-                        return acc
-                      }, {} as any),
-                    }}
-                    className="h-[300px] w-full"
-                  >
+                  <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={peerComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis
                           dataKey="metric"
                           tickLine={false}
@@ -581,19 +588,24 @@ export default function VarianceAnalysis() {
                           tick={{ fontSize: 12 }}
                         />
                         <YAxis tickLine={false} axisLine={false} width={60} tick={{ fontSize: 12 }} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        {safeSelectedBanks.map((bank, index) => (
-                          <Bar
-                            key={bank}
-                            dataKey={bank}
-                            fill={`var(--color-${bank})`}
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={60}
-                          />
-                        ))}
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        {safeSelectedBanks.map((bank, index) => {
+                          const colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"]
+                          return (
+                            <Bar
+                              key={bank}
+                              dataKey={bank}
+                              fill={colors[index % colors.length]}
+                              radius={[4, 4, 0, 0]}
+                              maxBarSize={60}
+                              name={bank}
+                            />
+                          )
+                        })}
                       </BarChart>
                     </ResponsiveContainer>
-                  </ChartContainer>
+                  </div>
                 </CardContent>
               </Card>
             </div>
