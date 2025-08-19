@@ -490,61 +490,57 @@ export default function VarianceAnalysis() {
             onPreviousPeriodChange={setSelectedPreviousPeriod}
           />
 
-          {/* Multi-Select Filters */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="shadow-sm border-gray-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700">Select Metrics to Analyze</CardTitle>
-                <CardDescription className="text-xs text-gray-500">
-                  Choose multiple metrics for comparison
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MultiSelectDropdown
-                  options={metricOptions}
-                  selectedValues={selectedMetrics}
-                  onSelectionChange={setSelectedMetrics}
-                  placeholder="Select metrics..."
-                  maxDisplayed={2}
-                />
-                <div className="mt-2 text-xs text-gray-500">{selectedMetrics.length} metrics selected</div>
-              </CardContent>
-            </Card>
+          {/* Compact Multi-Select Filters */}
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Filter className="h-4 w-4" />
+                Filter Options
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Metrics</label>
+                  <MultiSelectDropdown
+                    options={metricOptions}
+                    selectedValues={selectedMetrics}
+                    onSelectionChange={setSelectedMetrics}
+                    placeholder="Select metrics..."
+                    maxDisplayed={1}
+                    className="h-9 text-sm"
+                  />
+                  <div className="text-xs text-gray-500">{selectedMetrics.length} selected</div>
+                </div>
 
-            <Card className="shadow-sm border-gray-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700">Filter by Category</CardTitle>
-                <CardDescription className="text-xs text-gray-500">
-                  Select financial statement categories
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MultiSelectDropdown
-                  options={categoryFilters}
-                  selectedValues={selectedCategories}
-                  onSelectionChange={setSelectedCategories}
-                  placeholder="Select categories..."
-                  maxDisplayed={2}
-                />
-              </CardContent>
-            </Card>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Categories</label>
+                  <MultiSelectDropdown
+                    options={categoryFilters}
+                    selectedValues={selectedCategories}
+                    onSelectionChange={setSelectedCategories}
+                    placeholder="Select categories..."
+                    maxDisplayed={1}
+                    className="h-9 text-sm"
+                  />
+                  <div className="text-xs text-gray-500">{selectedCategories.length} selected</div>
+                </div>
 
-            <Card className="shadow-sm border-gray-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700">Filter by Bank</CardTitle>
-                <CardDescription className="text-xs text-gray-500">Compare with peer banks</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MultiSelectDropdown
-                  options={bankFilters}
-                  selectedValues={selectedBanks}
-                  onSelectionChange={setSelectedBanks}
-                  placeholder="Select banks..."
-                  maxDisplayed={2}
-                />
-              </CardContent>
-            </Card>
-          </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Banks</label>
+                  <MultiSelectDropdown
+                    options={bankFilters}
+                    selectedValues={selectedBanks}
+                    onSelectionChange={setSelectedBanks}
+                    placeholder="Select banks..."
+                    maxDisplayed={1}
+                    className="h-9 text-sm"
+                  />
+                  <div className="text-xs text-gray-500">{selectedBanks.length} selected</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Metric Selection Cards */}
           <Card className="shadow-lg rounded-xl border-none bg-white">

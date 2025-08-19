@@ -65,34 +65,34 @@ export function MultiSelectDropdown({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between min-h-[40px] h-auto px-3 py-2", className)}
+          className={cn("w-full justify-between min-h-[32px] h-auto px-2 py-1", className)}
         >
           <div className="flex flex-wrap gap-1 flex-1">
             {selectedValues.length === 0 ? (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="text-muted-foreground text-sm">{placeholder}</span>
             ) : (
               <>
                 {displayedSelections.map((value) => {
                   const option = options.find((opt) => opt.value === value)
                   return (
-                    <Badge key={value} variant="secondary" className="text-xs px-2 py-0.5 rounded-full">
+                    <Badge key={value} variant="secondary" className="text-xs px-1.5 py-0.5 rounded-full">
                       {option?.label || value}
                       <X
-                        className="ml-1 h-3 w-3 cursor-pointer hover:text-destructive"
+                        className="ml-1 h-2.5 w-2.5 cursor-pointer hover:text-destructive"
                         onClick={(e) => handleRemove(value, e)}
                       />
                     </Badge>
                   )
                 })}
                 {remainingCount > 0 && (
-                  <Badge variant="outline" className="text-xs px-2 py-0.5 rounded-full">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 rounded-full">
                     +{remainingCount} more
                   </Badge>
                 )}
               </>
             )}
           </div>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
