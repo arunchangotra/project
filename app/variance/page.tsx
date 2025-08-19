@@ -26,6 +26,9 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useState, useMemo, useEffect, useRef } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PeriodFilterComponent } from "@/components/period-filter"
+import { MultiSelectDropdown } from "@/components/multi-select-dropdown"
+import { metricOptions, categoryFilters, bankFilters } from "@/lib/filter-options"
 
 // Helper function to format currency
 const formatCurrency = (value: number) => `$${Math.abs(value)}M`
@@ -121,7 +124,6 @@ const calculateAggregates = (data: LineItem[]): LineItem[] => {
   const operatingIncome = processedData.find((item) => item.id === "operating-income")
   const operatingExpenses = processedData.find((item) => item.id === "operating-expenses")
   const impairmentCharges = processedData.find((item) => item.id === "impairment-charges")
-  const incomeTax = processedData.find((item) => item.id === "income-tax")
 
   const pbtItem = processedData.find((item) => item.id === "profit-before-tax")
   if (
@@ -137,14 +139,6 @@ const calculateAggregates = (data: LineItem[]): LineItem[] => {
     pbtItem.variancePercent = pbtItem.previous !== 0 ? (pbtItem.variance / pbtItem.previous) * 100 : 0
   }
 
-  const patItem = processedData.find((item) => item.id === "profit-after-tax")
-  if (patItem && pbtItem?.current !== undefined && incomeTax?.current !== undefined) {
-    patItem.current = pbtItem.current - incomeTax.current
-    patItem.previous = (pbtItem.previous ?? 0) - (incomeTax.previous ?? 0)
-    patItem.variance = patItem.current - patItem.previous
-    patItem.variancePercent = patItem.previous !== 0 ? (patItem.variance / patItem.previous) * 100 : 0
-  }
-
   return processedData
 }
 
@@ -155,8 +149,20 @@ export default function VarianceAnalysis() {
   // Track if we've already processed the initial URL parameter
   const hasProcessedInitialUrl = useRef(false)
 
+  // Filter states
+  const [selectedPeriodType, setSelectedPeriodType] = useState("quarterly")
+  const [selectedCurrentPeriod, setSelectedCurrentPeriod] = useState("jas_2024")
+  const [selectedPreviousPeriod, setSelectedPreviousPeriod] = useState("amj_2024")
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([
+    "net_interest_income",
+    "operating_income",
+    "net_profit",
+  ])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["P&L"])
+  const [selectedBanks, setSelectedBanks] = useState<string[]>(["ADIB"])
+
   // Multiple metrics selection state
-  const [selectedMetrics, setSelectedMetrics] = useState<Set<string>>(() => {
+  const [selectedMetricsForChart, setSelectedMetricsForChart] = useState<Set<string>>(() => {
     const metricId = searchParams.get("metricId")
     if (metricId) {
       hasProcessedInitialUrl.current = true
@@ -175,10 +181,6 @@ export default function VarianceAnalysis() {
   })
   const [selectedSegment, setSelectedSegment] = useState("All")
   const [selectedItem, setSelectedItem] = useState<LineItem | null>(null)
-
-  // Period selection for line item analysis
-  const [currentPeriod, setCurrentPeriod] = useState("Jul-Sep 2024")
-  const [previousPeriod, setPreviousPeriod] = useState("Apr-Jun 2024")
 
   // Calculate aggregates for line items
   const aggregatedData = useMemo(() => calculateAggregates(detailedVarianceData), [])
@@ -204,9 +206,9 @@ export default function VarianceAnalysis() {
   const otherMetrics = financialRatios.filter((metric) => !metric.isPopular)
   const displayedMetrics = showAllMetrics ? financialRatios : popularMetrics
 
-  // Toggle metric selection
+  // Toggle metric selection for charts
   const toggleMetric = (metricId: string) => {
-    setSelectedMetrics((prev) => {
+    setSelectedMetricsForChart((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(metricId)) {
         newSet.delete(metricId)
@@ -218,7 +220,7 @@ export default function VarianceAnalysis() {
   }
 
   // Get selected metrics data
-  const selectedMetricsData = Array.from(selectedMetrics)
+  const selectedMetricsData = Array.from(selectedMetricsForChart)
     .map((id) => financialRatios.find((m) => m.id === id))
     .filter(Boolean)
 
@@ -397,7 +399,7 @@ export default function VarianceAnalysis() {
     hasProcessedInitialUrl.current = true
 
     // Update selectedMetrics only if it's different
-    setSelectedMetrics((prev) => {
+    setSelectedMetricsForChart((prev) => {
       if (prev.size === 1 && prev.has(metricId)) return prev
       return new Set([metricId])
     })
@@ -412,9 +414,9 @@ export default function VarianceAnalysis() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Header */}
-          <div className="flex justify-between items-start mb-10">
+          <div className="flex justify-between items-start mb-8">
             <div className="space-y-2">
               <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Variance Analysis</h1>
               <p className="text-lg text-gray-600 leading-relaxed">
@@ -440,12 +442,78 @@ export default function VarianceAnalysis() {
             </div>
           </div>
 
+          {/* Period Filter */}
+          <PeriodFilterComponent
+            selectedPeriodType={selectedPeriodType}
+            onPeriodTypeChange={setSelectedPeriodType}
+            selectedCurrentPeriod={selectedCurrentPeriod}
+            selectedPreviousPeriod={selectedPreviousPeriod}
+            onCurrentPeriodChange={setSelectedCurrentPeriod}
+            onPreviousPeriodChange={setSelectedPreviousPeriod}
+          />
+
+          {/* Multi-Select Filters */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-700">Select Metrics to Analyze</CardTitle>
+                <CardDescription className="text-xs text-gray-500">
+                  Choose multiple metrics for comparison
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MultiSelectDropdown
+                  options={metricOptions}
+                  selectedValues={selectedMetrics}
+                  onSelectionChange={setSelectedMetrics}
+                  placeholder="Select metrics..."
+                  maxDisplayed={2}
+                />
+                <div className="mt-2 text-xs text-gray-500">{selectedMetrics.length} metrics selected</div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-700">Filter by Category</CardTitle>
+                <CardDescription className="text-xs text-gray-500">
+                  Select financial statement categories
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MultiSelectDropdown
+                  options={categoryFilters}
+                  selectedValues={selectedCategories}
+                  onSelectionChange={setSelectedCategories}
+                  placeholder="Select categories..."
+                  maxDisplayed={2}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-700">Filter by Bank</CardTitle>
+                <CardDescription className="text-xs text-gray-500">Compare with peer banks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MultiSelectDropdown
+                  options={bankFilters}
+                  selectedValues={selectedBanks}
+                  onSelectionChange={setSelectedBanks}
+                  placeholder="Select banks..."
+                  maxDisplayed={2}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Metric Selection Cards */}
           <Card className="shadow-lg rounded-xl border-none bg-white">
             <CardHeader className="pb-6">
               <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
                 <Filter className="h-5 w-5 text-apple-blue-600" />
-                <span>Select Metrics to Analyze</span>
+                <span>Select Metrics for Charts</span>
               </CardTitle>
               <CardDescription className="text-gray-600 text-base leading-relaxed">
                 Choose multiple metrics to compare their historical trends and peer performance
@@ -460,7 +528,7 @@ export default function VarianceAnalysis() {
                       key={metric.id}
                       className={cn(
                         "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
-                        selectedMetrics.has(metric.id)
+                        selectedMetricsForChart.has(metric.id)
                           ? "border-apple-blue-600 bg-apple-blue-50"
                           : "border-gray-200 hover:border-gray-300",
                       )}
@@ -474,7 +542,7 @@ export default function VarianceAnalysis() {
                             </h3>
                             <p className="text-xs text-gray-500 truncate mt-1">{metric.category}</p>
                           </div>
-                          {selectedMetrics.has(metric.id) && (
+                          {selectedMetricsForChart.has(metric.id) && (
                             <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
                           )}
                         </div>
@@ -505,7 +573,7 @@ export default function VarianceAnalysis() {
                         key={metric.id}
                         className={cn(
                           "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
-                          selectedMetrics.has(metric.id)
+                          selectedMetricsForChart.has(metric.id)
                             ? "border-apple-blue-600 bg-apple-blue-50"
                             : "border-gray-200 hover:border-gray-300",
                         )}
@@ -519,7 +587,7 @@ export default function VarianceAnalysis() {
                               </h3>
                               <p className="text-xs text-gray-500 truncate mt-1">{metric.category}</p>
                             </div>
-                            {selectedMetrics.has(metric.id) && (
+                            {selectedMetricsForChart.has(metric.id) && (
                               <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
                             )}
                           </div>
@@ -571,7 +639,7 @@ export default function VarianceAnalysis() {
           </Card>
 
           {/* Charts Section */}
-          {selectedMetrics.size > 0 && (
+          {selectedMetricsForChart.size > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Historical Trend Chart */}
               <Card className="shadow-lg rounded-xl border-none bg-white">
@@ -670,34 +738,6 @@ export default function VarianceAnalysis() {
               </CardDescription>
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center space-x-3">
-                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Current Period:</label>
-                  <Select value={currentPeriod} onValueChange={setCurrentPeriod}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Jul-Sep 2024">Jul-Sep 2024</SelectItem>
-                      <SelectItem value="Apr-Jun 2024">Apr-Jun 2024</SelectItem>
-                      <SelectItem value="Jan-Mar 2024">Jan-Mar 2024</SelectItem>
-                      <SelectItem value="Oct-Dec 2023">Oct-Dec 2023</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Previous Period:</label>
-                  <Select value={previousPeriod} onValueChange={setPreviousPeriod}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Apr-Jun 2024">Apr-Jun 2024</SelectItem>
-                      <SelectItem value="Jan-Mar 2024">Jan-Mar 2024</SelectItem>
-                      <SelectItem value="Oct-Dec 2023">Oct-Dec 2023</SelectItem>
-                      <SelectItem value="Jul-Sep 2023">Jul-Sep 2023</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center space-x-3">
                   <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Segment:</label>
                   <Select value={selectedSegment} onValueChange={setSelectedSegment}>
                     <SelectTrigger className="w-32">
@@ -721,8 +761,8 @@ export default function VarianceAnalysis() {
                   <TableHeader>
                     <TableRow className="bg-apple-gray-100 hover:bg-apple-gray-100">
                       <TableHead className="text-gray-700 font-semibold py-4">Line Item</TableHead>
-                      <TableHead className="text-right text-gray-700 font-semibold py-4">{currentPeriod}</TableHead>
-                      <TableHead className="text-right text-gray-700 font-semibold py-4">{previousPeriod}</TableHead>
+                      <TableHead className="text-right text-gray-700 font-semibold py-4">Current</TableHead>
+                      <TableHead className="text-right text-gray-700 font-semibold py-4">Previous</TableHead>
                       <TableHead className="text-right text-gray-700 font-semibold py-4">Variance ($)</TableHead>
                       <TableHead className="text-right text-gray-700 font-semibold py-4">Variance (%)</TableHead>
                       <TableHead className="text-gray-700 font-semibold py-4">Segment</TableHead>
@@ -772,7 +812,7 @@ export default function VarianceAnalysis() {
                                   <div className="grid grid-cols-2 gap-4">
                                     <Card className="shadow-md rounded-xl border-none">
                                       <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm text-gray-600">{currentPeriod}</CardTitle>
+                                        <CardTitle className="text-sm text-gray-600">Current Period</CardTitle>
                                       </CardHeader>
                                       <CardContent>
                                         <div className="text-2xl font-bold text-gray-900">
@@ -782,7 +822,7 @@ export default function VarianceAnalysis() {
                                     </Card>
                                     <Card className="shadow-md rounded-xl border-none">
                                       <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm text-gray-600">{previousPeriod}</CardTitle>
+                                        <CardTitle className="text-sm text-gray-600">Previous Period</CardTitle>
                                       </CardHeader>
                                       <CardContent>
                                         <div className="text-2xl font-bold text-gray-900">
