@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { detailedVarianceData, type LineItem } from "@/lib/sample-data"
 import { financialRatios } from "@/lib/financial-ratios"
-import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare } from "lucide-react"
+import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare, Building2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   LineChart,
@@ -151,6 +151,9 @@ export default function VarianceAnalysis() {
   // Track if we've already processed the initial URL parameter
   const hasProcessedInitialUrl = useRef(false)
 
+  // Global bank filter state
+  const [selectedBanks, setSelectedBanks] = useState<string[]>(["ADIB"])
+
   // Filter states
   const [selectedPeriodType, setSelectedPeriodType] = useState("quarterly")
   const [selectedCurrentPeriod, setSelectedCurrentPeriod] = useState("jas_2024")
@@ -161,7 +164,6 @@ export default function VarianceAnalysis() {
     "net_profit",
   ])
   const [selectedCategories, setSelectedCategories] = useState<string[]>(["P&L"])
-  const [selectedBanks, setSelectedBanks] = useState<string[]>(["ADIB"])
 
   // Chart filter states
   const [historicalChartFilter, setHistoricalChartFilter] = useState<ChartFilterType>("Actual")
@@ -566,6 +568,11 @@ export default function VarianceAnalysis() {
     }
   }, [searchParams, popularMetrics])
 
+  // Sync global bank filter with line item bank filter
+  useEffect(() => {
+    setSelectedBanksForLineItems(selectedBanks)
+  }, [selectedBanks])
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
@@ -597,6 +604,70 @@ export default function VarianceAnalysis() {
             </div>
           </div>
 
+          {/* Global Bank Filter */}
+          <Card className="shadow-lg rounded-xl border-none bg-gradient-to-r from-apple-blue-50 to-blue-50">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
+                <Building2 className="h-5 w-5 text-apple-blue-600" />
+                <span>Bank Selection</span>
+                <Badge variant="outline" className="ml-2 text-xs bg-white">
+                  Global Filter
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Select banks to analyze across all metrics, charts, and line items on this page
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-6 pb-6">
+              <div className="flex flex-wrap gap-2">
+                {bankFilters.map((bank) => (
+                  <Button
+                    key={bank.value}
+                    variant={selectedBanks.includes(bank.value) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedBanks((prev) => {
+                        if (prev.includes(bank.value)) {
+                          return prev.filter((b) => b !== bank.value)
+                        } else {
+                          return [...prev, bank.value]
+                        }
+                      })
+                    }}
+                    className={cn(
+                      "h-9 px-4 text-sm font-medium rounded-lg transition-all",
+                      selectedBanks.includes(bank.value)
+                        ? "bg-apple-blue-600 text-white hover:bg-apple-blue-700 border-apple-blue-600 shadow-sm"
+                        : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300",
+                    )}
+                  >
+                    {bank.label}
+                    {selectedBanks.includes(bank.value) && <Check className="h-3 w-3 ml-2" />}
+                  </Button>
+                ))}
+              </div>
+              {selectedBanks.length > 0 && (
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">{selectedBanks.length}</span> bank
+                    {selectedBanks.length !== 1 ? "s" : ""} selected:{" "}
+                    <span className="text-apple-blue-700 font-medium">
+                      {selectedBanks.map((bank) => bankFilters.find((b) => b.value === bank)?.label).join(", ")}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedBanks([])}
+                    className="text-xs px-3 py-1 h-7 text-gray-600 hover:text-gray-800 border-gray-300"
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Period Filter */}
           <PeriodFilterComponent
             selectedPeriodType={selectedPeriodType}
@@ -616,17 +687,23 @@ export default function VarianceAnalysis() {
               </CardTitle>
               <CardDescription className="text-gray-600 text-base leading-relaxed">
                 Filter and select metrics to compare their historical trends and peer performance
+                {selectedBanks.length > 0 && (
+                  <span className="block text-sm text-apple-blue-600 mt-1">
+                    Analysis filtered for:{" "}
+                    {selectedBanks.map((bank) => bankFilters.find((b) => b.value === bank)?.label).join(", ")}
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="px-6 pb-6">
-              {/* Analysis Filters - Integrated at the top */}
+              {/* Analysis Filters - Integrated at the top (without bank filter) */}
               <div className="mb-6 p-4 bg-apple-gray-50 rounded-lg border border-gray-200">
                 <div className="flex items-center space-x-2 mb-3">
                   <Filter className="h-4 w-4 text-apple-blue-600" />
-                  <span className="text-sm font-medium text-gray-700">Analysis Filters</span>
+                  <span className="text-sm font-medium text-gray-700">Metric Filters</span>
                   <span className="text-xs text-gray-500">- Refine your metric selection</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-600">Metrics</label>
                     <MultiSelectDropdown
@@ -652,22 +729,9 @@ export default function VarianceAnalysis() {
                     />
                     <div className="text-xs text-gray-400">{selectedCategories.length} selected</div>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-gray-600">Banks</label>
-                    <MultiSelectDropdown
-                      options={bankFilters}
-                      selectedValues={selectedBanks}
-                      onSelectionChange={setSelectedBanks}
-                      placeholder="Select banks..."
-                      maxDisplayed={1}
-                      className="h-9 text-xs"
-                    />
-                    <div className="text-xs text-gray-400">{selectedBanks.length} selected</div>
-                  </div>
                 </div>
 
-                {(selectedMetrics.length > 0 || selectedCategories.length > 0 || selectedBanks.length > 0) && (
+                {(selectedMetrics.length > 0 || selectedCategories.length > 0) && (
                   <div className="flex justify-end pt-3 border-t border-gray-200 mt-3">
                     <Button
                       variant="outline"
@@ -675,11 +739,10 @@ export default function VarianceAnalysis() {
                       onClick={() => {
                         setSelectedMetrics([])
                         setSelectedCategories([])
-                        setSelectedBanks([])
                       }}
                       className="text-xs px-3 py-1 h-7 text-gray-600 hover:text-gray-800 border-gray-300"
                     >
-                      Clear All Filters
+                      Clear Metric Filters
                     </Button>
                   </div>
                 )}
