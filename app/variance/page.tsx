@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { detailedVarianceData, type LineItem } from "@/lib/sample-data"
 import { financialRatios } from "@/lib/financial-ratios"
-import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare, Calendar } from "lucide-react"
+import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   LineChart,
@@ -25,8 +25,9 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useState, useMemo, useEffect, useRef } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PeriodFilterComponent } from "@/components/period-filter"
 import { MultiSelectDropdown } from "@/components/multi-select-dropdown"
-import { metricOptions, categoryFilters, bankFilters, periodFilters } from "@/lib/filter-options"
+import { metricOptions, categoryFilters, bankFilters } from "@/lib/filter-options"
 
 // Helper function to format currency
 const formatCurrency = (value: number) => `$${Math.abs(value)}M`
@@ -138,18 +139,6 @@ const calculateAggregates = (data: LineItem[]): LineItem[] => {
   }
 
   return processedData
-}
-
-const formatPeriodLabel = (period: string) => {
-  if (period.includes("jfm")) return `Q1 ${period.split("_")[1]}`
-  if (period.includes("amj")) return `Q2 ${period.split("_")[1]}`
-  if (period.includes("jas")) return `Q3 ${period.split("_")[1]}`
-  if (period.includes("ond")) return `Q4 ${period.split("_")[1]}`
-  if (period.includes("h1")) return `H1 ${period.split("_")[1]}`
-  if (period.includes("h2")) return `H2 ${period.split("_")[1]}`
-  if (period.includes("9m")) return `9M ${period.split("_")[1]}`
-  if (period.includes("fy")) return `FY ${period.split("_")[1]}`
-  return period
 }
 
 export default function VarianceAnalysis() {
@@ -460,8 +449,6 @@ export default function VarianceAnalysis() {
     }
   }, [searchParams, popularMetrics])
 
-  const currentFilter = periodFilters.find((f) => f.id === selectedPeriodType)
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
@@ -493,137 +480,85 @@ export default function VarianceAnalysis() {
             </div>
           </div>
 
-          {/* Compressed Period Filter */}
+          {/* Period Filter */}
+          <PeriodFilterComponent
+            selectedPeriodType={selectedPeriodType}
+            onPeriodTypeChange={setSelectedPeriodType}
+            selectedCurrentPeriod={selectedCurrentPeriod}
+            selectedPreviousPeriod={selectedPreviousPeriod}
+            onCurrentPeriodChange={setSelectedCurrentPeriod}
+            onPreviousPeriodChange={setSelectedPreviousPeriod}
+          />
+
+          {/* Compressed Multi-Select Filters */}
           <Card className="shadow-sm border-gray-200">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-                <Calendar className="h-4 w-4 text-apple-blue-600" />
-                Period Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Period Type</label>
-                  <Select value={selectedPeriodType} onValueChange={setSelectedPeriodType}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {periodFilters.map((filter) => (
-                        <SelectItem key={filter.id} value={filter.id}>
-                          {filter.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Current Period</label>
-                  <Select
-                    value={selectedCurrentPeriod}
-                    onValueChange={setSelectedCurrentPeriod}
-                    disabled={!currentFilter}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select current" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currentFilter?.periods.map((period) => (
-                        <SelectItem key={period} value={period}>
-                          {formatPeriodLabel(period)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Previous Period</label>
-                  <Select
-                    value={selectedPreviousPeriod}
-                    onValueChange={setSelectedPreviousPeriod}
-                    disabled={!currentFilter}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Select previous" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currentFilter?.periods.map((period) => (
-                        <SelectItem key={period} value={period}>
-                          {formatPeriodLabel(period)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1 flex flex-col justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 bg-amber-900 text-white hover:bg-amber-800 border-amber-900 text-sm"
-                  >
-                    Apply Filters
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Compressed Multi-Select Filters - Single Row */}
-          <Card className="shadow-lg rounded-xl border-none bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
-                <Filter className="h-5 w-5 text-apple-blue-600" />
+              <CardTitle className="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                <Filter className="h-4 w-4 text-apple-blue-600" />
                 <span>Analysis Filters</span>
               </CardTitle>
-              <CardDescription className="text-gray-600 text-base leading-relaxed">
-                Filter data by metrics, categories, and banks to focus your analysis
+              <CardDescription className="text-xs text-gray-500">
+                Refine your variance analysis by selecting specific criteria
               </CardDescription>
             </CardHeader>
-            <CardContent className="px-6 pb-6">
+            <CardContent className="space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Select Metrics to Analyze</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Metrics</label>
                   <MultiSelectDropdown
                     options={metricOptions}
                     selectedValues={selectedMetrics}
                     onSelectionChange={setSelectedMetrics}
                     placeholder="Select metrics..."
-                    maxDisplayed={2}
-                    className="h-10"
+                    maxDisplayed={1}
+                    className="h-9 text-xs"
                   />
-                  <div className="text-xs text-gray-500">{selectedMetrics.length} selected</div>
+                  <div className="text-xs text-gray-400">{selectedMetrics.length} selected</div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Filter by Category</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Categories</label>
                   <MultiSelectDropdown
                     options={categoryFilters}
                     selectedValues={selectedCategories}
                     onSelectionChange={setSelectedCategories}
                     placeholder="Select categories..."
-                    maxDisplayed={2}
-                    className="h-10"
+                    maxDisplayed={1}
+                    className="h-9 text-xs"
                   />
-                  <div className="text-xs text-gray-500">{selectedCategories.length} selected</div>
+                  <div className="text-xs text-gray-400">{selectedCategories.length} selected</div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Filter by Bank</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Banks</label>
                   <MultiSelectDropdown
                     options={bankFilters}
                     selectedValues={selectedBanks}
                     onSelectionChange={setSelectedBanks}
                     placeholder="Select banks..."
-                    maxDisplayed={2}
-                    className="h-10"
+                    maxDisplayed={1}
+                    className="h-9 text-xs"
                   />
-                  <div className="text-xs text-gray-500">{selectedBanks.length} selected</div>
+                  <div className="text-xs text-gray-400">{selectedBanks.length} selected</div>
                 </div>
               </div>
+
+              {(selectedMetrics.length > 0 || selectedCategories.length > 0 || selectedBanks.length > 0) && (
+                <div className="flex justify-end pt-2 border-t border-gray-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedMetrics([])
+                      setSelectedCategories([])
+                      setSelectedBanks([])
+                    }}
+                    className="text-xs px-3 py-1 h-7 text-gray-600 hover:text-gray-800 border-gray-300"
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
