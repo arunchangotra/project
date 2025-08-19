@@ -335,13 +335,7 @@ export default function VarianceAnalysis() {
           const filteredData = getDataByFilter(metric, historicalChartFilter, "historical")
           const quarterData = filteredData.find((d: any) => d.quarter === quarter)
           if (quarterData) {
-            // Ensure values are within reasonable bounds
-            let value = quarterData.value
-            if (typeof value === "number" && isFinite(value)) {
-              // Cap extreme values to prevent chart overflow
-              value = Math.max(-1000, Math.min(1000, value))
-            }
-            dataPoint[metric.id] = value
+            dataPoint[metric.id] = quarterData.value
           }
         })
         return dataPoint
@@ -438,32 +432,26 @@ export default function VarianceAnalysis() {
           const value = bank[bankDataKey] as number
 
           // Apply filter transformations
-          let finalValue = value
           switch (peerChartFilter) {
             case "Actual":
-              finalValue = value
+              dataPoint[`${metric.id}_value`] = value
               break
             case "QoQ":
               // Simulate QoQ changes for peer data
-              finalValue = Math.random() * 4 - 2 // Random -2% to +2%
+              const qoqChange = Math.random() * 4 - 2 // Random -2% to +2%
+              dataPoint[`${metric.id}_value`] = qoqChange
               break
             case "YoY":
               // Simulate YoY changes for peer data
-              finalValue = Math.random() * 8 - 4 // Random -4% to +4%
+              const yoyChange = Math.random() * 8 - 4 // Random -4% to +4%
+              dataPoint[`${metric.id}_value`] = yoyChange
               break
             case "Year":
-              finalValue = value
+              dataPoint[`${metric.id}_value`] = value
               break
             default:
-              finalValue = value
+              dataPoint[`${metric.id}_value`] = value
           }
-
-          // Ensure values are within reasonable bounds for chart display
-          if (typeof finalValue === "number" && isFinite(finalValue)) {
-            finalValue = Math.max(-100, Math.min(200, finalValue))
-          }
-
-          dataPoint[`${metric.id}_value`] = finalValue
         }
       })
       return dataPoint
@@ -1123,38 +1111,22 @@ export default function VarianceAnalysis() {
                       },
                     ]),
                   )}
-                  className="h-[300px]"
+                  className="h-[300px] w-full"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis
                         dataKey="quarter"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 12 }}
-                        interval="preserveStartEnd"
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        interval={0}
                       />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fontSize: 12 }}
-                        domain={["dataMin - 5", "dataMax + 5"]}
-                        tickFormatter={(value) => {
-                          if (Math.abs(value) >= 1000) {
-                            return `${(value / 1000).toFixed(1)}K`
-                          }
-                          return value.toFixed(1)
-                        }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "white",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                        }}
-                      />
+                      <YAxis tickLine={false} axisLine={false} width={60} />
+                      <Tooltip />
                       <Legend />
                       {selectedMetricsData.map((metric, index) => (
                         <Line
@@ -1165,7 +1137,6 @@ export default function VarianceAnalysis() {
                           strokeWidth={2}
                           dot={{ r: 4 }}
                           name={metric!.name}
-                          connectNulls={false}
                         />
                       ))}
                     </LineChart>
@@ -1198,33 +1169,22 @@ export default function VarianceAnalysis() {
                       },
                     ]),
                   )}
-                  className="h-[300px]"
+                  className="h-[300px] w-full"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={peerComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <BarChart data={peerComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="bank" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} interval={0} />
-                      <YAxis
+                      <XAxis
+                        dataKey="bank"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 12 }}
-                        domain={["dataMin - 2", "dataMax + 2"]}
-                        tickFormatter={(value) => {
-                          if (Math.abs(value) >= 1000) {
-                            return `${(value / 1000).toFixed(1)}K`
-                          }
-                          return value.toFixed(1)
-                        }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        interval={0}
                       />
-                      <Tooltip
-                        content={<PeerComparisonTooltip />}
-                        contentStyle={{
-                          backgroundColor: "white",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                        }}
-                      />
+                      <YAxis tickLine={false} axisLine={false} width={60} />
+                      <Tooltip content={<PeerComparisonTooltip />} />
                       <Legend />
                       {selectedMetricsData.map((metric, index) => (
                         <Bar
