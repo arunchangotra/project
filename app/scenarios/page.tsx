@@ -5,10 +5,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
+import { Badge } from "@/components/ui/badge"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { RefreshCw, TrendingUp, TrendingDown, Filter, Check, Plus, MessageSquare } from "lucide-react"
-import { financialRatios } from "@/lib/financial-ratios" // Import all financial ratios
+import {
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  Filter,
+  Check,
+  Plus,
+  MessageSquare,
+  Settings,
+  Calendar,
+  Building2,
+  ChevronDown,
+} from "lucide-react"
+import { financialRatios } from "@/lib/financial-ratios"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
@@ -20,12 +35,53 @@ interface ScenarioInputs {
   costGrowth: number
 }
 
-// Use a more flexible type for results, as keys will be dynamic (matching financialRatios IDs)
 type ScenarioResults = Record<string, number>
+
+// Bank filter options based on CSV data
+const bankFilterOptions = [
+  { value: "ADIB", label: "ADIB", color: "bg-blue-600" },
+  { value: "FAB", label: "FAB", color: "bg-green-600" },
+  { value: "ENBD", label: "ENBD", color: "bg-purple-600" },
+  { value: "CBD", label: "CBD", color: "bg-orange-600" },
+  { value: "RAKBANK", label: "RAKBANK", color: "bg-red-600" },
+  { value: "MASHREQ", label: "MASHREQ", color: "bg-indigo-600" },
+]
+
+// Category filter options based on CSV
+const categoryFilterOptions = [
+  { value: "P&L", label: "P&L Items", count: 89 },
+  { value: "KPI", label: "Key Performance Indicators", count: 67 },
+  { value: "Balance Sheet", label: "Balance Sheet", count: 45 },
+  { value: "Ratios", label: "Financial Ratios", count: 34 },
+  { value: "Risk", label: "Risk Metrics", count: 23 },
+]
+
+// Period filter options based on CSV
+const periodFilterOptions = [
+  { value: "fy_2024", label: "FY 2024", type: "annual" },
+  { value: "fy_2023", label: "FY 2023", type: "annual" },
+  { value: "9m_2024", label: "9M 2024", type: "nine_months" },
+  { value: "9m_2023", label: "9M 2023", type: "nine_months" },
+  { value: "h1_2024", label: "H1 2024", type: "half_yearly" },
+  { value: "h1_2023", label: "H1 2023", type: "half_yearly" },
+  { value: "jas_2024", label: "Q3 2024", type: "quarterly" },
+  { value: "amj_2024", label: "Q2 2024", type: "quarterly" },
+  { value: "jfm_2024", label: "Q1 2024", type: "quarterly" },
+]
+
+// Segment filter options
+const segmentFilterOptions = [
+  { value: "consolidated", label: "Consolidated" },
+  { value: "corporate", label: "Corporate Banking" },
+  { value: "retail", label: "Retail Banking" },
+  { value: "investment", label: "Investment Banking" },
+  { value: "treasury", label: "Treasury" },
+  { value: "islamic", label: "Islamic Banking" },
+]
 
 // Map internal calculation names to financialRatios IDs for consistency
 const METRIC_ID_MAP = {
-  netProfit: "PAT", // Using Profit After Tax (PAT) as equivalent for Net Profit
+  netProfit: "PAT",
   eps: "earnings-per-share",
   nim: "NIM",
   roe: "ROE",
@@ -40,7 +96,6 @@ const METRIC_ID_MAP = {
   er: "ER",
 } as const
 
-// Define the metrics that are dynamically calculated by the enhanced model
 const dynamicallyCalculatedMetrics = new Set(Object.values(METRIC_ID_MAP))
 
 export default function WhatIfScenarios() {
@@ -52,41 +107,82 @@ export default function WhatIfScenarios() {
     costGrowth: 0,
   })
 
+  // Filter states
+  const [selectedBanks, setSelectedBanks] = useState<string[]>(["ADIB"])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["P&L", "KPI"])
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>(["jas_2024"])
+  const [selectedSegments, setSelectedSegments] = useState<string[]>(["consolidated"])
+
+  // Filter dropdown states
+  const [categoryFilterOpen, setCategoryFilterOpen] = useState(false)
+  const [periodFilterOpen, setPeriodFilterOpen] = useState(false)
+  const [segmentFilterOpen, setSegmentFilterOpen] = useState(false)
+
   // Enhanced baseline values for more metrics, using their financialRatios IDs
   const baselineResults: ScenarioResults = {
-    [METRIC_ID_MAP.netProfit]: 890, // PAT
-    [METRIC_ID_MAP.eps]: 4.25, // EPS
-    [METRIC_ID_MAP.nim]: 3.45, // NIM
-    [METRIC_ID_MAP.roe]: 12.8, // ROE
-    [METRIC_ID_MAP.roa]: 1.28, // ROA
-    [METRIC_ID_MAP.car]: 14.5, // CAR
-    [METRIC_ID_MAP.cet1]: 12.1, // CET1
-    [METRIC_ID_MAP.nplr]: 1.8, // NPLR
-    [METRIC_ID_MAP.ldr]: 85.0, // LDR
-    [METRIC_ID_MAP.casa]: 42.0, // CASA
-    [METRIC_ID_MAP.per]: 10.5, // PER
-    [METRIC_ID_MAP.pbr]: 1.2, // PBR
-    [METRIC_ID_MAP.er]: 58.2, // ER (Efficiency Ratio)
+    [METRIC_ID_MAP.netProfit]: 890,
+    [METRIC_ID_MAP.eps]: 4.25,
+    [METRIC_ID_MAP.nim]: 3.45,
+    [METRIC_ID_MAP.roe]: 12.8,
+    [METRIC_ID_MAP.roa]: 1.28,
+    [METRIC_ID_MAP.car]: 14.5,
+    [METRIC_ID_MAP.cet1]: 12.1,
+    [METRIC_ID_MAP.nplr]: 1.8,
+    [METRIC_ID_MAP.ldr]: 85.0,
+    [METRIC_ID_MAP.casa]: 42.0,
+    [METRIC_ID_MAP.per]: 10.5,
+    [METRIC_ID_MAP.pbr]: 1.2,
+    [METRIC_ID_MAP.er]: 58.2,
   }
 
   const [results, setResults] = useState<ScenarioResults>(baselineResults)
 
-  // State to control which metrics are displayed in the result cards
-  // Initialize with only 3 key metrics instead of 5
   const [selectedDisplayMetrics, setSelectedDisplayMetrics] = useState<Set<string>>(() => {
-    // Select only 3 most important metrics by default
-    const defaultMetrics = ["NIM", "ROE", "ROA"] // 3 key metrics
+    const defaultMetrics = ["NIM", "ROE", "ROA"]
     return new Set(defaultMetrics)
   })
 
-  // State for showing all metrics
   const [showAllMetrics, setShowAllMetrics] = useState(false)
 
-  // Get popular and other metrics for display
-  const popularMetrics = financialRatios.filter((metric) => metric.isPopular)
-  const otherMetrics = financialRatios.filter((metric) => !metric.isPopular)
+  // Filter toggle functions
+  const toggleBank = (bankValue: string) => {
+    const newSelection = selectedBanks.includes(bankValue)
+      ? selectedBanks.filter((b) => b !== bankValue)
+      : [...selectedBanks, bankValue]
+    setSelectedBanks(newSelection)
+  }
 
-  // Toggle metric selection
+  const toggleCategory = (categoryValue: string) => {
+    const newSelection = selectedCategories.includes(categoryValue)
+      ? selectedCategories.filter((c) => c !== categoryValue)
+      : [...selectedCategories, categoryValue]
+    setSelectedCategories(newSelection)
+  }
+
+  const togglePeriod = (periodValue: string) => {
+    const newSelection = selectedPeriods.includes(periodValue)
+      ? selectedPeriods.filter((p) => p !== periodValue)
+      : [...selectedPeriods, periodValue]
+    setSelectedPeriods(newSelection)
+  }
+
+  const toggleSegment = (segmentValue: string) => {
+    const newSelection = selectedSegments.includes(segmentValue)
+      ? selectedSegments.filter((s) => s !== segmentValue)
+      : [...selectedSegments, segmentValue]
+    setSelectedSegments(newSelection)
+  }
+
+  const clearAllFilters = () => {
+    setSelectedBanks(["ADIB"])
+    setSelectedCategories(["P&L", "KPI"])
+    setSelectedPeriods(["jas_2024"])
+    setSelectedSegments(["consolidated"])
+  }
+
+  const getPopularMetrics = () => financialRatios.filter((metric) => metric.isPopular)
+  const getOtherMetrics = () => financialRatios.filter((metric) => !metric.isPopular)
+
   const toggleMetric = (metricId: string) => {
     setSelectedDisplayMetrics((prev) => {
       const newSet = new Set(prev)
@@ -100,9 +196,8 @@ export default function WhatIfScenarios() {
   }
 
   const calculateScenario = () => {
-    // Enhanced calculation logic for multiple metrics
-    const loanBookImpact = (inputs.loanGrowth / 100) * 1850 * 0.6 // 60% flow-through
-    const depositCostImpact = (inputs.depositRateChange / 10000) * 15000 // 150bps on 15B deposits
+    const loanBookImpact = (inputs.loanGrowth / 100) * 1850 * 0.6
+    const depositCostImpact = (inputs.depositRateChange / 10000) * 15000
     const provisionImpact = (inputs.provisioningChange / 100) * 125
     const feeImpact = (inputs.feeGrowth / 100) * 420
     const costImpact = (inputs.costGrowth / 100) * 1650
@@ -110,37 +205,30 @@ export default function WhatIfScenarios() {
     const netProfitChange = loanBookImpact - depositCostImpact - provisionImpact + feeImpact - costImpact
     const newNetProfit = baselineResults[METRIC_ID_MAP.netProfit] + netProfitChange
 
-    // Calculate other metrics based on the scenario inputs
     const newEps = (newNetProfit / baselineResults[METRIC_ID_MAP.netProfit]) * baselineResults[METRIC_ID_MAP.eps]
     const newNim = baselineResults[METRIC_ID_MAP.nim] + ((loanBookImpact - depositCostImpact) / 15000) * 100
-    const newRoe = (newNetProfit / 6950) * 100 // Assuming 6.95B equity
-    const newRoa = (newNetProfit / 69500) * 100 // Assuming 69.5B assets
+    const newRoe = (newNetProfit / 6950) * 100
+    const newRoa = (newNetProfit / 69500) * 100
 
-    // Capital ratios - affected by loan growth and profitability
-    const capitalImpact = (inputs.loanGrowth / 100) * 0.1 // Loan growth reduces capital ratios slightly
-    const profitabilityBoost = ((newNetProfit - baselineResults[METRIC_ID_MAP.netProfit]) / 1000) * 0.05 // Profit retention improves capital
+    const capitalImpact = (inputs.loanGrowth / 100) * 0.1
+    const profitabilityBoost = ((newNetProfit - baselineResults[METRIC_ID_MAP.netProfit]) / 1000) * 0.05
     const newCar = Math.max(8.0, baselineResults[METRIC_ID_MAP.car] - capitalImpact + profitabilityBoost)
     const newCet1 = Math.max(6.0, baselineResults[METRIC_ID_MAP.cet1] - capitalImpact * 0.8 + profitabilityBoost * 0.8)
 
-    // Asset quality - affected by provisioning and loan growth
     const assetQualityImpact = (inputs.provisioningChange / 100) * 0.2 + (inputs.loanGrowth / 100) * 0.1
     const newNplr = Math.max(0.5, baselineResults[METRIC_ID_MAP.nplr] + assetQualityImpact)
 
-    // Liquidity - affected by loan and deposit dynamics
     const liquidityImpact = (inputs.loanGrowth / 100) * 2 - (inputs.depositRateChange / 100) * 0.5
     const newLdr = Math.max(60.0, Math.min(100.0, baselineResults[METRIC_ID_MAP.ldr] + liquidityImpact))
 
-    // CASA ratio - affected by deposit rate changes (higher rates may reduce CASA)
     const casaImpact = (inputs.depositRateChange / 100) * -0.3
     const newCasa = Math.max(25.0, Math.min(60.0, baselineResults[METRIC_ID_MAP.casa] + casaImpact))
 
-    // Valuation metrics
-    const newPer = baselineResults[METRIC_ID_MAP.per] * (baselineResults[METRIC_ID_MAP.eps] / newEps) // Inverse relationship with EPS growth
-    const newPbr = baselineResults[METRIC_ID_MAP.pbr] * (newRoe / baselineResults[METRIC_ID_MAP.roe]) * 0.8 // Partial correlation with ROE
+    const newPer = baselineResults[METRIC_ID_MAP.per] * (baselineResults[METRIC_ID_MAP.eps] / newEps)
+    const newPbr = baselineResults[METRIC_ID_MAP.pbr] * (newRoe / baselineResults[METRIC_ID_MAP.roe]) * 0.8
 
-    // Efficiency ratio - affected by cost growth and revenue changes
     const revenueChange = loanBookImpact + feeImpact
-    const efficiencyImpact = ((costImpact - revenueChange) / (2850 + revenueChange)) * 100 // New efficiency ratio
+    const efficiencyImpact = ((costImpact - revenueChange) / (2850 + revenueChange)) * 100
     const newEr = Math.max(45.0, Math.min(80.0, baselineResults[METRIC_ID_MAP.er] + efficiencyImpact))
 
     setResults({
@@ -172,14 +260,12 @@ export default function WhatIfScenarios() {
       feeGrowth: 0,
       costGrowth: 0,
     })
-    // Reset results to baseline
     setResults(baselineResults)
   }
 
-  // Helper to get metric info and values for display
   const getMetricDisplayData = (metricId: string) => {
     const metricInfo = financialRatios.find((m) => m.id === metricId)
-    if (!metricInfo) return null // Metric not found
+    if (!metricInfo) return null
 
     let baselineValue: number
     let scenarioValue: number
@@ -192,9 +278,8 @@ export default function WhatIfScenarios() {
       change = scenarioValue - baselineValue
       isDynamicallyCalculated = true
     } else {
-      // For other metrics, use their latest historical data as both baseline and scenario
       baselineValue = metricInfo.historicalData[0]?.value || 0
-      scenarioValue = baselineValue // Scenario is same as baseline for non-calculated metrics
+      scenarioValue = baselineValue
       change = 0
       isDynamicallyCalculated = false
     }
@@ -210,7 +295,6 @@ export default function WhatIfScenarios() {
     }
   }
 
-  // Helper function to create short names for chart display
   const getShortMetricName = (fullName: string) => {
     const shortNames: Record<string, string> = {
       "Net Interest Margin (NIM)": "NIM",
@@ -231,19 +315,18 @@ export default function WhatIfScenarios() {
     return shortNames[fullName] || fullName
   }
 
-  // Dynamically generate comparison data for the chart based on selected display metrics
   const comparisonData = Array.from(selectedDisplayMetrics)
     .map((metricId) => {
       const data = getMetricDisplayData(metricId)
       if (!data) return null
       return {
-        metric: getShortMetricName(data.name), // Use short name for chart
+        metric: getShortMetricName(data.name),
         baseline: data.baseline,
         scenario: data.scenario,
         unit: data.unit,
       }
     })
-    .filter(Boolean) // Filter out any nulls if metricInfo is not found
+    .filter(Boolean)
 
   const generateAISummary = () => {
     const profitChange = results[METRIC_ID_MAP.netProfit] - baselineResults[METRIC_ID_MAP.netProfit]
@@ -276,7 +359,6 @@ export default function WhatIfScenarios() {
     return summary
   }
 
-  // Helper to format values for display
   const formatDisplayValue = (value: number, unit: string) => {
     if (unit === "$M") return `$${value.toFixed(0)}M`
     if (unit === "$") return `$${value.toFixed(2)}`
@@ -285,10 +367,9 @@ export default function WhatIfScenarios() {
     return value.toFixed(2)
   }
 
-  // Helper to format change values for display
   const formatDisplayChange = (change: number, unit: string, metricId: string) => {
     const sign = change > 0 ? "+" : ""
-    if (metricId === METRIC_ID_MAP.nim) return `${sign}${(change * 100).toFixed(0)}bps` // NIM is in bps
+    if (metricId === METRIC_ID_MAP.nim) return `${sign}${(change * 100).toFixed(0)}bps`
     if (unit === "$M") return `${sign}$${Math.abs(change).toFixed(0)}M`
     if (unit === "$") return `$${Math.abs(change).toFixed(2)}`
     if (unit === "%") return `${sign}${change.toFixed(1)}%`
@@ -335,6 +416,198 @@ export default function WhatIfScenarios() {
             </div>
           </div>
 
+          {/* Global Filters Section */}
+          <Card className="shadow-lg rounded-xl border-none bg-white">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Filter className="h-5 w-5 text-apple-blue-600" />
+                  <CardTitle className="text-xl font-semibold text-gray-800">Scenario Filters</CardTitle>
+                  <Badge variant="secondary" className="bg-apple-blue-100 text-apple-blue-700 text-xs px-2 py-1">
+                    Global Filter
+                  </Badge>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-gray-500 hover:text-gray-700 text-sm"
+                >
+                  Clear All
+                </Button>
+              </div>
+              <CardDescription className="text-gray-600">
+                Filter scenario analysis by bank, category, period, and segment
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Filter Buttons Row */}
+              <div className="flex flex-wrap gap-3">
+                {/* Category Filter */}
+                <Popover open={categoryFilterOpen} onOpenChange={setCategoryFilterOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-amber-900 hover:bg-amber-800 text-white h-9 px-4 text-sm font-medium"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Category
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-4" align="start">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm text-gray-900">Select Categories</h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {categoryFilterOptions.map((category) => (
+                          <div key={category.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={category.value}
+                              checked={selectedCategories.includes(category.value)}
+                              onCheckedChange={() => toggleCategory(category.value)}
+                              className="h-4 w-4"
+                            />
+                            <label htmlFor={category.value} className="text-sm text-gray-700 cursor-pointer flex-1">
+                              {category.label}
+                              <span className="text-gray-500 ml-1">({category.count})</span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Period Filter */}
+                <Popover open={periodFilterOpen} onOpenChange={setPeriodFilterOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-amber-900 hover:bg-amber-800 text-white h-9 px-4 text-sm font-medium"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Period Filter
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-4" align="start">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm text-gray-900">Time Periods</h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {periodFilterOptions.map((period) => (
+                          <div key={period.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={period.value}
+                              checked={selectedPeriods.includes(period.value)}
+                              onCheckedChange={() => togglePeriod(period.value)}
+                              className="h-4 w-4"
+                            />
+                            <label htmlFor={period.value} className="text-sm text-gray-700 cursor-pointer flex-1">
+                              {period.label}
+                              <Badge variant="outline" className="ml-2 text-xs px-1 py-0 h-4">
+                                {period.type}
+                              </Badge>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Segment Filter */}
+                <Popover open={segmentFilterOpen} onOpenChange={setSegmentFilterOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-amber-900 hover:bg-amber-800 text-white h-9 px-4 text-sm font-medium"
+                    >
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Segment
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-52 p-4" align="start">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm text-gray-900">Business Segments</h4>
+                      <div className="space-y-2">
+                        {segmentFilterOptions.map((segment) => (
+                          <div key={segment.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={segment.value}
+                              checked={selectedSegments.includes(segment.value)}
+                              onCheckedChange={() => toggleSegment(segment.value)}
+                              className="h-4 w-4"
+                            />
+                            <label htmlFor={segment.value} className="text-sm text-gray-700 cursor-pointer flex-1">
+                              {segment.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Bank Selection Buttons */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700">Select Banks for Analysis</h4>
+                <div className="flex flex-wrap gap-2">
+                  {bankFilterOptions.map((bank) => (
+                    <Button
+                      key={bank.value}
+                      variant={selectedBanks.includes(bank.value) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleBank(bank.value)}
+                      className={cn(
+                        "h-9 px-4 text-sm font-medium transition-all",
+                        selectedBanks.includes(bank.value)
+                          ? `${bank.color} text-white hover:opacity-90`
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50",
+                      )}
+                    >
+                      {bank.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Active Filters Summary */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Active Filters Summary</span>
+                  <Badge variant="outline" className="text-xs">
+                    {selectedBanks.length +
+                      selectedCategories.length +
+                      selectedPeriods.length +
+                      selectedSegments.length}{" "}
+                    filters
+                  </Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <div className="text-xs text-gray-600">
+                    <strong>Banks:</strong> {selectedBanks.join(", ") || "None"}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    <strong>Categories:</strong> {selectedCategories.join(", ") || "None"}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    <strong>Periods:</strong>{" "}
+                    {selectedPeriods.map((p) => periodFilterOptions.find((opt) => opt.value === p)?.label).join(", ") ||
+                      "None"}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    <strong>Segments:</strong> {selectedSegments.join(", ") || "None"}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Metric Selection Cards */}
           <Card className="shadow-lg rounded-xl border-none bg-white">
             <CardHeader className="pb-6">
@@ -348,9 +621,8 @@ export default function WhatIfScenarios() {
             </CardHeader>
             <CardContent className="px-6 pb-6">
               <div className="space-y-4">
-                {/* First row - always visible popular metrics */}
                 <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
-                  {popularMetrics.map((metric) => (
+                  {getPopularMetrics().map((metric) => (
                     <Card
                       key={metric.id}
                       className={cn(
@@ -381,10 +653,9 @@ export default function WhatIfScenarios() {
                   ))}
                 </div>
 
-                {/* Second row - additional metrics, shown when expanded */}
                 {showAllMetrics && (
                   <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
-                    {otherMetrics.map((metric) => (
+                    {getOtherMetrics().map((metric) => (
                       <Card
                         key={metric.id}
                         className={cn(
@@ -419,8 +690,7 @@ export default function WhatIfScenarios() {
                   </div>
                 )}
 
-                {/* Show More/Less button */}
-                {otherMetrics.length > 0 && (
+                {getOtherMetrics().length > 0 && (
                   <div className="flex justify-center pt-4">
                     {!showAllMetrics ? (
                       <Button
@@ -429,7 +699,7 @@ export default function WhatIfScenarios() {
                         className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Show {otherMetrics.length} More Metrics
+                        Show {getOtherMetrics().length} More Metrics
                       </Button>
                     ) : (
                       <Button
@@ -589,16 +859,25 @@ export default function WhatIfScenarios() {
                     baseline: { label: "Baseline", color: "hsl(var(--chart-1))" },
                     scenario: { label: "Scenario", color: "hsl(var(--chart-2))" },
                   }}
-                  className={`min-h-[200px] h-[${Math.max(200, selectedDisplayMetrics.size * 50 + 100)}px]`}
+                  className={`min-h-[200px] h-[${Math.max(200, selectedDisplayMetrics.size * 50 + 100)}px] w-full`}
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="metric" tickLine={false} axisLine={false} interval={0} tick={{ fontSize: 12 }} />
-                      <YAxis tickLine={false} axisLine={false} />
+                      <XAxis
+                        dataKey="metric"
+                        tickLine={false}
+                        axisLine={false}
+                        interval={0}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis tickLine={false} axisLine={false} width={60} tick={{ fontSize: 12 }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="baseline" fill="var(--color-baseline)" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="scenario" fill="var(--color-scenario)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="baseline" fill="var(--color-baseline)" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                      <Bar dataKey="scenario" fill="var(--color-scenario)" radius={[4, 4, 0, 0]} maxBarSize={60} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
