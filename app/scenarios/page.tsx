@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -58,6 +58,16 @@ const METRIC_ID_MAP = {
 
 const dynamicallyCalculatedMetrics = new Set(Object.values(METRIC_ID_MAP))
 
+// Segment filter options
+const segmentFilterOptions = [
+  { value: "consolidated", label: "Consolidated" },
+  { value: "corporate", label: "Corporate Banking" },
+  { value: "retail", label: "Retail Banking" },
+  { value: "investment", label: "Investment Banking" },
+  { value: "treasury", label: "Treasury" },
+  { value: "islamic", label: "Islamic Banking" },
+]
+
 export default function WhatIfScenarios() {
   const [inputs, setInputs] = useState<ScenarioInputs>({
     loanGrowth: 0,
@@ -70,67 +80,36 @@ export default function WhatIfScenarios() {
   // Get filter options from CSV data
   const filterOptions = useFilterOptions()
 
-  // Filter states - using actual CSV data
+  // Filter states - using actual CSV data with stable initialization
   const [selectedBanks, setSelectedBanks] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([])
   const [selectedSegments, setSelectedSegments] = useState<string[]>(["consolidated"])
-
-  // Initialize with first available bank when data loads
-  useEffect(() => {
-    if (filterOptions.banks.length > 0 && selectedBanks.length === 0) {
-      setSelectedBanks([filterOptions.banks[0]])
-    }
-  }, [filterOptions.banks])
-
-  // Initialize with available categories when data loads
-  useEffect(() => {
-    if (filterOptions.categories.length > 0 && selectedCategories.length === 0) {
-      const defaultCategories = filterOptions.categories.filter((cat) => ["P&L", "KPI"].includes(cat)).slice(0, 2)
-      setSelectedCategories(defaultCategories.length > 0 ? defaultCategories : [filterOptions.categories[0]])
-    }
-  }, [filterOptions.categories])
-
-  // Initialize with latest period when data loads
-  useEffect(() => {
-    if (filterOptions.periods.length > 0 && selectedPeriods.length === 0) {
-      // Find the latest quarter (jas_2024 = Q3 2024)
-      const latestPeriod = filterOptions.periods.find((p) => p.includes("jas_2024")) || filterOptions.periods[0]
-      setSelectedPeriods([latestPeriod])
-    }
-  }, [filterOptions.periods])
 
   // Filter dropdown states
   const [categoryFilterOpen, setCategoryFilterOpen] = useState(false)
   const [periodFilterOpen, setPeriodFilterOpen] = useState(false)
   const [segmentFilterOpen, setSegmentFilterOpen] = useState(false)
 
-  // Segment filter options
-  const segmentFilterOptions = [
-    { value: "consolidated", label: "Consolidated" },
-    { value: "corporate", label: "Corporate Banking" },
-    { value: "retail", label: "Retail Banking" },
-    { value: "investment", label: "Investment Banking" },
-    { value: "treasury", label: "Treasury" },
-    { value: "islamic", label: "Islamic Banking" },
-  ]
-
   // Enhanced baseline values for more metrics, using their financialRatios IDs
-  const baselineResults: ScenarioResults = {
-    [METRIC_ID_MAP.netProfit]: 890,
-    [METRIC_ID_MAP.eps]: 4.25,
-    [METRIC_ID_MAP.nim]: 3.45,
-    [METRIC_ID_MAP.roe]: 12.8,
-    [METRIC_ID_MAP.roa]: 1.28,
-    [METRIC_ID_MAP.car]: 14.5,
-    [METRIC_ID_MAP.cet1]: 12.1,
-    [METRIC_ID_MAP.nplr]: 1.8,
-    [METRIC_ID_MAP.ldr]: 85.0,
-    [METRIC_ID_MAP.casa]: 42.0,
-    [METRIC_ID_MAP.per]: 10.5,
-    [METRIC_ID_MAP.pbr]: 1.2,
-    [METRIC_ID_MAP.er]: 58.2,
-  }
+  const baselineResults: ScenarioResults = useMemo(
+    () => ({
+      [METRIC_ID_MAP.netProfit]: 890,
+      [METRIC_ID_MAP.eps]: 4.25,
+      [METRIC_ID_MAP.nim]: 3.45,
+      [METRIC_ID_MAP.roe]: 12.8,
+      [METRIC_ID_MAP.roa]: 1.28,
+      [METRIC_ID_MAP.car]: 14.5,
+      [METRIC_ID_MAP.cet1]: 12.1,
+      [METRIC_ID_MAP.nplr]: 1.8,
+      [METRIC_ID_MAP.ldr]: 85.0,
+      [METRIC_ID_MAP.casa]: 42.0,
+      [METRIC_ID_MAP.per]: 10.5,
+      [METRIC_ID_MAP.pbr]: 1.2,
+      [METRIC_ID_MAP.er]: 58.2,
+    }),
+    [],
+  )
 
   const [results, setResults] = useState<ScenarioResults>(baselineResults)
 
@@ -141,39 +120,59 @@ export default function WhatIfScenarios() {
 
   const [showAllMetrics, setShowAllMetrics] = useState(false)
 
-  // Get bank metrics for selected banks
-  const bankMetrics = useBankMetrics(selectedBanks, Array.from(selectedDisplayMetrics))
+  // Initialize filters only once when data is available
+  useEffect(() => {
+    if (filterOptions.banks.length > 0 && selectedBanks.length === 0) {
+      setSelectedBanks([filterOptions.banks[0]])
+    }
+  }, [filterOptions.banks]) // Only depend on length to avoid infinite loops
 
-  // Filter toggle functions
-  const toggleBank = (bankValue: string) => {
-    const newSelection = selectedBanks.includes(bankValue)
-      ? selectedBanks.filter((b) => b !== bankValue)
-      : [...selectedBanks, bankValue]
-    setSelectedBanks(newSelection)
-  }
+  useEffect(() => {
+    if (filterOptions.categories.length > 0 && selectedCategories.length === 0) {
+      const defaultCategories = filterOptions.categories.filter((cat) => ["P&L", "KPI"].includes(cat)).slice(0, 2)
+      setSelectedCategories(defaultCategories.length > 0 ? defaultCategories : [filterOptions.categories[0]])
+    }
+  }, [filterOptions.categories]) // Only depend on length
 
-  const toggleCategory = (categoryValue: string) => {
-    const newSelection = selectedCategories.includes(categoryValue)
-      ? selectedCategories.filter((c) => c !== categoryValue)
-      : [...selectedCategories, categoryValue]
-    setSelectedCategories(newSelection)
-  }
+  useEffect(() => {
+    if (filterOptions.periods.length > 0 && selectedPeriods.length === 0) {
+      const latestPeriod = filterOptions.periods.find((p) => p.includes("jas_2024")) || filterOptions.periods[0]
+      setSelectedPeriods([latestPeriod])
+    }
+  }, [filterOptions.periods]) // Only depend on length
 
-  const togglePeriod = (periodValue: string) => {
-    const newSelection = selectedPeriods.includes(periodValue)
-      ? selectedPeriods.filter((p) => p !== periodValue)
-      : [...selectedPeriods, periodValue]
-    setSelectedPeriods(newSelection)
-  }
+  // Get bank metrics for selected banks - memoize to prevent infinite loops
+  const memoizedSelectedBanks = useMemo(() => selectedBanks, [selectedBanks.join(",")])
+  const memoizedSelectedMetrics = useMemo(
+    () => Array.from(selectedDisplayMetrics),
+    [Array.from(selectedDisplayMetrics).join(",")],
+  )
+  const bankMetrics = useBankMetrics(memoizedSelectedBanks, memoizedSelectedMetrics)
 
-  const toggleSegment = (segmentValue: string) => {
-    const newSelection = selectedSegments.includes(segmentValue)
-      ? selectedSegments.filter((s) => s !== segmentValue)
-      : [...selectedSegments, segmentValue]
-    setSelectedSegments(newSelection)
-  }
+  // Filter toggle functions - use useCallback to prevent re-renders
+  const toggleBank = useCallback((bankValue: string) => {
+    setSelectedBanks((prev) => (prev.includes(bankValue) ? prev.filter((b) => b !== bankValue) : [...prev, bankValue]))
+  }, [])
 
-  const clearAllFilters = () => {
+  const toggleCategory = useCallback((categoryValue: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryValue) ? prev.filter((c) => c !== categoryValue) : [...prev, categoryValue],
+    )
+  }, [])
+
+  const togglePeriod = useCallback((periodValue: string) => {
+    setSelectedPeriods((prev) =>
+      prev.includes(periodValue) ? prev.filter((p) => p !== periodValue) : [...prev, periodValue],
+    )
+  }, [])
+
+  const toggleSegment = useCallback((segmentValue: string) => {
+    setSelectedSegments((prev) =>
+      prev.includes(segmentValue) ? prev.filter((s) => s !== segmentValue) : [...prev, segmentValue],
+    )
+  }, [])
+
+  const clearAllFilters = useCallback(() => {
     if (filterOptions.banks.length > 0) {
       setSelectedBanks([filterOptions.banks[0]])
     }
@@ -186,12 +185,12 @@ export default function WhatIfScenarios() {
       setSelectedPeriods([latestPeriod])
     }
     setSelectedSegments(["consolidated"])
-  }
+  }, [filterOptions.banks, filterOptions.categories, filterOptions.periods])
 
-  const getPopularMetrics = () => financialRatios.filter((metric) => metric.isPopular)
-  const getOtherMetrics = () => financialRatios.filter((metric) => !metric.isPopular)
+  const getPopularMetrics = useCallback(() => financialRatios.filter((metric) => metric.isPopular), [])
+  const getOtherMetrics = useCallback(() => financialRatios.filter((metric) => !metric.isPopular), [])
 
-  const toggleMetric = (metricId: string) => {
+  const toggleMetric = useCallback((metricId: string) => {
     setSelectedDisplayMetrics((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(metricId)) {
@@ -201,9 +200,9 @@ export default function WhatIfScenarios() {
       }
       return newSet
     })
-  }
+  }, [])
 
-  const calculateScenario = () => {
+  const calculateScenario = useCallback(() => {
     const loanBookImpact = (inputs.loanGrowth / 100) * 1850 * 0.6
     const depositCostImpact = (inputs.depositRateChange / 10000) * 15000
     const provisionImpact = (inputs.provisioningChange / 100) * 125
@@ -254,13 +253,13 @@ export default function WhatIfScenarios() {
       [METRIC_ID_MAP.pbr]: Math.max(0.5, newPbr),
       [METRIC_ID_MAP.er]: newEr,
     })
-  }
+  }, [inputs, baselineResults])
 
   useEffect(() => {
     calculateScenario()
-  }, [inputs])
+  }, [calculateScenario])
 
-  const resetScenario = () => {
+  const resetScenario = useCallback(() => {
     setInputs({
       loanGrowth: 0,
       depositRateChange: 0,
@@ -269,41 +268,44 @@ export default function WhatIfScenarios() {
       costGrowth: 0,
     })
     setResults(baselineResults)
-  }
+  }, [baselineResults])
 
-  const getMetricDisplayData = (metricId: string) => {
-    const metricInfo = financialRatios.find((m) => m.id === metricId)
-    if (!metricInfo) return null
+  const getMetricDisplayData = useCallback(
+    (metricId: string) => {
+      const metricInfo = financialRatios.find((m) => m.id === metricId)
+      if (!metricInfo) return null
 
-    let baselineValue: number
-    let scenarioValue: number
-    let change: number
-    let isDynamicallyCalculated: boolean
+      let baselineValue: number
+      let scenarioValue: number
+      let change: number
+      let isDynamicallyCalculated: boolean
 
-    if (dynamicallyCalculatedMetrics.has(metricId)) {
-      baselineValue = baselineResults[metricId]
-      scenarioValue = results[metricId]
-      change = scenarioValue - baselineValue
-      isDynamicallyCalculated = true
-    } else {
-      baselineValue = metricInfo.historicalData[0]?.value || 0
-      scenarioValue = baselineValue
-      change = 0
-      isDynamicallyCalculated = false
-    }
+      if (dynamicallyCalculatedMetrics.has(metricId)) {
+        baselineValue = baselineResults[metricId]
+        scenarioValue = results[metricId]
+        change = scenarioValue - baselineValue
+        isDynamicallyCalculated = true
+      } else {
+        baselineValue = metricInfo.historicalData[0]?.value || 0
+        scenarioValue = baselineValue
+        change = 0
+        isDynamicallyCalculated = false
+      }
 
-    return {
-      id: metricId,
-      name: metricInfo.name,
-      unit: metricInfo.unit,
-      baseline: baselineValue,
-      scenario: scenarioValue,
-      change: change,
-      isDynamicallyCalculated: isDynamicallyCalculated,
-    }
-  }
+      return {
+        id: metricId,
+        name: metricInfo.name,
+        unit: metricInfo.unit,
+        baseline: baselineValue,
+        scenario: scenarioValue,
+        change: change,
+        isDynamicallyCalculated: isDynamicallyCalculated,
+      }
+    },
+    [baselineResults, results],
+  )
 
-  const getShortMetricName = (fullName: string) => {
+  const getShortMetricName = useCallback((fullName: string) => {
     const shortNames: Record<string, string> = {
       "Net Interest Margin (NIM)": "NIM",
       "Return on Equity (ROE)": "ROE",
@@ -321,26 +323,27 @@ export default function WhatIfScenarios() {
       "Provision Coverage Ratio (PCR)": "PCR",
     }
     return shortNames[fullName] || fullName
-  }
+  }, [])
 
-  const comparisonData = Array.from(selectedDisplayMetrics)
-    .map((metricId) => {
-      const data = getMetricDisplayData(metricId)
-      if (!data) return null
-      return {
-        metric: getShortMetricName(data.name),
-        baseline: data.baseline,
-        scenario: data.scenario,
-        unit: data.unit,
-      }
-    })
-    .filter(Boolean)
+  const comparisonData = useMemo(() => {
+    return Array.from(selectedDisplayMetrics)
+      .map((metricId) => {
+        const data = getMetricDisplayData(metricId)
+        if (!data) return null
+        return {
+          metric: getShortMetricName(data.name),
+          baseline: data.baseline,
+          scenario: data.scenario,
+          unit: data.unit,
+        }
+      })
+      .filter(Boolean)
+  }, [selectedDisplayMetrics, getMetricDisplayData, getShortMetricName])
 
-  const generateAISummary = () => {
+  const generateAISummary = useCallback(() => {
     const profitChange = results[METRIC_ID_MAP.netProfit] - baselineResults[METRIC_ID_MAP.netProfit]
     const nimChange = results[METRIC_ID_MAP.nim] - baselineResults[METRIC_ID_MAP.nim]
     const epsChange = results[METRIC_ID_MAP.eps] - baselineResults[METRIC_ID_MAP.eps]
-    const roeChange = results[METRIC_ID_MAP.roe] - baselineResults[METRIC_ID_MAP.roe]
 
     let summary = ""
 
@@ -365,17 +368,17 @@ export default function WhatIfScenarios() {
     }
 
     return summary
-  }
+  }, [results, baselineResults])
 
-  const formatDisplayValue = (value: number, unit: string) => {
+  const formatDisplayValue = useCallback((value: number, unit: string) => {
     if (unit === "$M") return `$${value.toFixed(0)}M`
     if (unit === "$") return `$${value.toFixed(2)}`
     if (unit === "%") return `${value.toFixed(2)}%`
     if (unit === "x") return `${value.toFixed(2)}x`
     return value.toFixed(2)
-  }
+  }, [])
 
-  const formatDisplayChange = (change: number, unit: string, metricId: string) => {
+  const formatDisplayChange = useCallback((change: number, unit: string, metricId: string) => {
     const sign = change > 0 ? "+" : ""
     if (metricId === METRIC_ID_MAP.nim) return `${sign}${(change * 100).toFixed(0)}bps`
     if (unit === "$M") return `${sign}$${Math.abs(change).toFixed(0)}M`
@@ -383,7 +386,7 @@ export default function WhatIfScenarios() {
     if (unit === "%") return `${sign}${change.toFixed(1)}%`
     if (unit === "x") return `${sign}${change.toFixed(2)}x`
     return `${sign}${change.toFixed(2)}`
-  }
+  }, [])
 
   return (
     <DataLoadingWrapper>
