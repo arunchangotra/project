@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { detailedVarianceData, type LineItem } from "@/lib/sample-data"
 import { financialRatios } from "@/lib/financial-ratios"
-import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare, AlertTriangle } from "lucide-react"
+import { TrendingUp, TrendingDown, Filter, ChevronDown, Check, Plus, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   LineChart,
@@ -177,7 +177,7 @@ export default function VarianceAnalysis() {
     return new Set(["NIM", "ROA"])
   })
 
-  // Filter financial ratios based on selected categories and metrics with better mapping
+  // Filter financial ratios based on selected categories and metrics
   const filteredFinancialRatios = useMemo(() => {
     let filtered = financialRatios
 
@@ -185,15 +185,14 @@ export default function VarianceAnalysis() {
     if (selectedCategories.length > 0) {
       filtered = filtered.filter((ratio) =>
         selectedCategories.some((category) => {
-          // Enhanced mapping from filter categories to metric categories
-          const categoryMappings: Record<string, string[]> = {
-            "P&L": ["Profitability", "Efficiency"],
-            KPI: ["Profitability", "Efficiency", "Valuation", "Capital Adequacy"],
-            "Balance Sheet": ["Capital Adequacy", "Liquidity", "Leverage & Capital Adequacy", "Asset Quality"],
-            Ratios: ["Asset Quality", "Liquidity", "Valuation", "Market Risk"],
-            Risk: ["Asset Quality", "Market Risk", "Capital Adequacy"],
-          }
-          return categoryMappings[category]?.includes(ratio.category) || false
+          // Map filter categories to metric categories
+          if (category === "P&L") return ["Profitability", "Efficiency"].includes(ratio.category)
+          if (category === "KPI") return ["Profitability", "Efficiency", "Valuation"].includes(ratio.category)
+          if (category === "Balance Sheet")
+            return ["Capital Adequacy", "Liquidity", "Leverage & Capital Adequacy"].includes(ratio.category)
+          if (category === "Ratios") return ["Asset Quality", "Liquidity", "Valuation"].includes(ratio.category)
+          if (category === "Risk") return ["Asset Quality", "Market Risk"].includes(ratio.category)
+          return false
         }),
       )
     }
@@ -201,16 +200,10 @@ export default function VarianceAnalysis() {
     // Filter by selected metrics if any are selected
     if (selectedMetrics.length > 0) {
       filtered = filtered.filter((ratio) => {
-        // Enhanced mapping from metric options to ratio IDs
+        // Map metric options to ratio IDs
         const metricToRatioMap: Record<string, string[]> = {
           net_interest_income: ["NIM"],
-          non_interest_income: ["ER"],
-          operating_income: ["NIM", "ER", "ROA"],
-          operating_expenses: ["ER"],
-          staff_costs: ["ER"],
-          other_expenses: ["ER"],
-          impairment_charges: ["NPLR", "PCR"],
-          profit_before_tax: ["ROE", "ROA"],
+          operating_income: ["NIM", "ER"],
           net_profit: ["ROE", "ROA", "PER"],
           nim: ["NIM"],
           roe: ["ROE"],
@@ -219,7 +212,6 @@ export default function VarianceAnalysis() {
           capital_adequacy: ["CAR", "CET1"],
           tier1_ratio: ["CET1"],
           npl_ratio: ["NPLR"],
-          provision_coverage: ["PCR"],
           eps: ["PER"],
           loan_growth: ["LDR"],
           deposit_growth: ["LDR", "CASA"],
@@ -229,14 +221,8 @@ export default function VarianceAnalysis() {
       })
     }
 
-    // Filter by selected banks (for future bank-specific metrics)
-    if (selectedBanks.length > 0) {
-      // For now, all metrics are available for all banks
-      // This could be enhanced to show bank-specific availability
-    }
-
     return filtered
-  }, [selectedCategories, selectedMetrics, selectedBanks])
+  }, [selectedCategories, selectedMetrics])
 
   // Get popular and other metrics from filtered results
   const popularMetrics = filteredFinancialRatios.filter((metric) => metric.isPopular)
@@ -621,79 +607,7 @@ export default function VarianceAnalysis() {
             onPreviousPeriodChange={setSelectedPreviousPeriod}
           />
 
-          {/* Compressed Multi-Select Filters */}
-          <Card className="shadow-sm border-gray-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center space-x-2 text-sm font-medium text-gray-700">
-                <Filter className="h-4 w-4 text-apple-blue-600" />
-                <span>Analysis Filters</span>
-              </CardTitle>
-              <CardDescription className="text-xs text-gray-500">
-                Refine your variance analysis by selecting specific criteria
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Metrics</label>
-                  <MultiSelectDropdown
-                    options={metricOptions}
-                    selectedValues={selectedMetrics}
-                    onSelectionChange={setSelectedMetrics}
-                    placeholder="Select metrics..."
-                    maxDisplayed={1}
-                    className="h-9 text-xs"
-                  />
-                  <div className="text-xs text-gray-400">{selectedMetrics.length} selected</div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Categories</label>
-                  <MultiSelectDropdown
-                    options={categoryFilters}
-                    selectedValues={selectedCategories}
-                    onSelectionChange={setSelectedCategories}
-                    placeholder="Select categories..."
-                    maxDisplayed={1}
-                    className="h-9 text-xs"
-                  />
-                  <div className="text-xs text-gray-400">{selectedCategories.length} selected</div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Banks</label>
-                  <MultiSelectDropdown
-                    options={bankFilters}
-                    selectedValues={selectedBanks}
-                    onSelectionChange={setSelectedBanks}
-                    placeholder="Select banks..."
-                    maxDisplayed={1}
-                    className="h-9 text-xs"
-                  />
-                  <div className="text-xs text-gray-400">{selectedBanks.length} selected</div>
-                </div>
-              </div>
-
-              {(selectedMetrics.length > 0 || selectedCategories.length > 0 || selectedBanks.length > 0) && (
-                <div className="flex justify-end pt-2 border-t border-gray-100">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedMetrics([])
-                      setSelectedCategories([])
-                      setSelectedBanks([])
-                    }}
-                    className="text-xs px-3 py-1 h-7 text-gray-600 hover:text-gray-800 border-gray-300"
-                  >
-                    Clear All Filters
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Metric Selection Cards */}
+          {/* Metric Selection Cards with Integrated Analysis Filters */}
           <Card className="shadow-lg rounded-xl border-none bg-white">
             <CardHeader className="pb-6">
               <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
@@ -701,83 +615,89 @@ export default function VarianceAnalysis() {
                 <span>Select Metrics for Charts</span>
               </CardTitle>
               <CardDescription className="text-gray-600 text-base leading-relaxed">
-                Choose from filtered metrics to compare their historical trends and peer performance
-                {filteredFinancialRatios.length < financialRatios.length && (
-                  <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-start space-x-2">
-                      <Filter className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm">
-                        <p className="text-blue-800 font-medium">
-                          Showing {filteredFinancialRatios.length} of {financialRatios.length} metrics based on your
-                          analysis filters:
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {selectedCategories.map((category) => (
-                            <Badge
-                              key={category}
-                              variant="outline"
-                              className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 border-blue-300"
-                            >
-                              {category}
-                            </Badge>
-                          ))}
-                          {selectedMetrics.slice(0, 3).map((metric) => (
-                            <Badge
-                              key={metric}
-                              variant="outline"
-                              className="text-xs px-2 py-0.5 bg-green-100 text-green-700 border-green-300"
-                            >
-                              {metricOptions.find((m) => m.value === metric)?.label}
-                            </Badge>
-                          ))}
-                          {selectedMetrics.length > 3 && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs px-2 py-0.5 bg-green-100 text-green-700 border-green-300"
-                            >
-                              +{selectedMetrics.length - 3} more
-                            </Badge>
-                          )}
-                          {selectedBanks.map((bank) => (
-                            <Badge
-                              key={bank}
-                              variant="outline"
-                              className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 border-purple-300"
-                            >
-                              {bank}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                Filter and select metrics to compare their historical trends and peer performance
               </CardDescription>
             </CardHeader>
-            {filteredFinancialRatios.length === 0 && (
-              <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <p className="text-amber-800 text-sm font-medium">No metrics match your current analysis filters</p>
-                </div>
-                <p className="text-amber-700 text-xs mt-1">
-                  Try adjusting your category, metric, or bank selections above to see available chart options.
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedCategories([])
-                    setSelectedMetrics([])
-                    setSelectedBanks([])
-                  }}
-                  className="mt-2 text-amber-700 border-amber-300 hover:bg-amber-100 text-xs px-3 py-1 h-7"
-                >
-                  Clear Analysis Filters
-                </Button>
-              </div>
-            )}
             <CardContent className="px-6 pb-6">
+              {/* Analysis Filters - Integrated at the top */}
+              <div className="mb-6 p-4 bg-apple-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Filter className="h-4 w-4 text-apple-blue-600" />
+                  <span className="text-sm font-medium text-gray-700">Analysis Filters</span>
+                  <span className="text-xs text-gray-500">- Refine your metric selection</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Metrics</label>
+                    <MultiSelectDropdown
+                      options={metricOptions}
+                      selectedValues={selectedMetrics}
+                      onSelectionChange={setSelectedMetrics}
+                      placeholder="Select metrics..."
+                      maxDisplayed={1}
+                      className="h-9 text-xs"
+                    />
+                    <div className="text-xs text-gray-400">{selectedMetrics.length} selected</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Categories</label>
+                    <MultiSelectDropdown
+                      options={categoryFilters}
+                      selectedValues={selectedCategories}
+                      onSelectionChange={setSelectedCategories}
+                      placeholder="Select categories..."
+                      maxDisplayed={1}
+                      className="h-9 text-xs"
+                    />
+                    <div className="text-xs text-gray-400">{selectedCategories.length} selected</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-600">Banks</label>
+                    <MultiSelectDropdown
+                      options={bankFilters}
+                      selectedValues={selectedBanks}
+                      onSelectionChange={setSelectedBanks}
+                      placeholder="Select banks..."
+                      maxDisplayed={1}
+                      className="h-9 text-xs"
+                    />
+                    <div className="text-xs text-gray-400">{selectedBanks.length} selected</div>
+                  </div>
+                </div>
+
+                {(selectedMetrics.length > 0 || selectedCategories.length > 0 || selectedBanks.length > 0) && (
+                  <div className="flex justify-end pt-3 border-t border-gray-200 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedMetrics([])
+                        setSelectedCategories([])
+                        setSelectedBanks([])
+                      }}
+                      className="text-xs px-3 py-1 h-7 text-gray-600 hover:text-gray-800 border-gray-300"
+                    >
+                      Clear All Filters
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Filtered Results Summary */}
+              {filteredFinancialRatios.length < financialRatios.length && (
+                <div className="mb-4 p-3 bg-apple-blue-50 rounded-lg border border-apple-blue-200">
+                  <div className="flex items-center space-x-2">
+                    <div className="h-2 w-2 bg-apple-blue-600 rounded-full"></div>
+                    <span className="text-sm text-apple-blue-700 font-medium">
+                      Showing {filteredFinancialRatios.length} of {financialRatios.length} metrics based on your filters
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Metric Selection Cards */}
               {filteredFinancialRatios.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No metrics match your current filter selection.</p>
