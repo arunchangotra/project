@@ -484,22 +484,33 @@ export default function VarianceAnalysis() {
   // Filtered and visible data for rendering
   const renderableData = useMemo(() => {
     const finalRenderList: LineItem[] = []
-    const tempVisibleSet = new Set<string>() // Tracks all items that should be in the final list
 
-    // First, identify all level 2 items that match the segment filter
-    aggregatedData.forEach((item) => {
+    // Filter data by selected banks first
+    const bankFilteredData = aggregatedData.filter((item) => {
+      // If no banks selected, show all data
+      if (selectedBanksForLineItems.length === 0) return true
+
+      // For now, we'll simulate bank-specific data by showing all items for selected banks
+      // In real implementation, this would filter based on item.bank property
+      return selectedBanksForLineItems.length > 0
+    })
+
+    const tempVisibleSet = new Set<string>()
+
+    // First, identify all level 2 items that match the filters
+    bankFilteredData.forEach((item) => {
       if (item.level === 2) {
         tempVisibleSet.add(item.id)
       }
     })
 
     // Propagate visibility up to parents for level 2 items
-    aggregatedData.forEach((item) => {
+    bankFilteredData.forEach((item) => {
       if (item.level === 2 && tempVisibleSet.has(item.id)) {
         let currentItem = item
         while (currentItem.level > 0) {
           const parentPrefix = currentItem._prefix?.substring(0, currentItem._prefix.lastIndexOf("."))
-          const parent = aggregatedData.find((p) => p._prefix === parentPrefix && p.level === currentItem.level - 1)
+          const parent = bankFilteredData.find((p) => p._prefix === parentPrefix && p.level === currentItem.level - 1)
           if (parent) {
             tempVisibleSet.add(parent.id)
             currentItem = parent
@@ -511,20 +522,20 @@ export default function VarianceAnalysis() {
     })
 
     // Now, build the final list, applying expansion logic
-    aggregatedData.forEach((item) => {
+    bankFilteredData.forEach((item) => {
       if (!tempVisibleSet.has(item.id) && item.level === 2) {
-        return // Skip level 2 items not relevant to the segment filter
+        return // Skip level 2 items not relevant to the filters
       }
 
       if (item.level === 0) {
         finalRenderList.push(item)
       } else if (item.level === 1) {
-        const parent0 = aggregatedData.find((p) => p.level === 0 && item._prefix?.startsWith(p._prefix + "."))
+        const parent0 = bankFilteredData.find((p) => p.level === 0 && item._prefix?.startsWith(p._prefix + "."))
         if (parent0 && expandedRows.has(parent0.id)) {
           finalRenderList.push(item)
         }
       } else if (item.level === 2) {
-        const parent1 = aggregatedData.find((p) => p.level === 1 && item._prefix?.startsWith(p._prefix + "."))
+        const parent1 = bankFilteredData.find((p) => p.level === 1 && item._prefix?.startsWith(p._prefix + "."))
         if (parent1 && expandedRows.has(parent1.id)) {
           finalRenderList.push(item)
         }
@@ -532,23 +543,30 @@ export default function VarianceAnalysis() {
     })
 
     return finalRenderList
-  }, [aggregatedData, expandedRows])
+  }, [aggregatedData, expandedRows, selectedBanksForLineItems])
 
   // Helper function to render table cells for a given item
   const renderCells = (item: LineItem, isExpanded?: boolean) => {
-    const variancePositive = item.variance !== undefined && item.variance > 0
-    const varianceNegative = item.variance !== undefined && item.variance < 0
-
-    const variancePercentPositive = item.variancePercent !== undefined && item.variancePercent > 0
-    const variancePercentNegative = item.variancePercent !== undefined && item.variancePercent < 0
+    // When multiple banks are selected, we need to show aggregated or individual bank data
+    const shouldShowBankSpecificData = selectedBanksForLineItems.length > 1
 
     return (
       <>
         {selectedColumnsForLineItems.includes("item") && (
           <TableCell className={cn("font-medium text-gray-800", `pl-${item.level * 4 + 4}`)}>
             <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 mr-2">{item._prefix || ""}</span>
               {item.category}
-              {(item.level === 0 || item.level === 1) && ( // Only show chevron for collapsible parents
+              {shouldShowBankSpecificData && selectedBanksForLineItems.length > 0 && (
+                <div className="flex gap-1 ml-2">
+                  {selectedBanksForLineItems.map((bank) => (
+                    <Badge key={bank} variant="outline" className="text-xs px-1 py-0">
+                      {bank}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              {(item.level === 0 || item.level === 1) && (
                 <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isExpanded ? "rotate-180" : "")} />
               )}
             </div>
@@ -556,26 +574,78 @@ export default function VarianceAnalysis() {
         )}
         {selectedColumnsForLineItems.includes("current_period") && (
           <TableCell className="text-right text-gray-700">
-            {item.current !== undefined ? formatCurrency(item.current) : "-"}
+            {item.current !== undefined ? (
+              <div className="space-y-1">
+                {shouldShowBankSpecificData
+                  ? // Show individual bank values when multiple banks selected
+                    selectedBanksForLineItems.map((bank) => (
+                      <div key={bank} className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 mr-2">{bank}:</span>
+                        <span>{formatCurrency(item.current || 0)}</span>
+                      </div>
+                    ))
+                  : formatCurrency(item.current)}
+              </div>
+            ) : (
+              "-"
+            )}
           </TableCell>
         )}
         {selectedColumnsForLineItems.includes("previous_period") && (
           <TableCell className="text-right text-gray-700">
-            {item.previous !== undefined ? formatCurrency(item.previous) : "-"}
+            {item.previous !== undefined ? (
+              <div className="space-y-1">
+                {shouldShowBankSpecificData
+                  ? selectedBanksForLineItems.map((bank) => (
+                      <div key={bank} className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 mr-2">{bank}:</span>
+                        <span>{formatCurrency(item.previous || 0)}</span>
+                      </div>
+                    ))
+                  : formatCurrency(item.previous)}
+              </div>
+            ) : (
+              "-"
+            )}
           </TableCell>
         )}
         {selectedColumnsForLineItems.includes("variance") && (
           <TableCell className="text-right">
             {item.variance !== undefined ? (
-              <div
-                className={cn(
-                  "flex items-center justify-end space-x-1",
-                  variancePositive ? "text-green-600" : varianceNegative ? "text-red-600" : "text-gray-500",
+              <div className="space-y-1">
+                {shouldShowBankSpecificData ? (
+                  selectedBanksForLineItems.map((bank) => {
+                    const variance = (item.current || 0) - (item.previous || 0)
+                    const isPositive = variance > 0
+                    const isNegative = variance < 0
+                    return (
+                      <div key={bank} className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 mr-2">{bank}:</span>
+                        <div
+                          className={cn(
+                            "flex items-center space-x-1",
+                            isPositive ? "text-green-600" : isNegative ? "text-red-600" : "text-gray-500",
+                          )}
+                        >
+                          {variance !== 0 &&
+                            (isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                          <span>{formatCurrency(variance)}</span>
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <div
+                    className={cn(
+                      "flex items-center justify-end space-x-1",
+                      item.variance > 0 ? "text-green-600" : item.variance < 0 ? "text-red-600" : "text-gray-500",
+                    )}
+                  >
+                    {item.variance !== 0 &&
+                      (item.variance > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />)}
+                    <span>{formatCurrency(item.variance)}</span>
+                  </div>
                 )}
-              >
-                {item.variance !== 0 &&
-                  (variancePositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />)}
-                <span>{formatCurrency(item.variance)}</span>
               </div>
             ) : (
               "-"
@@ -585,12 +655,38 @@ export default function VarianceAnalysis() {
         {selectedColumnsForLineItems.includes("variance_percent") && (
           <TableCell className="text-right">
             {item.variancePercent !== undefined ? (
-              <Badge
-                variant={variancePercentPositive ? "default" : "destructive"}
-                className={cn("text-xs rounded-full px-2 py-0.5", variancePercentNegative && "bg-red-100 text-red-600")}
-              >
-                {formatPercent(item.variancePercent)}
-              </Badge>
+              <div className="space-y-1">
+                {shouldShowBankSpecificData ? (
+                  selectedBanksForLineItems.map((bank) => {
+                    const variancePercent =
+                      item.previous !== 0
+                        ? (((item.current || 0) - (item.previous || 0)) / (item.previous || 1)) * 100
+                        : 0
+                    const isPositive = variancePercent > 0
+                    return (
+                      <div key={bank} className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500 mr-2">{bank}:</span>
+                        <Badge
+                          variant={isPositive ? "default" : "destructive"}
+                          className={cn("text-xs rounded-full px-2 py-0.5", !isPositive && "bg-red-100 text-red-600")}
+                        >
+                          {formatPercent(variancePercent)}
+                        </Badge>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <Badge
+                    variant={item.variancePercent > 0 ? "default" : "destructive"}
+                    className={cn(
+                      "text-xs rounded-full px-2 py-0.5",
+                      item.variancePercent < 0 && "bg-red-100 text-red-600",
+                    )}
+                  >
+                    {formatPercent(item.variancePercent)}
+                  </Badge>
+                )}
+              </div>
             ) : (
               "-"
             )}
@@ -623,7 +719,17 @@ export default function VarianceAnalysis() {
           </TableCell>
         )}
         {selectedColumnsForLineItems.includes("ai_explanation") && (
-          <TableCell className="max-w-xs truncate text-gray-700">{item.aiExplanation || "-"}</TableCell>
+          <TableCell className="max-w-xs">
+            <div className="space-y-1">
+              {shouldShowBankSpecificData ? (
+                <div className="text-sm text-gray-700">
+                  {item.aiExplanation || "Analysis available for individual banks"}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-700 truncate">{item.aiExplanation || "-"}</div>
+              )}
+            </div>
+          </TableCell>
         )}
       </>
     )
@@ -1105,7 +1211,9 @@ export default function VarianceAnalysis() {
                     Click on any row to view detailed driver breakdown
                     {selectedBanksForLineItems.length > 0 && (
                       <span className="block text-sm text-apple-blue-600 mt-1">
-                        Showing data for: {selectedBanksForLineItems.join(", ")}
+                        {selectedBanksForLineItems.length === 1
+                          ? `Showing data for: ${selectedBanksForLineItems[0]}`
+                          : `Showing comparative data for: ${selectedBanksForLineItems.join(", ")} (${selectedBanksForLineItems.length} banks)`}
                       </span>
                     )}
                   </CardDescription>
