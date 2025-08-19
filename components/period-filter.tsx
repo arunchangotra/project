@@ -2,7 +2,6 @@
 import { Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { periodFilters } from "@/lib/filter-options"
 
 interface PeriodFilterProps {
@@ -37,74 +36,62 @@ export function PeriodFilterComponent({
   }
 
   return (
-    <Card className="shadow-sm border-gray-200">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <Calendar className="h-4 w-4" />
-          Period Selection
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">Period Type</label>
-            <Select value={selectedPeriodType} onValueChange={onPeriodTypeChange}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select period type" />
-              </SelectTrigger>
-              <SelectContent>
-                {periodFilters.map((filter) => (
-                  <SelectItem key={filter.id} value={filter.id}>
-                    {filter.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="flex items-center gap-4 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+        <Calendar className="h-4 w-4" />
+        <span>Period:</span>
+      </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">Current Period</label>
-            <Select value={selectedCurrentPeriod} onValueChange={onCurrentPeriodChange} disabled={!currentFilter}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select current period" />
-              </SelectTrigger>
-              <SelectContent>
-                {currentFilter?.periods.map((period) => (
-                  <SelectItem key={period} value={period}>
-                    {formatPeriodLabel(period)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="flex items-center gap-3">
+        <Select value={selectedPeriodType} onValueChange={onPeriodTypeChange}>
+          <SelectTrigger className="h-8 w-24 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {periodFilters.map((filter) => (
+              <SelectItem key={filter.id} value={filter.id}>
+                {filter.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-600">Previous Period</label>
-            <Select value={selectedPreviousPeriod} onValueChange={onPreviousPeriodChange} disabled={!currentFilter}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select previous period" />
-              </SelectTrigger>
-              <SelectContent>
-                {currentFilter?.periods.map((period) => (
-                  <SelectItem key={period} value={period}>
-                    {formatPeriodLabel(period)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <Select value={selectedCurrentPeriod} onValueChange={onCurrentPeriodChange} disabled={!currentFilter}>
+          <SelectTrigger className="h-8 w-20 text-xs">
+            <SelectValue placeholder="Current" />
+          </SelectTrigger>
+          <SelectContent>
+            {currentFilter?.periods.map((period) => (
+              <SelectItem key={period} value={period}>
+                {formatPeriodLabel(period)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        <div className="flex justify-center pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-amber-900 text-white hover:bg-amber-800 border-amber-900 h-7 px-3 text-xs"
-          >
-            Apply Period Filter
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        <span className="text-xs text-gray-500">vs</span>
+
+        <Select value={selectedPreviousPeriod} onValueChange={onPreviousPeriodChange} disabled={!currentFilter}>
+          <SelectTrigger className="h-8 w-20 text-xs">
+            <SelectValue placeholder="Previous" />
+          </SelectTrigger>
+          <SelectContent>
+            {currentFilter?.periods.map((period) => (
+              <SelectItem key={period} value={period}>
+                {formatPeriodLabel(period)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-amber-900 text-white hover:bg-amber-800 border-amber-900 h-8 px-3 text-xs"
+        >
+          Apply
+        </Button>
+      </div>
+    </div>
   )
 }
