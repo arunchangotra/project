@@ -96,9 +96,7 @@ export function PeriodFilterComponent({
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="bg-amber-900 text-white hover:bg-amber-800 border-amber-900">
-            Column C filter
-          </Button>
+          
           <Button variant="outline" size="sm" className="bg-amber-900 text-white hover:bg-amber-800 border-amber-900">
             Column D filter
           </Button>
