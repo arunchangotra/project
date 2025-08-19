@@ -38,18 +38,18 @@ export function PeriodFilterComponent({
 
   return (
     <Card className="shadow-sm border-gray-200">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-700">
           <Calendar className="h-4 w-4" />
-          Period Filter
+          Period Filter Which Column?
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 items-end">
-          <div className="space-y-1">
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
             <label className="text-xs font-medium text-gray-600">Period Type</label>
             <Select value={selectedPeriodType} onValueChange={onPeriodTypeChange}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="Select period type" />
               </SelectTrigger>
               <SelectContent>
@@ -62,10 +62,10 @@ export function PeriodFilterComponent({
             </Select>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <label className="text-xs font-medium text-gray-600">Current Period</label>
             <Select value={selectedCurrentPeriod} onValueChange={onCurrentPeriodChange} disabled={!currentFilter}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="Select current period" />
               </SelectTrigger>
               <SelectContent>
@@ -78,10 +78,10 @@ export function PeriodFilterComponent({
             </Select>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-2">
             <label className="text-xs font-medium text-gray-600">Previous Period</label>
             <Select value={selectedPreviousPeriod} onValueChange={onPreviousPeriodChange} disabled={!currentFilter}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="Select previous period" />
               </SelectTrigger>
               <SelectContent>
@@ -93,23 +93,13 @@ export function PeriodFilterComponent({
               </SelectContent>
             </Select>
           </div>
+        </div>
 
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-blue-900 text-white hover:bg-blue-800 border-blue-900 h-8 px-3 text-xs"
-            >
-              Column C
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-amber-900 text-white hover:bg-amber-800 border-amber-900 h-8 px-3 text-xs"
-            >
-              Column D
-            </Button>
-          </div>
+        <div className="flex gap-2">
+          
+          <Button variant="outline" size="sm" className="bg-amber-900 text-white hover:bg-amber-800 border-amber-900">
+            Column D filter
+          </Button>
         </div>
       </CardContent>
     </Card>
