@@ -335,7 +335,13 @@ export default function VarianceAnalysis() {
           const filteredData = getDataByFilter(metric, historicalChartFilter, "historical")
           const quarterData = filteredData.find((d: any) => d.quarter === quarter)
           if (quarterData) {
-            dataPoint[metric.id] = quarterData.value
+            // Ensure values are within reasonable bounds
+            let value = quarterData.value
+            if (typeof value === "number" && isFinite(value)) {
+              // Cap extreme values to prevent chart overflow
+              value = Math.max(-1000, Math.min(1000, value))
+            }
+            dataPoint[metric.id] = value
           }
         })
         return dataPoint
@@ -432,26 +438,32 @@ export default function VarianceAnalysis() {
           const value = bank[bankDataKey] as number
 
           // Apply filter transformations
+          let finalValue = value
           switch (peerChartFilter) {
             case "Actual":
-              dataPoint[`${metric.id}_value`] = value
+              finalValue = value
               break
             case "QoQ":
               // Simulate QoQ changes for peer data
-              const qoqChange = Math.random() * 4 - 2 // Random -2% to +2%
-              dataPoint[`${metric.id}_value`] = qoqChange
+              finalValue = Math.random() * 4 - 2 // Random -2% to +2%
               break
             case "YoY":
               // Simulate YoY changes for peer data
-              const yoyChange = Math.random() * 8 - 4 // Random -4% to +4%
-              dataPoint[`${metric.id}_value`] = yoyChange
+              finalValue = Math.random() * 8 - 4 // Random -4% to +4%
               break
             case "Year":
-              dataPoint[`${metric.id}_value`] = value
+              finalValue = value
               break
             default:
-              dataPoint[`${metric.id}_value`] = value
+              finalValue = value
           }
+
+          // Ensure values are within reasonable bounds for chart display
+          if (typeof finalValue === "number" && isFinite(finalValue)) {
+            finalValue = Math.max(-100, Math.min(200, finalValue))
+          }
+
+          dataPoint[`${metric.id}_value`] = finalValue
         }
       })
       return dataPoint
@@ -1114,11 +1126,35 @@ export default function VarianceAnalysis() {
                   className="h-[300px]"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="quarter" tickLine={false} axisLine={false} />
-                      <YAxis tickLine={false} axisLine={false} />
-                      <Tooltip />
+                      <XAxis
+                        dataKey="quarter"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                        domain={["dataMin - 5", "dataMax + 5"]}
+                        tickFormatter={(value) => {
+                          if (Math.abs(value) >= 1000) {
+                            return `${(value / 1000).toFixed(1)}K`
+                          }
+                          return value.toFixed(1)
+                        }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                      />
                       <Legend />
                       {selectedMetricsData.map((metric, index) => (
                         <Line
@@ -1129,6 +1165,7 @@ export default function VarianceAnalysis() {
                           strokeWidth={2}
                           dot={{ r: 4 }}
                           name={metric!.name}
+                          connectNulls={false}
                         />
                       ))}
                     </LineChart>
@@ -1164,11 +1201,30 @@ export default function VarianceAnalysis() {
                   className="h-[300px]"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={peerComparisonData}>
+                    <BarChart data={peerComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="bank" tickLine={false} axisLine={false} />
-                      <YAxis tickLine={false} axisLine={false} />
-                      <Tooltip content={<PeerComparisonTooltip />} />
+                      <XAxis dataKey="bank" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} interval={0} />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                        domain={["dataMin - 2", "dataMax + 2"]}
+                        tickFormatter={(value) => {
+                          if (Math.abs(value) >= 1000) {
+                            return `${(value / 1000).toFixed(1)}K`
+                          }
+                          return value.toFixed(1)
+                        }}
+                      />
+                      <Tooltip
+                        content={<PeerComparisonTooltip />}
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                      />
                       <Legend />
                       {selectedMetricsData.map((metric, index) => (
                         <Bar
@@ -1177,6 +1233,7 @@ export default function VarianceAnalysis() {
                           fill={`var(--color-${metric!.id}_value)`}
                           radius={[4, 4, 0, 0]}
                           name={metric!.name}
+                          maxBarSize={60}
                         />
                       ))}
                     </BarChart>
