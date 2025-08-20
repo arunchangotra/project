@@ -3,28 +3,27 @@
 import { useState, useEffect } from "react"
 import { csvDataService, type ProcessedLineItem } from "./csv-data-service"
 
-interface FilterOptions {
+export interface FilterOptions {
   banks: string[]
   categories: string[]
-  periods: string[]
   segments: string[]
+  periods: string[]
   isLoading: boolean
   error: string | null
 }
 
-interface DataFilters {
-  banks?: string[]
-  categories?: string[]
-  periods?: string[]
-  segments?: string[]
+export interface LineItemFilters {
+  banks: string[]
+  categories: string[]
+  periods: string[]
 }
 
 export function useFilterOptions(): FilterOptions {
   const [options, setOptions] = useState<FilterOptions>({
     banks: [],
     categories: [],
-    periods: [],
     segments: [],
+    periods: [],
     isLoading: true,
     error: null,
   })
@@ -32,9 +31,7 @@ export function useFilterOptions(): FilterOptions {
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        await csvDataService.fetchCSVData()
-        const filterOptions = csvDataService.getFilterOptions()
-
+        const filterOptions = await csvDataService.getFilterOptions()
         setOptions({
           ...filterOptions,
           isLoading: false,
@@ -55,7 +52,7 @@ export function useFilterOptions(): FilterOptions {
   return options
 }
 
-export function useFilteredLineItems(filters: DataFilters) {
+export function useFilteredLineItems(filters: LineItemFilters) {
   const [data, setData] = useState<ProcessedLineItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -66,116 +63,89 @@ export function useFilteredLineItems(filters: DataFilters) {
       setError(null)
 
       try {
-        await csvDataService.fetchCSVData()
-        const filteredData = csvDataService.filterData(filters)
-        setData(filteredData)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load line items")
-        setData([])
+        const allItems = await csvDataService.getProcessedLineItems()
+
+        // Apply filters
+        let filteredItems = allItems
+
+        if (filters.banks.length > 0) {
+          filteredItems = filteredItems.filter((item) => filters.banks.includes(item.bank))
+        }
+
+        if (filters.categories.length > 0) {
+          filteredItems = filteredItems.filter((item) => filters.categories.includes(item.category))
+        }
+
+        setData(filteredItems)
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to load line items")
       } finally {
         setIsLoading(false)
       }
     }
 
     loadData()
-  }, [filters.banks?.join(","), filters.categories?.join(","), filters.periods?.join(","), filters.segments?.join(",")])
+  }, [filters.banks, filters.categories, filters.periods])
 
   return { data, isLoading, error }
 }
 
-export function useHistoricalData(bank: string, itemIds: string[]) {
-  const [data, setData] = useState<Record<string, Array<{ quarter: string; value: number }>> | null>(null)
+export function useHistoricalData(bank: string, metricIds: string[]) {
+  const [data, setData] = useState<Record<string, any[]> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
-      if (!bank || itemIds.length === 0) {
-        setData({})
+      if (!bank || metricIds.length === 0) {
+        setData(null)
         setIsLoading(false)
         return
       }
 
       setIsLoading(true)
-      setError(null)
-
       try {
-        await csvDataService.fetchCSVData()
-        const historicalData = csvDataService.getHistoricalData(bank, itemIds)
+        const historicalData = await csvDataService.getHistoricalData(bank, metricIds)
         setData(historicalData)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load historical data")
-        setData({})
+      } catch (error) {
+        console.error("Error loading historical data:", error)
+        setData(null)
       } finally {
         setIsLoading(false)
       }
     }
 
     loadData()
-  }, [bank, itemIds.join(",")])
+  }, [bank, metricIds])
 
-  return { data, isLoading, error }
+  return { data, isLoading }
 }
 
 export function useBankMetrics(banks: string[], metricIds: string[]) {
   const [data, setData] = useState<Record<string, Record<string, number>> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
       if (banks.length === 0 || metricIds.length === 0) {
-        setData({})
+        setData(null)
         setIsLoading(false)
         return
       }
 
       setIsLoading(true)
-      setError(null)
-
       try {
-        await csvDataService.fetchCSVData()
-        const result: Record<string, Record<string, number>> = {}
-
-        banks.forEach((bank) => {
-          result[bank] = {}
-
-          // Map metric IDs to item IDs from CSV
-          const metricToItemMap: Record<string, string> = {
-            NIM: "20", // Net Interest Margin
-            ROA: "18", // Return on Assets
-            ROE: "19", // Return on Equity
-            ER: "9", // Efficiency Ratio (using Total Operating Expenses)
-            CAR: "17", // Capital Adequacy (using Total Equity as proxy)
-            CET1: "17", // CET1 (using Total Equity as proxy)
-            NPLR: "11", // NPL Ratio (using Impairment Charges as proxy)
-            LDR: "15", // Loan to Deposit Ratio (using Loans and Advances)
-            PER: "13", // Price Earnings Ratio (using Net Profit as proxy)
-          }
-
-          metricIds.forEach((metricId) => {
-            const itemId = metricToItemMap[metricId]
-            if (itemId) {
-              const historicalData = csvDataService.getHistoricalData(bank, [itemId])
-              const latestData = historicalData[itemId]?.[0] // Get most recent data
-              if (latestData) {
-                result[bank][metricId] = latestData.value
-              }
-            }
-          })
-        })
-
-        setData(result)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load bank metrics")
-        setData({})
+        const bankMetrics = await csvDataService.getBankMetrics(banks, metricIds)
+        setData(bankMetrics)
+      } catch (error) {
+        console.error("Error loading bank metrics:", error)
+        setData(null)
       } finally {
         setIsLoading(false)
       }
     }
 
     loadData()
-  }, [banks.join(","), metricIds.join(",")])
+  }, [banks, metricIds])
 
-  return { data, isLoading, error }
+  return { data, isLoading }
 }
