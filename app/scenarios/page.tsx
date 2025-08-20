@@ -1,33 +1,16 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { Badge } from "@/components/ui/badge"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Checkbox } from "@/components/ui/checkbox"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import {
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
-  Filter,
-  Check,
-  Plus,
-  MessageSquare,
-  Settings,
-  Calendar,
-  Building2,
-  ChevronDown,
-} from "lucide-react"
-import { financialRatios } from "@/lib/financial-ratios"
+import { RefreshCw, TrendingUp, TrendingDown, Filter, Check, Plus, MessageSquare } from "lucide-react"
+import { financialRatios } from "@/lib/financial-ratios" // Import all financial ratios
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { DataLoadingWrapper } from "@/components/data-loading-wrapper"
-import { useFilterOptions, useBankMetrics } from "@/lib/data-hooks"
 
 interface ScenarioInputs {
   loanGrowth: number
@@ -37,11 +20,12 @@ interface ScenarioInputs {
   costGrowth: number
 }
 
+// Use a more flexible type for results, as keys will be dynamic (matching financialRatios IDs)
 type ScenarioResults = Record<string, number>
 
 // Map internal calculation names to financialRatios IDs for consistency
 const METRIC_ID_MAP = {
-  netProfit: "PAT",
+  netProfit: "PAT", // Using Profit After Tax (PAT) as equivalent for Net Profit
   eps: "earnings-per-share",
   nim: "NIM",
   roe: "ROE",
@@ -56,17 +40,8 @@ const METRIC_ID_MAP = {
   er: "ER",
 } as const
 
+// Define the metrics that are dynamically calculated by the enhanced model
 const dynamicallyCalculatedMetrics = new Set(Object.values(METRIC_ID_MAP))
-
-// Segment filter options
-const segmentFilterOptions = [
-  { value: "consolidated", label: "Consolidated" },
-  { value: "corporate", label: "Corporate Banking" },
-  { value: "retail", label: "Retail Banking" },
-  { value: "investment", label: "Investment Banking" },
-  { value: "treasury", label: "Treasury" },
-  { value: "islamic", label: "Islamic Banking" },
-]
 
 export default function WhatIfScenarios() {
   const [inputs, setInputs] = useState<ScenarioInputs>({
@@ -77,120 +52,42 @@ export default function WhatIfScenarios() {
     costGrowth: 0,
   })
 
-  // Get filter options from CSV data
-  const filterOptions = useFilterOptions()
-
-  // Filter states - using actual CSV data with stable initialization
-  const [selectedBanks, setSelectedBanks] = useState<string[]>([])
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([])
-  const [selectedSegments, setSelectedSegments] = useState<string[]>(["consolidated"])
-
-  // Filter dropdown states
-  const [categoryFilterOpen, setCategoryFilterOpen] = useState(false)
-  const [periodFilterOpen, setPeriodFilterOpen] = useState(false)
-  const [segmentFilterOpen, setSegmentFilterOpen] = useState(false)
-
   // Enhanced baseline values for more metrics, using their financialRatios IDs
-  const baselineResults: ScenarioResults = useMemo(
-    () => ({
-      [METRIC_ID_MAP.netProfit]: 890,
-      [METRIC_ID_MAP.eps]: 4.25,
-      [METRIC_ID_MAP.nim]: 3.45,
-      [METRIC_ID_MAP.roe]: 12.8,
-      [METRIC_ID_MAP.roa]: 1.28,
-      [METRIC_ID_MAP.car]: 14.5,
-      [METRIC_ID_MAP.cet1]: 12.1,
-      [METRIC_ID_MAP.nplr]: 1.8,
-      [METRIC_ID_MAP.ldr]: 85.0,
-      [METRIC_ID_MAP.casa]: 42.0,
-      [METRIC_ID_MAP.per]: 10.5,
-      [METRIC_ID_MAP.pbr]: 1.2,
-      [METRIC_ID_MAP.er]: 58.2,
-    }),
-    [],
-  )
+  const baselineResults: ScenarioResults = {
+    [METRIC_ID_MAP.netProfit]: 890, // PAT
+    [METRIC_ID_MAP.eps]: 4.25, // EPS
+    [METRIC_ID_MAP.nim]: 3.45, // NIM
+    [METRIC_ID_MAP.roe]: 12.8, // ROE
+    [METRIC_ID_MAP.roa]: 1.28, // ROA
+    [METRIC_ID_MAP.car]: 14.5, // CAR
+    [METRIC_ID_MAP.cet1]: 12.1, // CET1
+    [METRIC_ID_MAP.nplr]: 1.8, // NPLR
+    [METRIC_ID_MAP.ldr]: 85.0, // LDR
+    [METRIC_ID_MAP.casa]: 42.0, // CASA
+    [METRIC_ID_MAP.per]: 10.5, // PER
+    [METRIC_ID_MAP.pbr]: 1.2, // PBR
+    [METRIC_ID_MAP.er]: 58.2, // ER (Efficiency Ratio)
+  }
 
   const [results, setResults] = useState<ScenarioResults>(baselineResults)
 
+  // State to control which metrics are displayed in the result cards
+  // Initialize with only 3 key metrics instead of 5
   const [selectedDisplayMetrics, setSelectedDisplayMetrics] = useState<Set<string>>(() => {
-    const defaultMetrics = ["NIM", "ROE", "ROA"]
+    // Select only 3 most important metrics by default
+    const defaultMetrics = ["NIM", "ROE", "ROA"] // 3 key metrics
     return new Set(defaultMetrics)
   })
 
+  // State for showing all metrics
   const [showAllMetrics, setShowAllMetrics] = useState(false)
 
-  // Initialize filters only once when data is available
-  useEffect(() => {
-    if (filterOptions.banks.length > 0 && selectedBanks.length === 0) {
-      setSelectedBanks([filterOptions.banks[0]])
-    }
-  }, [filterOptions.banks]) // Only depend on length to avoid infinite loops
+  // Get popular and other metrics for display
+  const popularMetrics = financialRatios.filter((metric) => metric.isPopular)
+  const otherMetrics = financialRatios.filter((metric) => !metric.isPopular)
 
-  useEffect(() => {
-    if (filterOptions.categories.length > 0 && selectedCategories.length === 0) {
-      const defaultCategories = filterOptions.categories.filter((cat) => ["P&L", "KPI"].includes(cat)).slice(0, 2)
-      setSelectedCategories(defaultCategories.length > 0 ? defaultCategories : [filterOptions.categories[0]])
-    }
-  }, [filterOptions.categories]) // Only depend on length
-
-  useEffect(() => {
-    if (filterOptions.periods.length > 0 && selectedPeriods.length === 0) {
-      const latestPeriod = filterOptions.periods.find((p) => p.includes("jas_2024")) || filterOptions.periods[0]
-      setSelectedPeriods([latestPeriod])
-    }
-  }, [filterOptions.periods]) // Only depend on length
-
-  // Get bank metrics for selected banks - memoize to prevent infinite loops
-  const memoizedSelectedBanks = useMemo(() => selectedBanks, [selectedBanks.join(",")])
-  const memoizedSelectedMetrics = useMemo(
-    () => Array.from(selectedDisplayMetrics),
-    [Array.from(selectedDisplayMetrics).join(",")],
-  )
-  const bankMetrics = useBankMetrics(memoizedSelectedBanks, memoizedSelectedMetrics)
-
-  // Filter toggle functions - use useCallback to prevent re-renders
-  const toggleBank = useCallback((bankValue: string) => {
-    setSelectedBanks((prev) => (prev.includes(bankValue) ? prev.filter((b) => b !== bankValue) : [...prev, bankValue]))
-  }, [])
-
-  const toggleCategory = useCallback((categoryValue: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryValue) ? prev.filter((c) => c !== categoryValue) : [...prev, categoryValue],
-    )
-  }, [])
-
-  const togglePeriod = useCallback((periodValue: string) => {
-    setSelectedPeriods((prev) =>
-      prev.includes(periodValue) ? prev.filter((p) => p !== periodValue) : [...prev, periodValue],
-    )
-  }, [])
-
-  const toggleSegment = useCallback((segmentValue: string) => {
-    setSelectedSegments((prev) =>
-      prev.includes(segmentValue) ? prev.filter((s) => s !== segmentValue) : [...prev, segmentValue],
-    )
-  }, [])
-
-  const clearAllFilters = useCallback(() => {
-    if (filterOptions.banks.length > 0) {
-      setSelectedBanks([filterOptions.banks[0]])
-    }
-    if (filterOptions.categories.length > 0) {
-      const defaultCategories = filterOptions.categories.filter((cat) => ["P&L", "KPI"].includes(cat)).slice(0, 2)
-      setSelectedCategories(defaultCategories.length > 0 ? defaultCategories : [filterOptions.categories[0]])
-    }
-    if (filterOptions.periods.length > 0) {
-      const latestPeriod = filterOptions.periods.find((p) => p.includes("jas_2024")) || filterOptions.periods[0]
-      setSelectedPeriods([latestPeriod])
-    }
-    setSelectedSegments(["consolidated"])
-  }, [filterOptions.banks, filterOptions.categories, filterOptions.periods])
-
-  const getPopularMetrics = useCallback(() => financialRatios.filter((metric) => metric.isPopular), [])
-  const getOtherMetrics = useCallback(() => financialRatios.filter((metric) => !metric.isPopular), [])
-
-  const toggleMetric = useCallback((metricId: string) => {
+  // Toggle metric selection
+  const toggleMetric = (metricId: string) => {
     setSelectedDisplayMetrics((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(metricId)) {
@@ -200,11 +97,12 @@ export default function WhatIfScenarios() {
       }
       return newSet
     })
-  }, [])
+  }
 
-  const calculateScenario = useCallback(() => {
-    const loanBookImpact = (inputs.loanGrowth / 100) * 1850 * 0.6
-    const depositCostImpact = (inputs.depositRateChange / 10000) * 15000
+  const calculateScenario = () => {
+    // Enhanced calculation logic for multiple metrics
+    const loanBookImpact = (inputs.loanGrowth / 100) * 1850 * 0.6 // 60% flow-through
+    const depositCostImpact = (inputs.depositRateChange / 10000) * 15000 // 150bps on 15B deposits
     const provisionImpact = (inputs.provisioningChange / 100) * 125
     const feeImpact = (inputs.feeGrowth / 100) * 420
     const costImpact = (inputs.costGrowth / 100) * 1650
@@ -212,30 +110,37 @@ export default function WhatIfScenarios() {
     const netProfitChange = loanBookImpact - depositCostImpact - provisionImpact + feeImpact - costImpact
     const newNetProfit = baselineResults[METRIC_ID_MAP.netProfit] + netProfitChange
 
+    // Calculate other metrics based on the scenario inputs
     const newEps = (newNetProfit / baselineResults[METRIC_ID_MAP.netProfit]) * baselineResults[METRIC_ID_MAP.eps]
     const newNim = baselineResults[METRIC_ID_MAP.nim] + ((loanBookImpact - depositCostImpact) / 15000) * 100
-    const newRoe = (newNetProfit / 6950) * 100
-    const newRoa = (newNetProfit / 69500) * 100
+    const newRoe = (newNetProfit / 6950) * 100 // Assuming 6.95B equity
+    const newRoa = (newNetProfit / 69500) * 100 // Assuming 69.5B assets
 
-    const capitalImpact = (inputs.loanGrowth / 100) * 0.1
-    const profitabilityBoost = ((newNetProfit - baselineResults[METRIC_ID_MAP.netProfit]) / 1000) * 0.05
+    // Capital ratios - affected by loan growth and profitability
+    const capitalImpact = (inputs.loanGrowth / 100) * 0.1 // Loan growth reduces capital ratios slightly
+    const profitabilityBoost = ((newNetProfit - baselineResults[METRIC_ID_MAP.netProfit]) / 1000) * 0.05 // Profit retention improves capital
     const newCar = Math.max(8.0, baselineResults[METRIC_ID_MAP.car] - capitalImpact + profitabilityBoost)
     const newCet1 = Math.max(6.0, baselineResults[METRIC_ID_MAP.cet1] - capitalImpact * 0.8 + profitabilityBoost * 0.8)
 
+    // Asset quality - affected by provisioning and loan growth
     const assetQualityImpact = (inputs.provisioningChange / 100) * 0.2 + (inputs.loanGrowth / 100) * 0.1
     const newNplr = Math.max(0.5, baselineResults[METRIC_ID_MAP.nplr] + assetQualityImpact)
 
+    // Liquidity - affected by loan and deposit dynamics
     const liquidityImpact = (inputs.loanGrowth / 100) * 2 - (inputs.depositRateChange / 100) * 0.5
     const newLdr = Math.max(60.0, Math.min(100.0, baselineResults[METRIC_ID_MAP.ldr] + liquidityImpact))
 
+    // CASA ratio - affected by deposit rate changes (higher rates may reduce CASA)
     const casaImpact = (inputs.depositRateChange / 100) * -0.3
     const newCasa = Math.max(25.0, Math.min(60.0, baselineResults[METRIC_ID_MAP.casa] + casaImpact))
 
-    const newPer = baselineResults[METRIC_ID_MAP.per] * (baselineResults[METRIC_ID_MAP.eps] / newEps)
-    const newPbr = baselineResults[METRIC_ID_MAP.pbr] * (newRoe / baselineResults[METRIC_ID_MAP.roe]) * 0.8
+    // Valuation metrics
+    const newPer = baselineResults[METRIC_ID_MAP.per] * (baselineResults[METRIC_ID_MAP.eps] / newEps) // Inverse relationship with EPS growth
+    const newPbr = baselineResults[METRIC_ID_MAP.pbr] * (newRoe / baselineResults[METRIC_ID_MAP.roe]) * 0.8 // Partial correlation with ROE
 
+    // Efficiency ratio - affected by cost growth and revenue changes
     const revenueChange = loanBookImpact + feeImpact
-    const efficiencyImpact = ((costImpact - revenueChange) / (2850 + revenueChange)) * 100
+    const efficiencyImpact = ((costImpact - revenueChange) / (2850 + revenueChange)) * 100 // New efficiency ratio
     const newEr = Math.max(45.0, Math.min(80.0, baselineResults[METRIC_ID_MAP.er] + efficiencyImpact))
 
     setResults({
@@ -253,13 +158,13 @@ export default function WhatIfScenarios() {
       [METRIC_ID_MAP.pbr]: Math.max(0.5, newPbr),
       [METRIC_ID_MAP.er]: newEr,
     })
-  }, [inputs, baselineResults])
+  }
 
   useEffect(() => {
     calculateScenario()
-  }, [calculateScenario])
+  }, [inputs])
 
-  const resetScenario = useCallback(() => {
+  const resetScenario = () => {
     setInputs({
       loanGrowth: 0,
       depositRateChange: 0,
@@ -267,45 +172,46 @@ export default function WhatIfScenarios() {
       feeGrowth: 0,
       costGrowth: 0,
     })
+    // Reset results to baseline
     setResults(baselineResults)
-  }, [baselineResults])
+  }
 
-  const getMetricDisplayData = useCallback(
-    (metricId: string) => {
-      const metricInfo = financialRatios.find((m) => m.id === metricId)
-      if (!metricInfo) return null
+  // Helper to get metric info and values for display
+  const getMetricDisplayData = (metricId: string) => {
+    const metricInfo = financialRatios.find((m) => m.id === metricId)
+    if (!metricInfo) return null // Metric not found
 
-      let baselineValue: number
-      let scenarioValue: number
-      let change: number
-      let isDynamicallyCalculated: boolean
+    let baselineValue: number
+    let scenarioValue: number
+    let change: number
+    let isDynamicallyCalculated: boolean
 
-      if (dynamicallyCalculatedMetrics.has(metricId)) {
-        baselineValue = baselineResults[metricId]
-        scenarioValue = results[metricId]
-        change = scenarioValue - baselineValue
-        isDynamicallyCalculated = true
-      } else {
-        baselineValue = metricInfo.historicalData[0]?.value || 0
-        scenarioValue = baselineValue
-        change = 0
-        isDynamicallyCalculated = false
-      }
+    if (dynamicallyCalculatedMetrics.has(metricId)) {
+      baselineValue = baselineResults[metricId]
+      scenarioValue = results[metricId]
+      change = scenarioValue - baselineValue
+      isDynamicallyCalculated = true
+    } else {
+      // For other metrics, use their latest historical data as both baseline and scenario
+      baselineValue = metricInfo.historicalData[0]?.value || 0
+      scenarioValue = baselineValue // Scenario is same as baseline for non-calculated metrics
+      change = 0
+      isDynamicallyCalculated = false
+    }
 
-      return {
-        id: metricId,
-        name: metricInfo.name,
-        unit: metricInfo.unit,
-        baseline: baselineValue,
-        scenario: scenarioValue,
-        change: change,
-        isDynamicallyCalculated: isDynamicallyCalculated,
-      }
-    },
-    [baselineResults, results],
-  )
+    return {
+      id: metricId,
+      name: metricInfo.name,
+      unit: metricInfo.unit,
+      baseline: baselineValue,
+      scenario: scenarioValue,
+      change: change,
+      isDynamicallyCalculated: isDynamicallyCalculated,
+    }
+  }
 
-  const getShortMetricName = useCallback((fullName: string) => {
+  // Helper function to create short names for chart display
+  const getShortMetricName = (fullName: string) => {
     const shortNames: Record<string, string> = {
       "Net Interest Margin (NIM)": "NIM",
       "Return on Equity (ROE)": "ROE",
@@ -323,27 +229,27 @@ export default function WhatIfScenarios() {
       "Provision Coverage Ratio (PCR)": "PCR",
     }
     return shortNames[fullName] || fullName
-  }, [])
+  }
 
-  const comparisonData = useMemo(() => {
-    return Array.from(selectedDisplayMetrics)
-      .map((metricId) => {
-        const data = getMetricDisplayData(metricId)
-        if (!data) return null
-        return {
-          metric: getShortMetricName(data.name),
-          baseline: data.baseline,
-          scenario: data.scenario,
-          unit: data.unit,
-        }
-      })
-      .filter(Boolean)
-  }, [selectedDisplayMetrics, getMetricDisplayData, getShortMetricName])
+  // Dynamically generate comparison data for the chart based on selected display metrics
+  const comparisonData = Array.from(selectedDisplayMetrics)
+    .map((metricId) => {
+      const data = getMetricDisplayData(metricId)
+      if (!data) return null
+      return {
+        metric: getShortMetricName(data.name), // Use short name for chart
+        baseline: data.baseline,
+        scenario: data.scenario,
+        unit: data.unit,
+      }
+    })
+    .filter(Boolean) // Filter out any nulls if metricInfo is not found
 
-  const generateAISummary = useCallback(() => {
+  const generateAISummary = () => {
     const profitChange = results[METRIC_ID_MAP.netProfit] - baselineResults[METRIC_ID_MAP.netProfit]
     const nimChange = results[METRIC_ID_MAP.nim] - baselineResults[METRIC_ID_MAP.nim]
     const epsChange = results[METRIC_ID_MAP.eps] - baselineResults[METRIC_ID_MAP.eps]
+    const roeChange = results[METRIC_ID_MAP.roe] - baselineResults[METRIC_ID_MAP.roe]
 
     let summary = ""
 
@@ -368,267 +274,117 @@ export default function WhatIfScenarios() {
     }
 
     return summary
-  }, [results, baselineResults])
+  }
 
-  const formatDisplayValue = useCallback((value: number, unit: string) => {
+  // Helper to format values for display
+  const formatDisplayValue = (value: number, unit: string) => {
     if (unit === "$M") return `$${value.toFixed(0)}M`
     if (unit === "$") return `$${value.toFixed(2)}`
     if (unit === "%") return `${value.toFixed(2)}%`
     if (unit === "x") return `${value.toFixed(2)}x`
     return value.toFixed(2)
-  }, [])
+  }
 
-  const formatDisplayChange = useCallback((change: number, unit: string, metricId: string) => {
+  // Helper to format change values for display
+  const formatDisplayChange = (change: number, unit: string, metricId: string) => {
     const sign = change > 0 ? "+" : ""
-    if (metricId === METRIC_ID_MAP.nim) return `${sign}${(change * 100).toFixed(0)}bps`
+    if (metricId === METRIC_ID_MAP.nim) return `${sign}${(change * 100).toFixed(0)}bps` // NIM is in bps
     if (unit === "$M") return `${sign}$${Math.abs(change).toFixed(0)}M`
     if (unit === "$") return `$${Math.abs(change).toFixed(2)}`
     if (unit === "%") return `${sign}${change.toFixed(1)}%`
     if (unit === "x") return `${sign}${change.toFixed(2)}x`
     return `${sign}${change.toFixed(2)}`
-  }, [])
+  }
 
   return (
-    <DataLoadingWrapper>
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-6 py-8 max-w-7xl">
-          <div className="space-y-8">
-            {/* Header */}
-            <div className="flex justify-between items-start mb-10">
-              <div className="space-y-2">
-                <h1 className="text-4xl font-bold text-gray-900 tracking-tight">What-If Scenario Builder</h1>
-                <p className="text-lg text-gray-600 leading-relaxed">
-                  Simulate impact of business levers on Q3 2024 performance
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full border-apple-blue-300 text-apple-blue-700 hover:bg-apple-blue-50 bg-transparent px-6 py-2"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Ask AI about scenarios
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={resetScenario}
-                  className="flex items-center space-x-2 rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent px-6 py-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>Reset</span>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent px-6 py-2"
-                >
-                  <Link href="/">Back to Dashboard</Link>
-                </Button>
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-10">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold text-gray-900 tracking-tight">What-If Scenario Builder</h1>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                Simulate impact of business levers on Q3 2024 performance
+              </p>
             </div>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-apple-blue-300 text-apple-blue-700 hover:bg-apple-blue-50 bg-transparent px-6 py-2"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Ask AI about scenarios
+              </Button>
+              <Button
+                variant="outline"
+                onClick={resetScenario}
+                className="flex items-center space-x-2 rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent px-6 py-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Reset</span>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-full border-gray-300 text-gray-700 hover:bg-apple-gray-100 bg-transparent px-6 py-2"
+              >
+                <Link href="/">Back to Dashboard</Link>
+              </Button>
+            </div>
+          </div>
 
-            {/* Global Filters Section */}
-            <Card className="shadow-lg rounded-xl border-none bg-white">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Filter className="h-5 w-5 text-apple-blue-600" />
-                    <CardTitle className="text-xl font-semibold text-gray-800">Scenario Filters</CardTitle>
-                    <Badge variant="secondary" className="bg-apple-blue-100 text-apple-blue-700 text-xs px-2 py-1">
-                      Global Filter
-                    </Badge>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearAllFilters}
-                    className="text-gray-500 hover:text-gray-700 text-sm"
-                  >
-                    Clear All
-                  </Button>
-                </div>
-                <CardDescription className="text-gray-600">
-                  Filter scenario analysis by bank, category, period, and segment
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Filter Buttons Row */}
-                <div className="flex flex-wrap gap-3">
-                  {/* Category Filter */}
-                  <Popover open={categoryFilterOpen} onOpenChange={setCategoryFilterOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="bg-amber-900 hover:bg-amber-800 text-white h-9 px-4 text-sm font-medium"
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Category
-                        <ChevronDown className="h-4 w-4 ml-2" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-4" align="start">
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-sm text-gray-900">Select Categories</h4>
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {filterOptions.categories.map((category) => (
-                            <div key={category} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={category}
-                                checked={selectedCategories.includes(category)}
-                                onCheckedChange={() => toggleCategory(category)}
-                                className="h-4 w-4"
-                              />
-                              <label htmlFor={category} className="text-sm text-gray-700 cursor-pointer flex-1">
-                                {category}
-                              </label>
-                            </div>
-                          ))}
+          {/* Metric Selection Cards */}
+          <Card className="shadow-lg rounded-xl border-none bg-white">
+            <CardHeader className="pb-6">
+              <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
+                <Filter className="h-5 w-5 text-apple-blue-600" />
+                <span>Select Metrics to Analyze</span>
+              </CardTitle>
+              <CardDescription className="text-gray-600 text-base leading-relaxed">
+                Choose which metrics to display in the results and comparison chart
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-6 pb-6">
+              <div className="space-y-4">
+                {/* First row - always visible popular metrics */}
+                <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
+                  {popularMetrics.map((metric) => (
+                    <Card
+                      key={metric.id}
+                      className={cn(
+                        "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
+                        selectedDisplayMetrics.has(metric.id)
+                          ? "border-apple-blue-600 bg-apple-blue-50"
+                          : "border-gray-200 hover:border-gray-300",
+                      )}
+                      onClick={() => toggleMetric(metric.id)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">
+                              {metric.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 truncate mt-1">{metric.category}</p>
+                          </div>
+                          {selectedDisplayMetrics.has(metric.id) && (
+                            <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
+                          )}
                         </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  {/* Period Filter */}
-                  <Popover open={periodFilterOpen} onOpenChange={setPeriodFilterOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="bg-amber-900 hover:bg-amber-800 text-white h-9 px-4 text-sm font-medium"
-                      >
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Period Filter
-                        <ChevronDown className="h-4 w-4 ml-2" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-56 p-4" align="start">
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-sm text-gray-900">Time Periods</h4>
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {filterOptions.periods.map((period) => (
-                            <div key={period} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={period}
-                                checked={selectedPeriods.includes(period)}
-                                onCheckedChange={() => togglePeriod(period)}
-                                className="h-4 w-4"
-                              />
-                              <label htmlFor={period} className="text-sm text-gray-700 cursor-pointer flex-1">
-                                {period.replace("_", " ").toUpperCase()}
-                              </label>
-                            </div>
-                          ))}
+                        <div className="text-sm font-bold text-gray-900">
+                          {formatDisplayValue(results[metric.id] || metric.historicalData[0]?.value || 0, metric.unit)}
                         </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  {/* Segment Filter */}
-                  <Popover open={segmentFilterOpen} onOpenChange={setSegmentFilterOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="bg-amber-900 hover:bg-amber-800 text-white h-9 px-4 text-sm font-medium"
-                      >
-                        <Building2 className="h-4 w-4 mr-2" />
-                        Segment
-                        <ChevronDown className="h-4 w-4 ml-2" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-52 p-4" align="start">
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-sm text-gray-900">Business Segments</h4>
-                        <div className="space-y-2">
-                          {segmentFilterOptions.map((segment) => (
-                            <div key={segment.value} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={segment.value}
-                                checked={selectedSegments.includes(segment.value)}
-                                onCheckedChange={() => toggleSegment(segment.value)}
-                                className="h-4 w-4"
-                              />
-                              <label htmlFor={segment.value} className="text-sm text-gray-700 cursor-pointer flex-1">
-                                {segment.label}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
 
-                {/* Bank Selection Buttons */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-gray-700">Select Banks for Analysis</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {filterOptions.banks.map((bank) => (
-                      <Button
-                        key={bank}
-                        variant={selectedBanks.includes(bank) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleBank(bank)}
-                        className={cn(
-                          "h-9 px-4 text-sm font-medium transition-all",
-                          selectedBanks.includes(bank)
-                            ? "bg-blue-600 text-white hover:bg-blue-700"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50",
-                        )}
-                      >
-                        {bank}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Active Filters Summary */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Active Filters Summary</span>
-                    <Badge variant="outline" className="text-xs">
-                      {selectedBanks.length +
-                        selectedCategories.length +
-                        selectedPeriods.length +
-                        selectedSegments.length}{" "}
-                      filters
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <div className="text-xs text-gray-600">
-                      <strong>Banks:</strong> {selectedBanks.join(", ") || "None"}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      <strong>Categories:</strong> {selectedCategories.join(", ") || "None"}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      <strong>Periods:</strong> {selectedPeriods.join(", ") || "None"}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      <strong>Segments:</strong> {selectedSegments.join(", ") || "None"}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Metric Selection Cards */}
-            <Card className="shadow-lg rounded-xl border-none bg-white">
-              <CardHeader className="pb-6">
-                <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
-                  <Filter className="h-5 w-5 text-apple-blue-600" />
-                  <span>Select Metrics to Analyze</span>
-                </CardTitle>
-                <CardDescription className="text-gray-600 text-base leading-relaxed">
-                  Choose which metrics to display in the results and comparison chart
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-6 pb-6">
-                <div className="space-y-4">
+                {/* Second row - additional metrics, shown when expanded */}
+                {showAllMetrics && (
                   <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
-                    {getPopularMetrics().map((metric) => (
+                    {otherMetrics.map((metric) => (
                       <Card
                         key={metric.id}
                         className={cn(
@@ -661,257 +417,206 @@ export default function WhatIfScenarios() {
                       </Card>
                     ))}
                   </div>
+                )}
 
-                  {showAllMetrics && (
-                    <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3">
-                      {getOtherMetrics().map((metric) => (
-                        <Card
-                          key={metric.id}
-                          className={cn(
-                            "cursor-pointer transition-all duration-200 hover:shadow-md border-2",
-                            selectedDisplayMetrics.has(metric.id)
-                              ? "border-apple-blue-600 bg-apple-blue-50"
-                              : "border-gray-200 hover:border-gray-300",
-                          )}
-                          onClick={() => toggleMetric(metric.id)}
-                        >
-                          <CardContent className="p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-xs text-gray-800 leading-tight truncate">
-                                  {metric.name}
-                                </h3>
-                                <p className="text-xs text-gray-500 truncate mt-1">{metric.category}</p>
-                              </div>
-                              {selectedDisplayMetrics.has(metric.id) && (
-                                <Check className="h-3 w-3 text-apple-blue-600 flex-shrink-0 ml-1" />
-                              )}
-                            </div>
-                            <div className="text-sm font-bold text-gray-900">
-                              {formatDisplayValue(
-                                results[metric.id] || metric.historicalData[0]?.value || 0,
-                                metric.unit,
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                {/* Show More/Less button */}
+                {otherMetrics.length > 0 && (
+                  <div className="flex justify-center pt-4">
+                    {!showAllMetrics ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAllMetrics(true)}
+                        className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Show {otherMetrics.length} More Metrics
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAllMetrics(false)}
+                        className="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
+                      >
+                        Show Less
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-                  {getOtherMetrics().length > 0 && (
-                    <div className="flex justify-center pt-4">
-                      {!showAllMetrics ? (
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowAllMetrics(true)}
-                          className="border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Show {getOtherMetrics().length} More Metrics
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowAllMetrics(false)}
-                          className="border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2"
-                        >
-                          Show Less
-                        </Button>
-                      )}
-                    </div>
-                  )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Input Controls */}
+            <Card className="shadow-lg rounded-xl border-none bg-white">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-xl font-semibold text-gray-800">Scenario Inputs</CardTitle>
+                <CardDescription className="text-gray-600">Adjust key business levers to see impact</CardDescription>
+              </CardHeader>
+              <CardContent className="px-6 pb-6 space-y-8">
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Loan Growth (%)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.loanGrowth]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, loanGrowth: value[0] }))}
+                      max={20}
+                      min={-10}
+                      step={1}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-10%</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.loanGrowth}%</span>
+                    <span>+20%</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Deposit Rate Change (bps)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.depositRateChange]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, depositRateChange: value[0] }))}
+                      max={100}
+                      min={-50}
+                      step={5}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-50bps</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.depositRateChange}bps</span>
+                    <span>+100bps</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Provisioning Change (%)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.provisioningChange]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, provisioningChange: value[0] }))}
+                      max={50}
+                      min={-25}
+                      step={5}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-25%</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.provisioningChange}%</span>
+                    <span>+50%</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Fee Income Growth (%)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.feeGrowth]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, feeGrowth: value[0] }))}
+                      max={15}
+                      min={-15}
+                      step={1}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-15%</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.feeGrowth}%</span>
+                    <span>+15%</span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="text-gray-700 font-medium text-base">Operating Cost Growth (%)</Label>
+                  <div className="px-3">
+                    <Slider
+                      value={[inputs.costGrowth]}
+                      onValueChange={(value) => setInputs((prev) => ({ ...prev, costGrowth: value[0] }))}
+                      max={10}
+                      min={-10}
+                      step={1}
+                      className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 px-3">
+                    <span>-10%</span>
+                    <span className="font-medium text-gray-800 text-base">{inputs.costGrowth}%</span>
+                    <span>+10%</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Input Controls */}
-              <Card className="shadow-lg rounded-xl border-none bg-white">
-                <CardHeader className="pb-6">
-                  <CardTitle className="text-xl font-semibold text-gray-800">Scenario Inputs</CardTitle>
-                  <CardDescription className="text-gray-600">Adjust key business levers to see impact</CardDescription>
-                </CardHeader>
-                <CardContent className="px-6 pb-6 space-y-8">
-                  <div className="space-y-4">
-                    <Label className="text-gray-700 font-medium text-base">Loan Growth (%)</Label>
-                    <div className="px-3">
-                      <Slider
-                        value={[inputs.loanGrowth]}
-                        onValueChange={(value) => setInputs((prev) => ({ ...prev, loanGrowth: value[0] }))}
-                        max={20}
-                        min={-10}
-                        step={1}
-                        className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                      />
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-500 px-3">
-                      <span>-10%</span>
-                      <span className="font-medium text-gray-800 text-base">{inputs.loanGrowth}%</span>
-                      <span>+20%</span>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <Label className="text-gray-700 font-medium text-base">Deposit Rate Change (bps)</Label>
-                    <div className="px-3">
-                      <Slider
-                        value={[inputs.depositRateChange]}
-                        onValueChange={(value) => setInputs((prev) => ({ ...prev, depositRateChange: value[0] }))}
-                        max={100}
-                        min={-50}
-                        step={5}
-                        className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                      />
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-500 px-3">
-                      <span>-50bps</span>
-                      <span className="font-medium text-gray-800 text-base">{inputs.depositRateChange}bps</span>
-                      <span>+100bps</span>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <Label className="text-gray-700 font-medium text-base">Provisioning Change (%)</Label>
-                    <div className="px-3">
-                      <Slider
-                        value={[inputs.provisioningChange]}
-                        onValueChange={(value) => setInputs((prev) => ({ ...prev, provisioningChange: value[0] }))}
-                        max={50}
-                        min={-25}
-                        step={5}
-                        className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                      />
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-500 px-3">
-                      <span>-25%</span>
-                      <span className="font-medium text-gray-800 text-base">{inputs.provisioningChange}%</span>
-                      <span>+50%</span>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <Label className="text-gray-700 font-medium text-base">Fee Income Growth (%)</Label>
-                    <div className="px-3">
-                      <Slider
-                        value={[inputs.feeGrowth]}
-                        onValueChange={(value) => setInputs((prev) => ({ ...prev, feeGrowth: value[0] }))}
-                        max={15}
-                        min={-15}
-                        step={1}
-                        className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                      />
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-500 px-3">
-                      <span>-15%</span>
-                      <span className="font-medium text-gray-800 text-base">{inputs.feeGrowth}%</span>
-                      <span>+15%</span>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <Label className="text-gray-700 font-medium text-base">Operating Cost Growth (%)</Label>
-                    <div className="px-3">
-                      <Slider
-                        value={[inputs.costGrowth]}
-                        onValueChange={(value) => setInputs((prev) => ({ ...prev, costGrowth: value[0] }))}
-                        max={10}
-                        min={-10}
-                        step={1}
-                        className="w-full [&>span:first-child]:h-2 [&>span:first-child]:bg-apple-blue-200 [&>span:first-child]:rounded-full [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-apple-blue-600 [&_[role=slider]]:border-none [&_[role=slider]]:shadow-md"
-                      />
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-500 px-3">
-                      <span>-10%</span>
-                      <span className="font-medium text-gray-800 text-base">{inputs.costGrowth}%</span>
-                      <span>+10%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Results */}
-              <Card className="shadow-lg rounded-xl border-none bg-white">
-                <CardHeader className="pb-6">
-                  <CardTitle className="text-xl font-semibold text-gray-800">Scenario Results</CardTitle>
-                  <CardDescription className="text-gray-600">Impact on selected financial metrics</CardDescription>
-                </CardHeader>
-                <CardContent className="px-6 pb-6">
-                  <div className="grid grid-cols-2 gap-6 mb-8">
-                    {Array.from(selectedDisplayMetrics).map((metricId) => {
-                      const data = getMetricDisplayData(metricId)
-                      if (!data) return null
-
-                      const isPositive = data.change > 0
-                      const isNegative = data.change < 0
-
-                      return (
-                        <div key={data.id} className="space-y-3 p-4 bg-gray-50 rounded-lg">
-                          <div className="text-sm text-gray-600 font-medium">{data.name}</div>
-                          <div className="text-3xl font-bold text-gray-900">
-                            {formatDisplayValue(data.scenario, data.unit)}
-                          </div>
-                          {data.isDynamicallyCalculated && (
-                            <div
-                              className={`text-sm flex items-center space-x-1 ${
-                                isPositive ? "text-green-600" : isNegative ? "text-red-600" : "text-gray-500"
-                              }`}
-                            >
-                              {data.change !== 0 &&
-                                (isPositive ? (
-                                  <TrendingUp className="h-3 w-3" />
-                                ) : (
-                                  <TrendingDown className="h-3 w-3" />
-                                ))}
-                              <span className="font-medium">
-                                {formatDisplayChange(data.change, data.unit, data.id)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  <ChartContainer
-                    config={{
-                      baseline: { label: "Baseline", color: "hsl(var(--chart-1))" },
-                      scenario: { label: "Scenario", color: "hsl(var(--chart-2))" },
-                    }}
-                    className={`min-h-[200px] h-[${Math.max(200, selectedDisplayMetrics.size * 50 + 100)}px] w-full`}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis
-                          dataKey="metric"
-                          tickLine={false}
-                          axisLine={false}
-                          interval={0}
-                          angle={-45}
-                          textAnchor="end"
-                          height={60}
-                          tick={{ fontSize: 12 }}
-                        />
-                        <YAxis tickLine={false} axisLine={false} width={60} tick={{ fontSize: 12 }} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="baseline" fill="var(--color-baseline)" radius={[4, 4, 0, 0]} maxBarSize={60} />
-                        <Bar dataKey="scenario" fill="var(--color-scenario)" radius={[4, 4, 0, 0]} maxBarSize={60} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* AI Summary */}
+            {/* Results */}
             <Card className="shadow-lg rounded-xl border-none bg-white">
               <CardHeader className="pb-6">
-                <CardTitle className="text-xl font-semibold text-gray-800">AI Impact Summary</CardTitle>
+                <CardTitle className="text-xl font-semibold text-gray-800">Scenario Results</CardTitle>
+                <CardDescription className="text-gray-600">Impact on selected financial metrics</CardDescription>
               </CardHeader>
               <CardContent className="px-6 pb-6">
-                <p className="text-gray-700 leading-relaxed text-base">{generateAISummary()}</p>
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  {Array.from(selectedDisplayMetrics).map((metricId) => {
+                    const data = getMetricDisplayData(metricId)
+                    if (!data) return null
+
+                    const isPositive = data.change > 0
+                    const isNegative = data.change < 0
+
+                    return (
+                      <div key={data.id} className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                        <div className="text-sm text-gray-600 font-medium">{data.name}</div>
+                        <div className="text-3xl font-bold text-gray-900">
+                          {formatDisplayValue(data.scenario, data.unit)}
+                        </div>
+                        {data.isDynamicallyCalculated && (
+                          <div
+                            className={`text-sm flex items-center space-x-1 ${
+                              isPositive ? "text-green-600" : isNegative ? "text-red-600" : "text-gray-500"
+                            }`}
+                          >
+                            {data.change !== 0 &&
+                              (isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                            <span className="font-medium">{formatDisplayChange(data.change, data.unit, data.id)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <ChartContainer
+                  config={{
+                    baseline: { label: "Baseline", color: "hsl(var(--chart-1))" },
+                    scenario: { label: "Scenario", color: "hsl(var(--chart-2))" },
+                  }}
+                  className={`min-h-[200px] h-[${Math.max(200, selectedDisplayMetrics.size * 50 + 100)}px]`}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="metric" tickLine={false} axisLine={false} interval={0} tick={{ fontSize: 12 }} />
+                      <YAxis tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="baseline" fill="var(--color-baseline)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="scenario" fill="var(--color-scenario)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
               </CardContent>
             </Card>
           </div>
+
+          {/* AI Summary */}
+          <Card className="shadow-lg rounded-xl border-none bg-white">
+            <CardHeader className="pb-6">
+              <CardTitle className="text-xl font-semibold text-gray-800">AI Impact Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="px-6 pb-6">
+              <p className="text-gray-700 leading-relaxed text-base">{generateAISummary()}</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </DataLoadingWrapper>
+    </div>
   )
 }

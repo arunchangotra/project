@@ -2,63 +2,47 @@
 
 import type { ReactNode } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react"
-import { useCSVData } from "@/lib/data-hooks"
+import { AlertCircle, Loader2 } from "lucide-react"
 
 interface DataLoadingWrapperProps {
   children: ReactNode
+  isLoading?: boolean
+  error?: string | null
+  fallback?: ReactNode
 }
 
-export function DataLoadingWrapper({ children }: DataLoadingWrapperProps) {
-  const { isLoading, error, isLoaded } = useCSVData()
+export function DataLoadingWrapper({ children, isLoading = false, error = null, fallback }: DataLoadingWrapperProps) {
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Loading Error</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-96 shadow-lg">
-          <CardContent className="p-8 text-center space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Loading Financial Data</h3>
+      fallback || (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Financial Data</h3>
             <p className="text-gray-600">Fetching and processing CSV data...</p>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: "60%" }}></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-96 shadow-lg">
-          <CardContent className="p-8 text-center space-y-4">
-            <AlertCircle className="h-12 w-12 mx-auto text-red-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Data Loading Error</h3>
-            <p className="text-gray-600">{error}</p>
-            <Button onClick={() => window.location.reload()} className="flex items-center space-x-2">
-              <RefreshCw className="h-4 w-4" />
-              <span>Retry</span>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-96 shadow-lg">
-          <CardContent className="p-8 text-center space-y-4">
-            <AlertCircle className="h-12 w-12 mx-auto text-yellow-600" />
-            <h3 className="text-lg font-semibold text-gray-900">No Data Available</h3>
-            <p className="text-gray-600">Unable to load financial data</p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      )
     )
   }
 

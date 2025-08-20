@@ -1,27 +1,34 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { csvDataService, type ProcessedLineItem, type FilterOptions } from "./csv-data-service"
 
-export function useCSVData() {
+export function useFilterOptions() {
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    banks: [],
+    categories: [],
+    periods: [],
+    items: [],
+  })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
     let isMounted = true
 
-    const loadData = async () => {
+    const fetchOptions = async () => {
       try {
         setIsLoading(true)
         setError(null)
-        await csvDataService.loadData()
+        const options = await csvDataService.getFilterOptions()
+
         if (isMounted) {
-          setIsLoaded(true)
+          setFilterOptions(options)
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Failed to load data")
+          setError(err instanceof Error ? err.message : "Failed to load filter options")
+          console.error("Error loading filter options:", err)
         }
       } finally {
         if (isMounted) {
@@ -30,53 +37,42 @@ export function useCSVData() {
       }
     }
 
-    if (!csvDataService.isDataLoaded()) {
-      loadData()
-    } else {
-      setIsLoaded(true)
-      setIsLoading(false)
-    }
+    fetchOptions()
 
     return () => {
       isMounted = false
     }
   }, [])
 
-  return { isLoading, error, isLoaded }
+  return { ...filterOptions, isLoading, error }
 }
 
-export function useFilteredLineItems(filters: Partial<FilterOptions>) {
+export function useFilteredLineItems(filters: {
+  banks?: string[]
+  categories?: string[]
+  periods?: string[]
+  items?: string[]
+}) {
   const [data, setData] = useState<ProcessedLineItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const { isLoaded } = useCSVData()
-
-  // Memoize the filters to prevent unnecessary re-renders
-  const memoizedFilters = useMemo(
-    () => filters,
-    [
-      Array.isArray(filters.banks) ? filters.banks.join(",") : "",
-      Array.isArray(filters.categories) ? filters.categories.join(",") : "",
-      Array.isArray(filters.periods) ? filters.periods.join(",") : "",
-      Array.isArray(filters.items) ? filters.items.join(",") : "",
-    ],
-  )
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isLoaded) return
-
     let isMounted = true
 
     const fetchData = async () => {
-      setIsLoading(true)
       try {
-        const filteredData = csvDataService.getFilteredData(memoizedFilters)
+        setIsLoading(true)
+        setError(null)
+        const filteredData = await csvDataService.getFilteredData(filters)
+
         if (isMounted) {
-          setData(Array.isArray(filteredData) ? filteredData : [])
+          setData(filteredData)
         }
-      } catch (error) {
-        console.error("Error filtering data:", error)
+      } catch (err) {
         if (isMounted) {
-          setData([])
+          setError(err instanceof Error ? err.message : "Failed to load line items")
+          console.error("Error loading filtered line items:", err)
         }
       } finally {
         if (isMounted) {
@@ -90,150 +86,97 @@ export function useFilteredLineItems(filters: Partial<FilterOptions>) {
     return () => {
       isMounted = false
     }
-  }, [memoizedFilters, isLoaded])
+  }, [JSON.stringify(filters)]) // Use JSON.stringify for deep comparison
 
-  return { data, isLoading }
+  return { data, isLoading, error }
 }
 
-export function useFilterOptions() {
-  const [options, setOptions] = useState({
-    banks: [] as string[],
-    categories: [] as string[],
-    periods: [] as string[],
-    items: [] as string[],
-  })
-  const { isLoaded } = useCSVData()
-
-  useEffect(() => {
-    if (!isLoaded) return
-
-    let isMounted = true
-
-    try {
-      const newOptions = {
-        banks: csvDataService.getAvailableBanks() || [],
-        categories: csvDataService.getAvailableCategories() || [],
-        periods: csvDataService.getAvailablePeriods() || [],
-        items: csvDataService.getAvailableItems() || [],
-      }
-
-      if (isMounted) {
-        setOptions(newOptions)
-      }
-    } catch (error) {
-      console.error("Error getting filter options:", error)
-      if (isMounted) {
-        setOptions({
-          banks: [],
-          categories: [],
-          periods: [],
-          items: [],
-        })
-      }
-    }
-
-    return () => {
-      isMounted = false
-    }
-  }, [isLoaded])
-
-  return options
-}
-
-export function useBankMetrics(banks: string[], metricIds: string[]) {
-  const [metrics, setMetrics] = useState<Record<string, Record<string, number>>>({})
-  const { isLoaded } = useCSVData()
-
-  // Memoize the dependencies to prevent unnecessary re-renders
-  const memoizedBanks = useMemo(() => {
-    return Array.isArray(banks) ? banks : []
-  }, [Array.isArray(banks) ? banks.join(",") : ""])
-
-  const memoizedMetricIds = useMemo(() => {
-    return Array.isArray(metricIds) ? metricIds : []
-  }, [Array.isArray(metricIds) ? metricIds.join(",") : ""])
-
-  useEffect(() => {
-    if (!isLoaded || !memoizedBanks.length || !memoizedMetricIds.length) {
-      setMetrics({})
-      return
-    }
-
-    let isMounted = true
-
-    try {
-      const bankMetrics: Record<string, Record<string, number>> = {}
-
-      memoizedBanks.forEach((bank) => {
-        try {
-          bankMetrics[bank] = csvDataService.getBankMetrics(bank, memoizedMetricIds) || {}
-        } catch (error) {
-          console.error(`Error getting metrics for bank ${bank}:`, error)
-          bankMetrics[bank] = {}
-        }
-      })
-
-      if (isMounted) {
-        setMetrics(bankMetrics)
-      }
-    } catch (error) {
-      console.error("Error getting bank metrics:", error)
-      if (isMounted) {
-        setMetrics({})
-      }
-    }
-
-    return () => {
-      isMounted = false
-    }
-  }, [memoizedBanks, memoizedMetricIds, isLoaded])
-
-  return metrics
-}
-
-export function useHistoricalData(bank: string, metricIds: string[]) {
+export function useHistoricalData(bank: string, metrics: string[]) {
   const [data, setData] = useState<Record<string, Array<{ quarter: string; value: number }>>>({})
-  const { isLoaded } = useCSVData()
-
-  // Memoize the dependencies to prevent unnecessary re-renders
-  const memoizedMetricIds = useMemo(() => {
-    return Array.isArray(metricIds) ? metricIds : []
-  }, [Array.isArray(metricIds) ? metricIds.join(",") : ""])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isLoaded || !bank || !memoizedMetricIds.length) {
-      setData({})
-      return
-    }
-
     let isMounted = true
 
-    try {
-      const historicalData: Record<string, Array<{ quarter: string; value: number }>> = {}
-
-      memoizedMetricIds.forEach((metricId) => {
-        try {
-          historicalData[metricId] = csvDataService.getHistoricalData(bank, metricId) || []
-        } catch (error) {
-          console.error(`Error getting historical data for ${bank} - ${metricId}:`, error)
-          historicalData[metricId] = []
-        }
-      })
-
-      if (isMounted) {
-        setData(historicalData)
-      }
-    } catch (error) {
-      console.error("Error getting historical data:", error)
-      if (isMounted) {
+    const fetchData = async () => {
+      if (!bank || !metrics.length) {
         setData({})
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setError(null)
+        const historicalData = await csvDataService.getHistoricalData(bank, metrics)
+
+        if (isMounted) {
+          setData(historicalData)
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Failed to load historical data")
+          console.error("Error loading historical data:", err)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
+
+    fetchData()
 
     return () => {
       isMounted = false
     }
-  }, [bank, memoizedMetricIds, isLoaded])
+  }, [bank, JSON.stringify(metrics)])
 
-  return data
+  return { data, isLoading, error }
+}
+
+export function useBankMetrics(banks: string[], metrics: string[]) {
+  const [data, setData] = useState<Record<string, Record<string, number>>>({})
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchData = async () => {
+      if (!banks.length || !metrics.length) {
+        setData({})
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setError(null)
+        const bankMetrics = await csvDataService.getBankMetrics(banks, metrics)
+
+        if (isMounted) {
+          setData(bankMetrics)
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Failed to load bank metrics")
+          console.error("Error loading bank metrics:", err)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchData()
+
+    return () => {
+      isMounted = false
+    }
+  }, [JSON.stringify(banks), JSON.stringify(metrics)])
+
+  return { data, isLoading, error }
 }
