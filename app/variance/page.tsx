@@ -31,12 +31,14 @@ import {
   Eye,
   AlertCircle,
   Loader2,
+  Database,
+  CheckCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { DataLoadingWrapper } from "@/components/data-loading-wrapper"
 import { useFilterOptions, useFilteredLineItems, useHistoricalData, useBankMetrics } from "@/lib/data-hooks"
-import { financialRatios } from "@/lib/financial-ratios"
+import { csvDataService } from "@/lib/csv-data-service"
 
 export default function VarianceAnalysis() {
   // Get filter options from CSV data
@@ -49,7 +51,7 @@ export default function VarianceAnalysis() {
   const [selectedSegments, setSelectedSegments] = useState<string[]>(["Revenue", "Profitability"])
 
   // Chart and display states
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(["NIM", "ROE", "ROA"])
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(["20", "18", "19"]) // NIM, ROA, ROE item IDs
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     new Set(["item", "bank", "category", "currentValue", "previousValue", "variance", "variancePercent"]),
   )
@@ -89,7 +91,6 @@ export default function VarianceAnalysis() {
     { value: "Equity", label: "Equity" },
     { value: "Efficiency", label: "Efficiency" },
     { value: "Risk", label: "Risk" },
-    { value: "Capital", label: "Capital" },
   ]
 
   // Memoize filter object to prevent infinite loops
@@ -98,8 +99,9 @@ export default function VarianceAnalysis() {
       banks: selectedBanks,
       categories: selectedCategories,
       periods: selectedPeriods,
+      segments: selectedSegments,
     }),
-    [selectedBanks, selectedCategories, selectedPeriods],
+    [selectedBanks, selectedCategories, selectedPeriods, selectedSegments],
   )
 
   // Get filtered line items from CSV data
@@ -112,7 +114,7 @@ export default function VarianceAnalysis() {
   )
 
   // Get bank metrics for peer comparison
-  const { data: bankMetrics, isLoading: bankMetricsLoading } = useBankMetrics(selectedBanks, selectedMetrics)
+  const { data: bankMetrics, isLoading: bankMetricsLoading } = useBankMetrics(selectedBanks, ["NIM", "ROA", "ROE"])
 
   // Filter toggle functions
   const toggleBank = useCallback((bankValue: string) => {
@@ -192,9 +194,8 @@ export default function VarianceAnalysis() {
     if (!selectedMetrics.length || !selectedBanks.length || !bankMetrics) return []
 
     return selectedMetrics.map((metricId) => {
-      const metricInfo = financialRatios.find((m) => m.id === metricId)
       const dataPoint: any = {
-        metric: metricInfo?.name || metricId,
+        metric: `Item ${metricId}`,
         metricId,
       }
 
@@ -207,21 +208,22 @@ export default function VarianceAnalysis() {
     })
   }, [selectedMetrics, selectedBanks, bankMetrics])
 
-  const formatValue = useCallback((value: number | null, unit?: string) => {
+  const formatValue = useCallback((value: number | null, isPercentage = false) => {
     if (value === null || value === undefined) return "N/A"
 
-    if (unit === "%") return `${value.toFixed(2)}%`
-    if (unit === "$M") return `$${value.toFixed(0)}M`
-    if (unit === "$") return `$${value.toFixed(2)}`
-    if (unit === "x") return `${value.toFixed(2)}x`
+    if (isPercentage) {
+      return `${value.toFixed(2)}%`
+    }
 
-    // For ratio values, format appropriately
-    if (Math.abs(value) < 1) {
+    // For financial values, format appropriately
+    if (Math.abs(value) >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`
+    } else if (Math.abs(value) >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`
+    } else if (Math.abs(value) < 1) {
       return value.toFixed(3)
-    } else if (Math.abs(value) < 100) {
-      return value.toFixed(2)
     } else {
-      return `$${value.toFixed(0)}M`
+      return value.toFixed(2)
     }
   }, [])
 
@@ -240,7 +242,7 @@ export default function VarianceAnalysis() {
           <p className="font-medium text-gray-800 mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {`${entry.name}: ${entry.value !== null ? formatValue(entry.value) : "N/A"}`}
+              {`Item ${entry.name}: ${entry.value !== null ? formatValue(entry.value) : "N/A"}`}
             </p>
           ))}
         </div>
@@ -255,8 +257,14 @@ export default function VarianceAnalysis() {
     return lineItems.filter((item) => selectedSegments.includes(item.segment || ""))
   }, [lineItems, selectedSegments])
 
+  // Retry function for data loading
+  const handleRetry = useCallback(() => {
+    csvDataService.clearCache()
+    window.location.reload()
+  }, [])
+
   return (
-    <DataLoadingWrapper isLoading={filterOptions.isLoading} error={filterOptions.error}>
+    <DataLoadingWrapper isLoading={filterOptions.isLoading} error={filterOptions.error} onRetry={handleRetry}>
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-6 py-8 max-w-7xl">
           <div className="space-y-8">
@@ -265,14 +273,19 @@ export default function VarianceAnalysis() {
               <div className="space-y-2">
                 <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Variance Analysis</h1>
                 <p className="text-lg text-gray-600 leading-relaxed">
-                  Real-time financial performance analysis powered by CSV data
+                  Real-time financial performance analysis powered by ADIB CSV data
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                    Live Data
+                    <Database className="h-3 w-3 mr-1" />
+                    CSV Data Loaded
                   </Badge>
                   <Badge variant="outline" className="text-xs">
+                    <CheckCircle className="h-3 w-3 mr-1" />
                     {lineItems.length} line items
+                  </Badge>
+                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                    ADIB Bank
                   </Badge>
                 </div>
               </div>
@@ -302,13 +315,36 @@ export default function VarianceAnalysis() {
               </div>
             </div>
 
+            {/* CSV Data Status Card */}
+            <Card className="shadow-lg rounded-xl border-none bg-gradient-to-r from-green-50 to-blue-50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-green-100 rounded-full">
+                      <Database className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">CSV Data Integration Active</h3>
+                      <p className="text-gray-600">
+                        All data is sourced directly from the ADIB CSV file with real-time variance calculations
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-600">{lineItems.length}</div>
+                    <div className="text-sm text-gray-600">Financial Items</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Global Filters Section */}
             <Card className="shadow-lg rounded-xl border-none bg-white">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Filter className="h-5 w-5 text-apple-blue-600" />
-                    <CardTitle className="text-xl font-semibold text-gray-800">Global Filters</CardTitle>
+                    <CardTitle className="text-xl font-semibold text-gray-800">Data Filters</CardTitle>
                     <Badge variant="secondary" className="bg-apple-blue-100 text-apple-blue-700 text-xs px-2 py-1">
                       CSV Powered
                     </Badge>
@@ -319,11 +355,11 @@ export default function VarianceAnalysis() {
                     onClick={clearAllFilters}
                     className="text-gray-500 hover:text-gray-700 text-sm"
                   >
-                    Clear All
+                    Reset Filters
                   </Button>
                 </div>
                 <CardDescription className="text-gray-600">
-                  Filter analysis by bank, category, period, and segment using real CSV data
+                  Filter analysis by bank, category, period, and segment using real CSV data from ADIB
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -437,7 +473,7 @@ export default function VarianceAnalysis() {
 
                 {/* Bank Selection Buttons */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-gray-700">Select Banks for Analysis</h4>
+                  <h4 className="text-sm font-medium text-gray-700">Available Banks from CSV Data</h4>
                   <div className="flex flex-wrap gap-2">
                     {filterOptions.banks.map((bank) => (
                       <Button
@@ -493,7 +529,7 @@ export default function VarianceAnalysis() {
               {/* Historical Trends Chart */}
               <Card className="shadow-lg rounded-xl border-none bg-white">
                 <CardHeader className="pb-6">
-                  <CardTitle className="text-xl font-semibold text-gray-800">Historical Trends</CardTitle>
+                  <CardTitle className="text-xl font-semibold text-gray-800">Historical Trends from CSV</CardTitle>
                   <CardDescription className="text-gray-600">
                     Track key metrics over time for {selectedBanks.join(", ") || "selected banks"}
                   </CardDescription>
@@ -514,7 +550,6 @@ export default function VarianceAnalysis() {
                           <Legend />
                           {selectedMetrics.map((metricId, index) => {
                             const colors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"]
-                            const metric = financialRatios.find((m) => m.id === metricId)
                             return (
                               <Line
                                 key={metricId}
@@ -524,7 +559,7 @@ export default function VarianceAnalysis() {
                                 strokeWidth={2}
                                 dot={{ r: 4 }}
                                 connectNulls={false}
-                                name={metric?.name || metricId}
+                                name={`Item ${metricId}`}
                               />
                             )
                           })}
@@ -538,9 +573,9 @@ export default function VarianceAnalysis() {
               {/* Peer Comparison Chart */}
               <Card className="shadow-lg rounded-xl border-none bg-white">
                 <CardHeader className="pb-6">
-                  <CardTitle className="text-xl font-semibold text-gray-800">Peer Comparison</CardTitle>
+                  <CardTitle className="text-xl font-semibold text-gray-800">Current Period Values</CardTitle>
                   <CardDescription className="text-gray-600">
-                    Compare selected metrics across banks for latest period
+                    Latest values from CSV data for selected metrics
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -592,7 +627,7 @@ export default function VarianceAnalysis() {
               <CardHeader className="pb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-xl font-semibold text-gray-800">Line Item Analysis</CardTitle>
+                    <CardTitle className="text-xl font-semibold text-gray-800">CSV Line Item Analysis</CardTitle>
                     <CardDescription className="text-gray-600 mt-2">
                       Real-time variance analysis from CSV data - {filteredLineItems.length} items shown
                     </CardDescription>
@@ -671,10 +706,10 @@ export default function VarianceAnalysis() {
                             <th className="text-left py-3 px-4 font-medium text-gray-700">Category</th>
                           )}
                           {visibleColumns.has("currentValue") && (
-                            <th className="text-right py-3 px-4 font-medium text-gray-700">Current</th>
+                            <th className="text-right py-3 px-4 font-medium text-gray-700">Current (Q1 2024)</th>
                           )}
                           {visibleColumns.has("previousValue") && (
-                            <th className="text-right py-3 px-4 font-medium text-gray-700">Previous</th>
+                            <th className="text-right py-3 px-4 font-medium text-gray-700">Previous (Q1 2023)</th>
                           )}
                           {visibleColumns.has("variance") && (
                             <th className="text-right py-3 px-4 font-medium text-gray-700">Variance</th>

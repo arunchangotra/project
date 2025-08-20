@@ -1,161 +1,148 @@
-export interface CSVDataRow {
-  id: string
-  q1_t: string
-  q1_t_minus_1: string
-  q2_t_minus_1: string
-  q3_t_minus_1: string
-  f_t_minus_1: string
-  q1_t_minus_2: string
-  q2_t_minus_2: string
-  q3_t_minus_2: string
-  f_t_minus_2: string
+interface CSVRow {
+  "": string // Item ID
+  q1_t: string // Current quarter
+  "q1_t-1": string // Previous quarter 1
+  "q2_t-1": string // Previous quarter 2
+  "q3_t-1": string // Previous quarter 3
+  "f_t-1": string // Full year previous
+  "q1_t-2": string // Two years ago Q1
+  "q2_t-2": string // Two years ago Q2
+  "q3_t-2": string // Two years ago Q3
+  "f_t-2": string // Two years ago full year
 }
 
-export interface ProcessedLineItem {
+interface ProcessedLineItem {
   id: string
+  itemId: string
   item: string
-  category: string
   bank: string
-  level: number
+  category: string
+  segment: string
   currentValue: number | null
   previousValue: number | null
   variance: number | null
   variancePercent: number | null
-  q1_current: number | null
-  q1_previous: number | null
-  q2_previous: number | null
-  q3_previous: number | null
-  full_year_previous: number | null
-  segment?: string
-  subCategory?: string
+  q1Current: number | null
+  q1Previous: number | null
+  q2Previous: number | null
+  q3Previous: number | null
+  fullYearPrevious: number | null
+  q1TwoYearsAgo: number | null
+  q2TwoYearsAgo: number | null
+  q3TwoYearsAgo: number | null
+  fullYearTwoYearsAgo: number | null
 }
 
-export interface FilterOptions {
-  banks: string[]
-  categories: string[]
-  periods: string[]
-  items: string[]
+// Mapping of item IDs to financial statement items
+const ITEM_ID_MAPPING: Record<string, { name: string; category: string; segment: string }> = {
+  "1": { name: "Net Interest Income", category: "P&L", segment: "Revenue" },
+  "2": { name: "Fee and Commission Income", category: "P&L", segment: "Revenue" },
+  "3": { name: "Trading Income", category: "P&L", segment: "Revenue" },
+  "4": { name: "Other Operating Income", category: "P&L", segment: "Revenue" },
+  "5": { name: "Total Operating Income", category: "P&L", segment: "Revenue" },
+  "6": { name: "Staff Costs", category: "P&L", segment: "Expenses" },
+  "7": { name: "General and Administrative Expenses", category: "P&L", segment: "Expenses" },
+  "8": { name: "Depreciation and Amortization", category: "P&L", segment: "Expenses" },
+  "9": { name: "Total Operating Expenses", category: "P&L", segment: "Expenses" },
+  "10": { name: "Operating Profit Before Provisions", category: "P&L", segment: "Profitability" },
+  "11": { name: "Impairment Charges", category: "P&L", segment: "Risk" },
+  "12": { name: "Net Operating Profit", category: "P&L", segment: "Profitability" },
+  "13": { name: "Net Profit", category: "P&L", segment: "Profitability" },
+  "14": { name: "Total Assets", category: "Balance Sheet", segment: "Assets" },
+  "15": { name: "Loans and Advances", category: "Balance Sheet", segment: "Assets" },
+  "16": { name: "Customer Deposits", category: "Balance Sheet", segment: "Liabilities" },
+  "17": { name: "Total Equity", category: "Balance Sheet", segment: "Equity" },
+  "18": { name: "Return on Assets (ROA)", category: "KPI", segment: "Efficiency" },
+  "19": { name: "Return on Equity (ROE)", category: "KPI", segment: "Efficiency" },
+  "20": { name: "Net Interest Margin (NIM)", category: "KPI", segment: "Efficiency" },
 }
 
 class CSVDataService {
-  private csvUrl = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/adib_csv-NnJWhpVRJafi03oUOvKnAwYIuMmOzx.csv"
-  private cachedData: ProcessedLineItem[] | null = null
-  private filterOptions: FilterOptions | null = null
+  private static instance: CSVDataService
+  private csvData: ProcessedLineItem[] | null = null
+  private isLoading = false
+  private error: string | null = null
 
-  // Item ID to readable name mapping
-  private itemNameMapping: Record<string, { name: string; category: string; level: number; segment?: string }> = {
-    "1": { name: "Net Interest Income", category: "P&L", level: 0, segment: "Revenue" },
-    "2": { name: "Non-Interest Income", category: "P&L", level: 0, segment: "Revenue" },
-    "3": { name: "Total Operating Income", category: "P&L", level: 0, segment: "Revenue" },
-    "4": { name: "Operating Expenses", category: "P&L", level: 0, segment: "Expenses" },
-    "5": { name: "Operating Profit", category: "P&L", level: 0, segment: "Profitability" },
-    "6": { name: "Impairment Charges", category: "P&L", level: 0, segment: "Risk" },
-    "7": { name: "Profit Before Tax", category: "P&L", level: 0, segment: "Profitability" },
-    "8": { name: "Tax Expense", category: "P&L", level: 0, segment: "Tax" },
-    "9": { name: "Net Profit", category: "P&L", level: 0, segment: "Profitability" },
-    "10": { name: "Total Assets", category: "Balance Sheet", level: 0, segment: "Assets" },
-    "11": { name: "Customer Deposits", category: "Balance Sheet", level: 0, segment: "Liabilities" },
-    "12": { name: "Loans and Advances", category: "Balance Sheet", level: 0, segment: "Assets" },
-    "13": { name: "Shareholders' Equity", category: "Balance Sheet", level: 0, segment: "Equity" },
-    "14": { name: "Return on Assets (ROA)", category: "KPI", level: 0, segment: "Profitability" },
-    "15": { name: "Return on Equity (ROE)", category: "KPI", level: 0, segment: "Profitability" },
-    "16": { name: "Net Interest Margin (NIM)", category: "KPI", level: 0, segment: "Efficiency" },
-    "17": { name: "Cost to Income Ratio", category: "KPI", level: 0, segment: "Efficiency" },
-    "18": { name: "Capital Adequacy Ratio", category: "Ratios", level: 0, segment: "Capital" },
-    "19": { name: "Tier 1 Capital Ratio", category: "Ratios", level: 0, segment: "Capital" },
-    "20": { name: "NPL Ratio", category: "Risk", level: 0, segment: "Asset Quality" },
+  private constructor() {}
+
+  static getInstance(): CSVDataService {
+    if (!CSVDataService.instance) {
+      CSVDataService.instance = new CSVDataService()
+    }
+    return CSVDataService.instance
   }
 
   private parseCSVValue(value: string): number | null {
-    if (!value || value.toLowerCase() === "na" || value.trim() === "") {
+    if (!value || value.trim() === "" || value.toLowerCase() === "na") {
       return null
     }
     const parsed = Number.parseFloat(value)
     return isNaN(parsed) ? null : parsed
   }
 
-  private parseCSV(csvText: string): CSVDataRow[] {
-    const lines = csvText.trim().split("\n")
-    const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""))
-
-    return lines.slice(1).map((line) => {
-      const values = line.split(",").map((v) => v.trim().replace(/"/g, ""))
-      const row: any = {}
-
-      headers.forEach((header, index) => {
-        const key = header === "" ? "id" : header.replace(/-/g, "_minus_")
-        row[key] = values[index] || ""
-      })
-
-      return row as CSVDataRow
-    })
-  }
-
-  private processRawData(rawData: CSVDataRow[]): ProcessedLineItem[] {
-    return rawData
-      .map((row) => {
-        const itemInfo = this.itemNameMapping[row.id] || {
-          name: `Item ${row.id}`,
-          category: "Other",
-          level: 0,
-          segment: "General",
-        }
-
-        // Parse numerical values
-        const q1_current = this.parseCSVValue(row.q1_t)
-        const q1_previous = this.parseCSVValue(row.q1_t_minus_1)
-        const q2_previous = this.parseCSVValue(row.q2_t_minus_1)
-        const q3_previous = this.parseCSVValue(row.q3_t_minus_1)
-        const full_year_previous = this.parseCSVValue(row.f_t_minus_1)
-
-        // Calculate variance (using Q1 current vs Q1 previous as primary comparison)
-        const currentValue = q1_current
-        const previousValue = q1_previous
-        const variance = currentValue !== null && previousValue !== null ? currentValue - previousValue : null
-        const variancePercent =
-          variance !== null && previousValue !== null && previousValue !== 0
-            ? (variance / Math.abs(previousValue)) * 100
-            : null
-
-        return {
-          id: row.id,
-          item: itemInfo.name,
-          category: itemInfo.category,
-          bank: "ADIB", // Since this is ADIB-specific data
-          level: itemInfo.level,
-          currentValue,
-          previousValue,
-          variance,
-          variancePercent,
-          q1_current,
-          q1_previous,
-          q2_previous,
-          q3_previous,
-          full_year_previous,
-          segment: itemInfo.segment,
-          subCategory: itemInfo.segment,
-        }
-      })
-      .filter((item) => item.currentValue !== null || item.previousValue !== null) // Filter out items with no data
-  }
-
-  private generateFilterOptions(data: ProcessedLineItem[]): FilterOptions {
-    const banks = [...new Set(data.map((item) => item.bank))].sort()
-    const categories = [...new Set(data.map((item) => item.category))].sort()
-    const periods = ["q1_2024", "q1_2023", "q2_2023", "q3_2023", "fy_2023"] // Based on available data columns
-    const items = [...new Set(data.map((item) => item.item))].sort()
-
-    return { banks, categories, periods, items }
-  }
-
-  async fetchAndProcessData(): Promise<{ data: ProcessedLineItem[]; filterOptions: FilterOptions }> {
-    if (this.cachedData && this.filterOptions) {
-      return { data: this.cachedData, filterOptions: this.filterOptions }
+  private processCSVRow(row: CSVRow): ProcessedLineItem | null {
+    const itemId = row[""].trim()
+    if (!itemId || !ITEM_ID_MAPPING[itemId]) {
+      return null
     }
 
+    const mapping = ITEM_ID_MAPPING[itemId]
+    const q1Current = this.parseCSVValue(row["q1_t"])
+    const q1Previous = this.parseCSVValue(row["q1_t-1"])
+
+    // Calculate variance
+    const variance = q1Current !== null && q1Previous !== null ? q1Current - q1Previous : null
+    const variancePercent =
+      variance !== null && q1Previous !== null && q1Previous !== 0 ? (variance / q1Previous) * 100 : null
+
+    return {
+      id: `item-${itemId}`,
+      itemId,
+      item: mapping.name,
+      bank: "ADIB", // From the CSV file provided
+      category: mapping.category,
+      segment: mapping.segment,
+      currentValue: q1Current,
+      previousValue: q1Previous,
+      variance,
+      variancePercent,
+      q1Current,
+      q1Previous,
+      q2Previous: this.parseCSVValue(row["q2_t-1"]),
+      q3Previous: this.parseCSVValue(row["q3_t-1"]),
+      fullYearPrevious: this.parseCSVValue(row["f_t-1"]),
+      q1TwoYearsAgo: this.parseCSVValue(row["q1_t-2"]),
+      q2TwoYearsAgo: this.parseCSVValue(row["q2_t-2"]),
+      q3TwoYearsAgo: this.parseCSVValue(row["q3_t-2"]),
+      fullYearTwoYearsAgo: this.parseCSVValue(row["f_t-2"]),
+    }
+  }
+
+  async fetchCSVData(): Promise<ProcessedLineItem[]> {
+    if (this.csvData) {
+      return this.csvData
+    }
+
+    if (this.isLoading) {
+      // Wait for existing request
+      while (this.isLoading) {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+      return this.csvData || []
+    }
+
+    this.isLoading = true
+    this.error = null
+
     try {
-      console.log("Fetching CSV data from:", this.csvUrl)
-      const response = await fetch(this.csvUrl)
+      console.log(
+        "Fetching CSV data from:",
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/adib_csv-NnJWhpVRJafi03oUOvKnAwYIuMmOzx.csv",
+      )
+
+      const response = await fetch(
+        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/adib_csv-NnJWhpVRJafi03oUOvKnAwYIuMmOzx.csv",
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -164,136 +151,143 @@ class CSVDataService {
       const csvText = await response.text()
       console.log("CSV data fetched, length:", csvText.length)
 
-      const rawData = this.parseCSV(csvText)
-      console.log("Parsed CSV rows:", rawData.length)
+      // Parse CSV manually (simple approach for this specific format)
+      const lines = csvText.split("\n").filter((line) => line.trim())
+      const headers = lines[0].split(",").map((h) => h.replace(/"/g, "").trim())
 
-      const processedData = this.processRawData(rawData)
-      console.log("Processed line items:", processedData.length)
+      console.log("CSV headers:", headers)
 
-      const filterOptions = this.generateFilterOptions(processedData)
+      const processedData: ProcessedLineItem[] = []
 
-      // Cache the results
-      this.cachedData = processedData
-      this.filterOptions = filterOptions
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(",").map((v) => v.replace(/"/g, "").trim())
 
-      return { data: processedData, filterOptions }
+        if (values.length >= headers.length) {
+          const row: CSVRow = {
+            "": values[0] || "",
+            q1_t: values[1] || "",
+            "q1_t-1": values[2] || "",
+            "q2_t-1": values[3] || "",
+            "q3_t-1": values[4] || "",
+            "f_t-1": values[5] || "",
+            "q1_t-2": values[6] || "",
+            "q2_t-2": values[7] || "",
+            "q3_t-2": values[8] || "",
+            "f_t-2": values[9] || "",
+          }
+
+          const processedItem = this.processCSVRow(row)
+          if (processedItem) {
+            processedData.push(processedItem)
+          }
+        }
+      }
+
+      console.log("Processed CSV data:", processedData.length, "items")
+      console.log("Sample processed item:", processedData[0])
+
+      this.csvData = processedData
+      return processedData
     } catch (error) {
-      console.error("Error fetching/processing CSV data:", error)
-      throw error
+      console.error("Error fetching CSV data:", error)
+      this.error = error instanceof Error ? error.message : "Unknown error"
+      return []
+    } finally {
+      this.isLoading = false
     }
   }
 
-  async getFilteredData(filters: {
+  getFilterOptions(): {
+    banks: string[]
+    categories: string[]
+    periods: string[]
+    segments: string[]
+  } {
+    if (!this.csvData) {
+      return { banks: [], categories: [], periods: [], segments: [] }
+    }
+
+    const banks = Array.from(new Set(this.csvData.map((item) => item.bank)))
+    const categories = Array.from(new Set(this.csvData.map((item) => item.category)))
+    const segments = Array.from(new Set(this.csvData.map((item) => item.segment)))
+    const periods = ["q1_t", "q1_t-1", "q2_t-1", "q3_t-1", "f_t-1"] // Available periods from CSV
+
+    return { banks, categories, periods, segments }
+  }
+
+  filterData(filters: {
     banks?: string[]
     categories?: string[]
     periods?: string[]
-    items?: string[]
-  }): Promise<ProcessedLineItem[]> {
-    const { data } = await this.fetchAndProcessData()
+    segments?: string[]
+  }): ProcessedLineItem[] {
+    if (!this.csvData) {
+      return []
+    }
 
-    return data.filter((item) => {
-      if (filters.banks && filters.banks.length > 0 && !filters.banks.includes(item.bank)) {
-        return false
-      }
-      if (filters.categories && filters.categories.length > 0 && !filters.categories.includes(item.category)) {
-        return false
-      }
-      if (filters.items && filters.items.length > 0 && !filters.items.includes(item.item)) {
-        return false
-      }
-      return true
-    })
+    let filtered = this.csvData
+
+    if (filters.banks && filters.banks.length > 0) {
+      filtered = filtered.filter((item) => filters.banks!.includes(item.bank))
+    }
+
+    if (filters.categories && filters.categories.length > 0) {
+      filtered = filtered.filter((item) => filters.categories!.includes(item.category))
+    }
+
+    if (filters.segments && filters.segments.length > 0) {
+      filtered = filtered.filter((item) => filters.segments!.includes(item.segment))
+    }
+
+    return filtered
   }
 
-  async getFilterOptions(): Promise<FilterOptions> {
-    const { filterOptions } = await this.fetchAndProcessData()
-    return filterOptions
-  }
+  getHistoricalData(bank: string, itemIds: string[]): Record<string, Array<{ quarter: string; value: number }>> {
+    if (!this.csvData) {
+      return {}
+    }
 
-  // Generate historical data for charts based on CSV data
-  async getHistoricalData(
-    bank: string,
-    metrics: string[],
-  ): Promise<Record<string, Array<{ quarter: string; value: number }>>> {
-    const { data } = await this.fetchAndProcessData()
     const result: Record<string, Array<{ quarter: string; value: number }>> = {}
 
-    // Map metric IDs to item names for lookup
-    const metricToItemMap: Record<string, string> = {
-      NIM: "Net Interest Margin (NIM)",
-      ROA: "Return on Assets (ROA)",
-      ROE: "Return on Equity (ROE)",
-      ER: "Cost to Income Ratio",
-      CAR: "Capital Adequacy Ratio",
-      NPLR: "NPL Ratio",
-    }
+    const bankData = this.csvData.filter((item) => item.bank === bank)
 
-    metrics.forEach((metricId) => {
-      const itemName = metricToItemMap[metricId]
-      const item = data.find((d) => d.item === itemName && d.bank === bank)
-
+    itemIds.forEach((itemId) => {
+      const item = bankData.find((d) => d.itemId === itemId)
       if (item) {
-        const historicalData = []
+        result[itemId] = []
 
-        // Create historical data points from available periods
-        if (item.q3_previous !== null) {
-          historicalData.push({ quarter: "Q3 2023", value: item.q3_previous })
+        // Add historical quarters with actual data
+        if (item.q1Current !== null) {
+          result[itemId].push({ quarter: "Q1 2024", value: item.q1Current })
         }
-        if (item.q2_previous !== null) {
-          historicalData.push({ quarter: "Q2 2023", value: item.q2_previous })
+        if (item.q1Previous !== null) {
+          result[itemId].push({ quarter: "Q1 2023", value: item.q1Previous })
         }
-        if (item.q1_previous !== null) {
-          historicalData.push({ quarter: "Q1 2023", value: item.q1_previous })
+        if (item.q2Previous !== null) {
+          result[itemId].push({ quarter: "Q2 2023", value: item.q2Previous })
         }
-        if (item.q1_current !== null) {
-          historicalData.push({ quarter: "Q1 2024", value: item.q1_current })
+        if (item.q3Previous !== null) {
+          result[itemId].push({ quarter: "Q3 2023", value: item.q3Previous })
         }
-
-        result[metricId] = historicalData.sort((a, b) => {
-          const quarterOrder = { "Q1 2023": 1, "Q2 2023": 2, "Q3 2023": 3, "Q1 2024": 4 }
-          return (
-            (quarterOrder[a.quarter as keyof typeof quarterOrder] || 0) -
-            (quarterOrder[b.quarter as keyof typeof quarterOrder] || 0)
-          )
-        })
-      } else {
-        result[metricId] = []
       }
-    })
-
-    return result
-  }
-
-  // Generate bank metrics for peer comparison
-  async getBankMetrics(banks: string[], metrics: string[]): Promise<Record<string, Record<string, number>>> {
-    const { data } = await this.fetchAndProcessData()
-    const result: Record<string, Record<string, number>> = {}
-
-    const metricToItemMap: Record<string, string> = {
-      NIM: "Net Interest Margin (NIM)",
-      ROA: "Return on Assets (ROA)",
-      ROE: "Return on Equity (ROE)",
-      ER: "Cost to Income Ratio",
-      CAR: "Capital Adequacy Ratio",
-      NPLR: "NPL Ratio",
-    }
-
-    banks.forEach((bank) => {
-      result[bank] = {}
-      metrics.forEach((metricId) => {
-        const itemName = metricToItemMap[metricId]
-        const item = data.find((d) => d.item === itemName && d.bank === bank)
-        result[bank][metricId] = item?.currentValue || item?.q1_current || 0
-      })
     })
 
     return result
   }
 
   clearCache(): void {
-    this.cachedData = null
-    this.filterOptions = null
+    this.csvData = null
+    this.error = null
+  }
+
+  getError(): string | null {
+    return this.error
+  }
+
+  isDataLoading(): boolean {
+    return this.isLoading
   }
 }
 
-export const csvDataService = new CSVDataService()
+export const csvDataService = CSVDataService.getInstance()
+export type { ProcessedLineItem }
