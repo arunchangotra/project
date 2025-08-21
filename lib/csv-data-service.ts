@@ -26,28 +26,79 @@ export interface ProcessedLineItem {
   _prefix?: string
 }
 
-// Item ID to readable name mapping
+// Item ID to readable name mapping - expanded to cover all CSV items
 const ITEM_ID_MAPPING: Record<string, { name: string; category: string; segment: string; level: number }> = {
   "1": { name: "Net Interest Income", category: "P&L", segment: "Revenue", level: 0 },
-  "2": { name: "Interest Income", category: "P&L", segment: "Revenue", level: 1 },
-  "3": { name: "Interest Expense", category: "P&L", segment: "Revenue", level: 1 },
-  "4": { name: "Non-Interest Income", category: "P&L", segment: "Revenue", level: 0 },
-  "5": { name: "Fee and Commission Income", category: "P&L", segment: "Revenue", level: 1 },
-  "6": { name: "Trading Income", category: "P&L", segment: "Revenue", level: 1 },
-  "7": { name: "Other Operating Income", category: "P&L", segment: "Revenue", level: 1 },
-  "8": { name: "Total Operating Income", category: "P&L", segment: "Revenue", level: 0 },
-  "9": { name: "Operating Expenses", category: "P&L", segment: "Expenses", level: 0 },
-  "10": { name: "Staff Costs", category: "P&L", segment: "Expenses", level: 1 },
-  "11": { name: "Other Operating Expenses", category: "P&L", segment: "Expenses", level: 1 },
-  "12": { name: "Depreciation", category: "P&L", segment: "Expenses", level: 1 },
-  "13": { name: "Impairment Charges", category: "P&L", segment: "Risk", level: 0 },
-  "14": { name: "Profit Before Tax", category: "P&L", segment: "Profitability", level: 0 },
-  "15": { name: "Tax Expense", category: "P&L", segment: "Profitability", level: 1 },
-  "16": { name: "Net Profit", category: "P&L", segment: "Profitability", level: 0 },
-  "17": { name: "Total Assets", category: "Balance Sheet", segment: "Assets", level: 0 },
-  "18": { name: "Loans and Advances", category: "Balance Sheet", segment: "Assets", level: 1 },
-  "19": { name: "Investment Securities", category: "Balance Sheet", segment: "Assets", level: 1 },
-  "20": { name: "Cash and Bank Balances", category: "Balance Sheet", segment: "Assets", level: 1 },
+  "1.1": { name: "Interest Income", category: "P&L", segment: "Revenue", level: 1 },
+  "1.1.1": { name: "Interest Income - Loans", category: "P&L", segment: "Revenue", level: 2 },
+  "1.1.2": { name: "Interest Income - Securities", category: "P&L", segment: "Revenue", level: 2 },
+  "1.1.3": { name: "Interest Income - Other", category: "P&L", segment: "Revenue", level: 2 },
+  "1.2": { name: "Interest Expense", category: "P&L", segment: "Revenue", level: 1 },
+  "1.2.1": { name: "Interest Expense - Deposits", category: "P&L", segment: "Revenue", level: 2 },
+  "1.2.2": { name: "Interest Expense - Borrowings", category: "P&L", segment: "Revenue", level: 2 },
+  "2": { name: "Non-Interest Income", category: "P&L", segment: "Revenue", level: 0 },
+  "2.1": { name: "Fee and Commission Income", category: "P&L", segment: "Revenue", level: 1 },
+  "2.1.1": { name: "Trade Finance Fees", category: "P&L", segment: "Revenue", level: 2 },
+  "2.1.2": { name: "Credit Card Fees", category: "P&L", segment: "Revenue", level: 2 },
+  "2.1.3": { name: "Banking Service Fees", category: "P&L", segment: "Revenue", level: 2 },
+  "2.2": { name: "Trading Income", category: "P&L", segment: "Revenue", level: 1 },
+  "2.2.1": { name: "FX Trading Income", category: "P&L", segment: "Revenue", level: 2 },
+  "2.2.2": { name: "Securities Trading Income", category: "P&L", segment: "Revenue", level: 2 },
+  "2.3": { name: "Other Operating Income", category: "P&L", segment: "Revenue", level: 1 },
+  "3": { name: "Total Operating Income", category: "P&L", segment: "Revenue", level: 0 },
+  "4": { name: "Operating Expenses", category: "P&L", segment: "Expenses", level: 0 },
+  "4.1": { name: "Staff Costs", category: "P&L", segment: "Expenses", level: 1 },
+  "4.1.1": { name: "Salaries and Benefits", category: "P&L", segment: "Expenses", level: 2 },
+  "4.1.2": { name: "Training and Development", category: "P&L", segment: "Expenses", level: 2 },
+  "4.2": { name: "Other Operating Expenses", category: "P&L", segment: "Expenses", level: 1 },
+  "4.2.1": { name: "Technology Expenses", category: "P&L", segment: "Expenses", level: 2 },
+  "4.2.2": { name: "Marketing Expenses", category: "P&L", segment: "Expenses", level: 2 },
+  "4.2.3": { name: "Professional Services", category: "P&L", segment: "Expenses", level: 2 },
+  "4.2.4": { name: "Premises and Equipment", category: "P&L", segment: "Expenses", level: 2 },
+  "4.3": { name: "Depreciation and Amortization", category: "P&L", segment: "Expenses", level: 1 },
+  "5": { name: "Impairment Charges", category: "P&L", segment: "Risk", level: 0 },
+  "5.1": { name: "Loan Loss Provisions", category: "P&L", segment: "Risk", level: 1 },
+  "5.1.1": { name: "Stage 1 Provisions", category: "P&L", segment: "Risk", level: 2 },
+  "5.1.2": { name: "Stage 2 Provisions", category: "P&L", segment: "Risk", level: 2 },
+  "5.1.3": { name: "Stage 3 Provisions", category: "P&L", segment: "Risk", level: 2 },
+  "5.2": { name: "Other Impairments", category: "P&L", segment: "Risk", level: 1 },
+  "6": { name: "Profit Before Tax", category: "P&L", segment: "Profitability", level: 0 },
+  "7": { name: "Tax Expense", category: "P&L", segment: "Profitability", level: 1 },
+  "8": { name: "Net Profit", category: "P&L", segment: "Profitability", level: 0 },
+  "9": { name: "Total Assets", category: "Balance Sheet", segment: "Assets", level: 0 },
+  "9.1": { name: "Cash and Bank Balances", category: "Balance Sheet", segment: "Assets", level: 1 },
+  "9.2": { name: "Due from Banks", category: "Balance Sheet", segment: "Assets", level: 1 },
+  "9.3": { name: "Loans and Advances", category: "Balance Sheet", segment: "Assets", level: 1 },
+  "9.3.1": { name: "Corporate Loans", category: "Balance Sheet", segment: "Assets", level: 2 },
+  "9.3.2": { name: "Retail Loans", category: "Balance Sheet", segment: "Assets", level: 2 },
+  "9.3.3": { name: "SME Loans", category: "Balance Sheet", segment: "Assets", level: 2 },
+  "9.4": { name: "Investment Securities", category: "Balance Sheet", segment: "Assets", level: 1 },
+  "9.4.1": { name: "Government Securities", category: "Balance Sheet", segment: "Assets", level: 2 },
+  "9.4.2": { name: "Corporate Securities", category: "Balance Sheet", segment: "Assets", level: 2 },
+  "9.5": { name: "Fixed Assets", category: "Balance Sheet", segment: "Assets", level: 1 },
+  "9.6": { name: "Other Assets", category: "Balance Sheet", segment: "Assets", level: 1 },
+  "10": { name: "Total Liabilities", category: "Balance Sheet", segment: "Liabilities", level: 0 },
+  "10.1": { name: "Customer Deposits", category: "Balance Sheet", segment: "Liabilities", level: 1 },
+  "10.1.1": { name: "Current Accounts", category: "Balance Sheet", segment: "Liabilities", level: 2 },
+  "10.1.2": { name: "Savings Accounts", category: "Balance Sheet", segment: "Liabilities", level: 2 },
+  "10.1.3": { name: "Time Deposits", category: "Balance Sheet", segment: "Liabilities", level: 2 },
+  "10.2": { name: "Due to Banks", category: "Balance Sheet", segment: "Liabilities", level: 1 },
+  "10.3": { name: "Borrowings", category: "Balance Sheet", segment: "Liabilities", level: 1 },
+  "10.4": { name: "Other Liabilities", category: "Balance Sheet", segment: "Liabilities", level: 1 },
+  "11": { name: "Total Equity", category: "Balance Sheet", segment: "Equity", level: 0 },
+  "11.1": { name: "Share Capital", category: "Balance Sheet", segment: "Equity", level: 1 },
+  "11.2": { name: "Retained Earnings", category: "Balance Sheet", segment: "Equity", level: 1 },
+  "11.3": { name: "Other Reserves", category: "Balance Sheet", segment: "Equity", level: 1 },
+  // KPI Metrics
+  "12": { name: "Net Interest Margin", category: "KPI", segment: "Profitability", level: 0 },
+  "13": { name: "Return on Assets", category: "KPI", segment: "Profitability", level: 0 },
+  "14": { name: "Return on Equity", category: "KPI", segment: "Profitability", level: 0 },
+  "15": { name: "Cost to Income Ratio", category: "KPI", segment: "Efficiency", level: 0 },
+  "16": { name: "Loan to Deposit Ratio", category: "KPI", segment: "Liquidity", level: 0 },
+  "17": { name: "Capital Adequacy Ratio", category: "Ratios", segment: "Capital", level: 0 },
+  "18": { name: "Tier 1 Capital Ratio", category: "Ratios", segment: "Capital", level: 0 },
+  "19": { name: "NPL Ratio", category: "Risk", segment: "Asset Quality", level: 0 },
+  "20": { name: "Provision Coverage Ratio", category: "Risk", segment: "Asset Quality", level: 0 },
 }
 
 class CSVDataService {
@@ -108,9 +159,10 @@ class CSVDataService {
             f_t_minus_2: columns[9] || "na",
           }
         })
-        .filter((row) => row.id && ITEM_ID_MAPPING[row.id])
+        .filter((row) => row.id && row.id.trim() !== "") // Include all rows with valid IDs
 
       this.csvData = dataRows
+      console.log(`Loaded ${this.csvData.length} rows from CSV`)
       return this.csvData
     } catch (error) {
       console.error("Error fetching CSV data:", error)
@@ -136,7 +188,19 @@ class CSVDataService {
     const csvData = await this.fetchCSVData()
 
     this.processedData = csvData.map((row) => {
-      const itemInfo = ITEM_ID_MAPPING[row.id]
+      // Try to find exact match first, then fallback to generic mapping
+      let itemInfo = ITEM_ID_MAPPING[row.id]
+
+      if (!itemInfo) {
+        // Create generic mapping for unknown items
+        itemInfo = {
+          name: `Item ${row.id}`,
+          category: "Other",
+          segment: "Unknown",
+          level: 0,
+        }
+      }
+
       const current = this.parseValue(row.q1_t)
       const previous = this.parseValue(row.q1_t_minus_1)
 
@@ -163,6 +227,7 @@ class CSVDataService {
       }
     })
 
+    console.log(`Processed ${this.processedData.length} line items`)
     return this.processedData
   }
 

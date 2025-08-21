@@ -64,20 +64,25 @@ export function useFilteredLineItems(filters: LineItemFilters) {
 
       try {
         const allItems = await csvDataService.getProcessedLineItems()
+        console.log(`Loaded ${allItems.length} items from CSV service`)
 
-        // Apply filters
+        // Apply filters - but be more permissive
         let filteredItems = allItems
 
+        // Only filter by banks if specific banks are selected
         if (filters.banks.length > 0) {
           filteredItems = filteredItems.filter((item) => filters.banks.includes(item.bank))
         }
 
+        // Only filter by categories if specific categories are selected
         if (filters.categories.length > 0) {
           filteredItems = filteredItems.filter((item) => filters.categories.includes(item.category))
         }
 
+        console.log(`Filtered to ${filteredItems.length} items`)
         setData(filteredItems)
       } catch (error) {
+        console.error("Error in useFilteredLineItems:", error)
         setError(error instanceof Error ? error.message : "Failed to load line items")
       } finally {
         setIsLoading(false)

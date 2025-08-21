@@ -597,6 +597,28 @@ export default function VarianceAnalysis() {
     }
   }, [searchParams, popularMetrics])
 
+  // Renderable data logic to show all CSV items without complex filtering
+  const renderableData = useMemo(() => {
+    let filteredItems = csvLineItems
+
+    // Apply bank filter
+    if (selectedBanksForLineItems.length > 0) {
+      filteredItems = filteredItems.filter((item) => selectedBanksForLineItems.includes(item.bank))
+    }
+
+    // Apply category filter
+    if (selectedCategoriesForLineItems.length > 0) {
+      filteredItems = filteredItems.filter((item) => selectedCategoriesForLineItems.includes(item.category))
+    }
+
+    // Sort by ID to maintain logical order
+    return filteredItems.sort((a, b) => {
+      const aNum = Number.parseFloat(a._prefix || "0")
+      const bNum = Number.parseFloat(b._prefix || "0")
+      return aNum - bNum
+    })
+  }, [csvLineItems, selectedBanksForLineItems, selectedCategoriesForLineItems])
+
   return (
     <DataLoadingWrapper isLoading={filterOptions.isLoading} error={filterOptions.error}>
       <div className="min-h-screen bg-gray-50">
@@ -1025,7 +1047,19 @@ export default function VarianceAnalysis() {
                   <div>
                     <CardTitle className="text-xl font-semibold text-gray-800">Line Item Analysis</CardTitle>
                     <CardDescription className="text-gray-600 mt-2">
-                      Real-time data from CSV file - {csvLineItems.length} items loaded
+                      Real-time data from CSV file - {csvLineItems.length} total items, {renderableData.length}{" "}
+                      displayed
+                      <div className="text-xs text-gray-500 mt-1">
+                        Categories: {[...new Set(csvLineItems.map((item) => item.category))].join(", ")}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Item IDs:{" "}
+                        {csvLineItems
+                          .slice(0, 10)
+                          .map((item) => item._prefix)
+                          .join(", ")}
+                        {csvLineItems.length > 10 && "..."}
+                      </div>
                       {selectedBanksForLineItems.length > 0 && (
                         <span className="block text-sm text-apple-blue-600 mt-1">
                           {selectedBanksForLineItems.length === 1
@@ -1099,7 +1133,7 @@ export default function VarianceAnalysis() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {csvLineItems.map((item) => {
+                        {renderableData.map((item) => {
                           const isParent = item.level !== 2
                           const isExpanded = expandedRows.has(item.id)
 
